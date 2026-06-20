@@ -4,15 +4,19 @@ import android.content.Context
 import android.content.SharedPreferences
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKey
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.launch
 
 val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "settings")
 
@@ -20,6 +24,7 @@ class DataStoreManager(private val context: Context) {
 
     companion object {
         val SERVER_URL_KEY = stringPreferencesKey("server_url")
+        val DYNAMIC_COLOR_KEY = booleanPreferencesKey("dynamic_color")
 
         private const val SECURE_PREFS_NAME  = "secure_auth"
         private const val KEY_AUTH_TOKEN      = "auth_token"
@@ -45,11 +50,24 @@ class DataStoreManager(private val context: Context) {
         )
     }
 
+    init {
+        // EncryptedSharedPreferences-Init (Keystore-I/O) im Hintergrund vorwärmen,
+        // damit der erste Token-Zugriff den Main-Thread nicht blockiert.
+        CoroutineScope(Dispatchers.IO).launch { runCatching { _authToken.value } }
+    }
+
     // --- Server-URL (nicht sicherheitskritisch -> normaler DataStore) ---
     val serverUrl: Flow<String?> = context.dataStore.data.map { it[SERVER_URL_KEY] }
 
     suspend fun saveServerUrl(url: String) {
         context.dataStore.edit { it[SERVER_URL_KEY] = url }
+    }
+
+    // --- Material You / Dynamic Color (nicht sicherheitskritisch) ---
+    val dynamicColor: Flow<Boolean> = context.dataStore.data.map { it[DYNAMIC_COLOR_KEY] ?: false }
+
+    suspend fun saveDynamicColor(enabled: Boolean) {
+        context.dataStore.edit { it[DYNAMIC_COLOR_KEY] = enabled }
     }
 
     // --- Auth-Token (verschlüsselt) ---

@@ -10,9 +10,11 @@ import androidx.lifecycle.viewModelScope
 import at.neuhaus.movieshelf.data.SessionManager
 import at.neuhaus.movieshelf.data.model.Movie
 import at.neuhaus.movieshelf.data.repository.MovieRepository
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.text.Collator
 import java.util.Locale
 
@@ -86,7 +88,7 @@ class DashboardViewModel(private val repository: MovieRepository) : ViewModel() 
                 allLoadedMovies = result.filter { it.boxsetParentId == null }
                 currentPage = 1
                 hasMore = result.size >= pageSize && !isOffline
-                applyFiltersAndSort()
+                recompute()
                 refreshFilterOptions()
             } catch (e: Exception) {
                 error = friendlyError(e)
@@ -109,7 +111,7 @@ class DashboardViewModel(private val repository: MovieRepository) : ViewModel() 
                 if (newItems.isNotEmpty()) {
                     currentPage = nextPage
                     allLoadedMovies = allLoadedMovies + newItems
-                    applyFiltersAndSort()
+                    recompute()
                 }
                 hasMore = newItems.size >= pageSize
             } catch (_: Exception) {
@@ -130,17 +132,17 @@ class DashboardViewModel(private val repository: MovieRepository) : ViewModel() 
 
     fun onSortSelected(option: SortOption) {
         sortOption = option
-        applyFiltersAndSort()
+        recompute()
     }
 
     fun onFilterChanged(newFilter: FilterState) {
         filterState = newFilter
-        applyFiltersAndSort()
+        recompute()
     }
 
     fun clearFilters() {
         filterState = FilterState()
-        applyFiltersAndSort()
+        recompute()
     }
 
     fun onSearchQueryChange(newQuery: String) {
@@ -164,7 +166,7 @@ class DashboardViewModel(private val repository: MovieRepository) : ViewModel() 
         allLoadedMovies = allLoadedMovies.map {
             if (it.id == movieId) it.copy(isWatched = !currentState) else it
         }
-        applyFiltersAndSort()
+        recompute()
 
         if (SessionManager.isDemo) return
 
@@ -176,12 +178,32 @@ class DashboardViewModel(private val repository: MovieRepository) : ViewModel() 
                 allLoadedMovies = allLoadedMovies.map {
                     if (it.id == movieId) it.copy(isWatched = currentState) else it
                 }
-                applyFiltersAndSort()
+                recompute()
             }
         }
     }
 
-    private fun applyFiltersAndSort() {
+    private fun recompute() {
+        viewModelScope.launch {
+            val result = withContext(Dispatchers.Default) { computeFilteredSorted() }
+            movies = result
+        }
+    }
+
+    /**
+     * Reine Berechnung: filtert + sortiert aus [allLoadedMovies], [filterState] und [sortOption]
+     * und gibt die fertige Liste zurück (kein State-Schreiben). Thread-sicher, da der nicht
+     * thread-sichere [Collator] und der Titel-Comparator lokal erzeugt werden.
+     */
+    private fun computeFilteredSorted(): List<Movie> {
+        // Locale-bewusster Vergleich: 'ä' wird wie 'a' einsortiert (statt hinter 'z'),
+        // Groß-/Kleinschreibung ignoriert. Lokal erzeugt -> nichts wird zwischen parallelen Läufen geteilt.
+        val collator: Collator = Collator.getInstance(Locale.GERMAN).apply {
+            strength = Collator.SECONDARY
+        }
+        val byTitle: Comparator<Movie> =
+            Comparator { a, b -> collator.compare(titleSortKey(a.title), titleSortKey(b.title)) }
+
         var filtered = allLoadedMovies
 
         // Genre-Filter (Komma-separierte Genre-Spalte)
@@ -207,7 +229,7 @@ class DashboardViewModel(private val repository: MovieRepository) : ViewModel() 
             filtered = filtered.filter { (it.year ?: Int.MAX_VALUE) <= to }
         }
 
-        movies = when (sortOption) {
+        return when (sortOption) {
             // Zuletzt hinzugefügt: nach Server-Datum (created_at, ISO-8601 sortiert lexikografisch),
             // fehlendes Datum ans Ende, bei Gleichstand höchste ID zuerst.
             SortOption.BY_NEWEST -> filtered.sortedWith(
@@ -225,15 +247,6 @@ class DashboardViewModel(private val repository: MovieRepository) : ViewModel() 
             )
         }
     }
-
-    // Locale-bewusster Vergleich: 'ä' wird wie 'a' einsortiert (statt hinter 'z'),
-    // Groß-/Kleinschreibung ignoriert.
-    private val collator: Collator = Collator.getInstance(Locale.GERMAN).apply {
-        strength = Collator.SECONDARY
-    }
-
-    private val byTitle: Comparator<Movie> =
-        Comparator { a, b -> collator.compare(titleSortKey(a.title), titleSortKey(b.title)) }
 
     /** Entfernt führende Artikel und Leerzeichen für die Sortierung (wie in Mediatheken). */
     private fun titleSortKey(title: String?): String {
@@ -268,7 +281,7 @@ class DashboardViewModel(private val repository: MovieRepository) : ViewModel() 
             }
             allLoadedMovies = result.filter { it.boxsetParentId == null }
             isOffline = repository.isOffline
-            applyFiltersAndSort()
+            recompute()
             hasMore = false
         } catch (e: Exception) {
             error = friendlyError(e)
@@ -284,7 +297,7 @@ class DashboardViewModel(private val repository: MovieRepository) : ViewModel() 
             allLoadedMovies = getDemoMovies()
             isOffline = false
             hasMore = false
-            applyFiltersAndSort()
+            recompute()
             availableGenres = listOf("Sci-Fi", "Action")
             availableDirectors = listOf("Christopher Nolan")
             yearRange = 2008 to 2014

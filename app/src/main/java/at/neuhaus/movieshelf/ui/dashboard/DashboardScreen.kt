@@ -569,7 +569,7 @@ fun MovieItem(
             ) {
                 Icon(
                     imageVector = if (movie.isWatched == true) Icons.Default.Visibility else Icons.Default.VisibilityOff,
-                    contentDescription = null,
+                    contentDescription = if (movie.isWatched == true) "Als ungesehen markieren" else "Als gesehen markieren",
                     tint = Color.White,
                     modifier = Modifier.size(18.dp)
                 )

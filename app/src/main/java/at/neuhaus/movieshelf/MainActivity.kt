@@ -42,6 +42,11 @@ import at.neuhaus.movieshelf.ui.profile.ProfileScreen
 import at.neuhaus.movieshelf.ui.setup.SetupScreen
 import at.neuhaus.movieshelf.ui.stats.StatsScreen
 import at.neuhaus.movieshelf.ui.theme.MovieShelfTheme
+import com.google.android.play.core.appupdate.AppUpdateManagerFactory
+import com.google.android.play.core.install.InstallStateUpdatedListener
+import com.google.android.play.core.install.model.AppUpdateType
+import com.google.android.play.core.install.model.InstallStatus
+import com.google.android.play.core.install.model.UpdateAvailability
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
@@ -49,13 +54,24 @@ class MainActivity : ComponentActivity() {
 
     val oauthCallbackUri = mutableStateOf<Uri?>(null)
 
+    private val appUpdateManager by lazy { AppUpdateManagerFactory.create(this) }
+    private val installListener = InstallStateUpdatedListener { state ->
+        // Flexibles Update fertig heruntergeladen -> installieren.
+        if (state.installStatus() == InstallStatus.DOWNLOADED) {
+            runCatching { appUpdateManager.completeUpdate() }
+        }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         handleIntent(intent)
+        checkForAppUpdate()
 
         setContent {
-            MovieShelfTheme {
+            val dsm = remember { DataStoreManager(applicationContext) }
+            val dynamicColor by dsm.dynamicColor.collectAsState(initial = false)
+            MovieShelfTheme(dynamicColor = dynamicColor) {
                 MovieShelfApp(oauthCallbackUri)
             }
         }
@@ -65,6 +81,32 @@ class MainActivity : ComponentActivity() {
         super.onNewIntent(intent)
         setIntent(intent)
         handleIntent(intent)
+    }
+
+    /**
+     * Prüft via Google Play, ob ein App-Update verfügbar ist, und startet einen
+     * flexiblen Update-Flow (Download im Hintergrund). No-op, wenn nicht über Play
+     * installiert oder kein Update vorhanden.
+     */
+    private fun checkForAppUpdate() {
+        runCatching {
+            appUpdateManager.registerListener(installListener)
+            appUpdateManager.appUpdateInfo.addOnSuccessListener { info ->
+                if (info.updateAvailability() == UpdateAvailability.UPDATE_AVAILABLE &&
+                    info.isUpdateTypeAllowed(AppUpdateType.FLEXIBLE)
+                ) {
+                    runCatching {
+                        @Suppress("DEPRECATION")
+                        appUpdateManager.startUpdateFlowForResult(info, AppUpdateType.FLEXIBLE, this, 4711)
+                    }
+                }
+            }
+        }
+    }
+
+    override fun onDestroy() {
+        runCatching { appUpdateManager.unregisterListener(installListener) }
+        super.onDestroy()
     }
 
     private fun handleIntent(intent: Intent) {

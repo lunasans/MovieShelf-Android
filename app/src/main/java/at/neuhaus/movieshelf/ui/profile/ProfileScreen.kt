@@ -10,19 +10,27 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.automirrored.filled.PlaylistPlay
 import androidx.compose.material.icons.filled.Email
+import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Save
 import androidx.compose.material.icons.filled.Security
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import android.os.Build
+import at.neuhaus.movieshelf.data.local.DataStoreManager
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -33,6 +41,11 @@ fun ProfileScreen(
 ) {
     val viewModel: ProfileViewModel = viewModel()
     val snackbarHostState = remember { SnackbarHostState() }
+    val context = LocalContext.current
+    val dataStoreManager = remember { DataStoreManager(context) }
+    val scope = rememberCoroutineScope()
+    val dynamicColor by dataStoreManager.dynamicColor.collectAsState(initial = false)
+    val supportsDynamic = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
 
     LaunchedEffect(viewModel.error) {
         viewModel.error?.let {
@@ -178,6 +191,40 @@ fun ProfileScreen(
                             )
                         }
                         Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null, tint = MaterialTheme.colorScheme.outline)
+                    }
+                }
+
+                Spacer(Modifier.height(16.dp))
+
+                // Material You (Dynamic Color)
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                    )
+                ) {
+                    Row(
+                        modifier = Modifier.padding(16.dp).fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Row(modifier = Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically) {
+                            Icon(Icons.Default.Palette, contentDescription = null)
+                            Spacer(Modifier.width(16.dp))
+                            Column {
+                                Text("Material You", fontWeight = FontWeight.Bold)
+                                Text(
+                                    if (supportsDynamic) "Systemfarben verwenden" else "Erst ab Android 12 verfügbar",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
+                        Switch(
+                            checked = dynamicColor && supportsDynamic,
+                            enabled = supportsDynamic,
+                            onCheckedChange = { scope.launch { dataStoreManager.saveDynamicColor(it) } }
+                        )
                     }
                 }
 

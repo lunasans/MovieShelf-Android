@@ -27,6 +27,12 @@ Priorität: 🔴 hoch · 🟡 mittel · ⚪ optional.
 - ✅ **Trailer von TMDb speichern** — Server: neuer Admin-Endpunkt `POST /api/admin/movies/{id}/fetch-trailer` (TMDb-Videos, Fallback YouTube-Suche). Android: „Trailer von TMDb holen"-Button im Detail (Admin, wenn kein Trailer). **Server-Teil muss deployt werden.**
 - ✅ **Echtes 2FA** — Server: neue Endpunkte `POST /api/user/2fa/enable|confirm|disable` (Google2FA, Secret + otpauth + Recovery-Codes). Android: 2FA-Verwaltungs-Screen im Profil (einrichten/bestätigen/deaktivieren). **Server-Teil muss deployt werden.**
 - ✅ **Akzent vereinheitlicht** — drei verschiedene Rottöne → ein kohärentes Marken-Rot, Theme-Sekundärtöne harmonisiert.
+- ✅ **Material You** — Dynamic-Color-Schalter im Profil (ab Android 12), Einstellung in DataStore, Theme respektiert sie.
+- ✅ **In-App-Update-Hinweis** — Google Play In-App-Updates (flexibel) beim Start; no-op außerhalb von Play.
+- ✅ **Sortierung auf Background-Dispatcher** — Filter+Sortierung läuft jetzt auf `Dispatchers.Default` (thread-sicherer Collator), nicht mehr auf dem Main-Thread.
+- ✅ **EncryptedPrefs-I/O** — Keystore-Init wird beim Start im Hintergrund vorgewärmt (kein Main-Thread-Block beim ersten Token-Zugriff).
+- ✅ **Barrierefreiheit** — `contentDescription`-Durchsicht der Hauptscreens (fehlende bei bedienbaren Icons ergänzt, dekorative korrekt `null`).
+- ✅ **Version 1.7.0** (versionCode 19)
 
 ### ✨ Features (Backend-Endpunkte existieren bereits)
 

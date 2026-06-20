@@ -1,10 +1,14 @@
 package at.neuhaus.movieshelf.ui.theme
 
+import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
+import androidx.compose.material3.dynamicDarkColorScheme
+import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.platform.LocalContext
 
 private val DarkColorScheme = darkColorScheme(
     primary = PrimaryDark,
@@ -71,11 +75,18 @@ private val LightColorScheme = lightColorScheme(
 @Composable
 fun MovieShelfTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
-    // Dynamic color deaktiviert für konsistenten "Movie-Look"
+    // Material You / Dynamic Color – per Einstellung umschaltbar (ab Android 12).
+    // Standard: aus, für den konsistenten "Movie-Look".
     dynamicColor: Boolean = false,
     content: @Composable () -> Unit
 ) {
-    val colorScheme = if (darkTheme) DarkColorScheme else LightColorScheme
+    val context = LocalContext.current
+    val colorScheme = when {
+        dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S ->
+            if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
+        darkTheme -> DarkColorScheme
+        else -> LightColorScheme
+    }
 
     MaterialTheme(
         colorScheme = colorScheme,

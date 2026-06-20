@@ -15,8 +15,8 @@ android {
         applicationId = "info.movieshelf"
         minSdk = 24
         targetSdk = 36
-        versionCode = 18
-        versionName = "1.6.1c"
+        versionCode = 19
+        versionName = "1.7.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -74,6 +74,7 @@ dependencies {
     implementation(libs.coil.compose)
     implementation(libs.androidx.datastore.preferences)
     implementation(libs.androidx.security.crypto)
+    implementation(libs.app.update.ktx)
 
     // Room
     implementation(libs.androidx.room.runtime)
