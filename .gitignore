@@ -19,3 +19,4 @@ build/
 *.aab
 *.hprof
 
+native-debug-symbols.zip
