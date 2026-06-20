@@ -43,6 +43,7 @@ data class Movie(
     val tag: String? = null,
     @SerializedName("collection_type") val collectionType: String? = null,
     @SerializedName("created_at") val createdAt: String? = null,
+    @SerializedName("is_wishlisted") val isWishlisted: Boolean? = null,
     @SerializedName("in_collection") val inCollection: Boolean? = true,
     // Felder für Boxsets
     @SerializedName("is_boxset") val isBoxset: Boolean? = false,
@@ -60,6 +61,18 @@ data class TagResponse(
 )
 
 // --- Listen / Wunschliste ---
+// Antwort von POST /api/movies/{id}/wishlist
+data class WishlistToggleResponse(
+    val wishlisted: Boolean? = null
+)
+
+// Antwort der Cover/Backdrop-Upload-Endpunkte
+data class ImageUploadResponse(
+    val message: String? = null,
+    @SerializedName("cover_url") val coverUrl: String? = null,
+    @SerializedName("backdrop_url") val backdropUrl: String? = null
+)
+
 data class MovieListSummary(
     val id: Int,
     val name: String? = null,

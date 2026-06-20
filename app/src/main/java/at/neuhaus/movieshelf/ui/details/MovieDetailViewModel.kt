@@ -132,6 +132,28 @@ class MovieDetailViewModel(
         }
     }
 
+    fun toggleWishlist() {
+        if (SessionManager.isDemo) {
+            movie = movie?.copy(isWishlisted = !(movie?.isWishlisted ?: false))
+            return
+        }
+        val currentMovie = movie ?: return
+        val newState = !(currentMovie.isWishlisted ?: false)
+
+        // Optimistisches UI-Update
+        movie = currentMovie.copy(isWishlisted = newState)
+
+        viewModelScope.launch {
+            try {
+                val response = RetrofitClient.api.toggleWishlist(currentMovie.id)
+                movie = movie?.copy(isWishlisted = response.wishlisted ?: newState)
+            } catch (e: Exception) {
+                movie = currentMovie // Rollback bei Fehler
+                error = "Fehler bei der Wunschliste: ${e.message}"
+            }
+        }
+    }
+
     class Factory(
         private val movieId: Int,
         private val repository: MovieRepository? = null

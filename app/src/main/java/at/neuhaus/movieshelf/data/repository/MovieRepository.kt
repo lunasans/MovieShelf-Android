@@ -85,6 +85,14 @@ class MovieRepository(
         movieDao.deleteById(id)
     }
 
+    /** Cover hochladen (Admin). Gibt die neue Cover-URL zurück. */
+    suspend fun uploadCover(id: Int, part: okhttp3.MultipartBody.Part): String? =
+        api.uploadCover(id, part).coverUrl
+
+    /** Backdrop hochladen (Admin). Gibt die neue Backdrop-URL zurück. */
+    suspend fun uploadBackdrop(id: Int, part: okhttp3.MultipartBody.Part): String? =
+        api.uploadBackdrop(id, part).backdropUrl
+
     /** Einzelnen Film laden — aus Cache wenn offline. */
     suspend fun getMovie(id: Int): Movie? {
         return try {

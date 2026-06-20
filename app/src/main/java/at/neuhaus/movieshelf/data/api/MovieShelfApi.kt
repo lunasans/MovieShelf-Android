@@ -1,6 +1,7 @@
 package at.neuhaus.movieshelf.data.api
 
 import at.neuhaus.movieshelf.data.model.*
+import okhttp3.MultipartBody
 import retrofit2.http.*
 
 interface MovieShelfApi {
@@ -31,6 +32,21 @@ interface MovieShelfApi {
     @DELETE("api/admin/movies/{id}")
     suspend fun deleteMovie(@Path("id") id: Int): Map<String, Any>
 
+    // Cover/Backdrop hochladen (nur Admins, Multipart)
+    @Multipart
+    @POST("api/admin/movies/{id}/cover")
+    suspend fun uploadCover(
+        @Path("id") id: Int,
+        @Part cover: MultipartBody.Part
+    ): ImageUploadResponse
+
+    @Multipart
+    @POST("api/admin/movies/{id}/backdrop")
+    suspend fun uploadBackdrop(
+        @Path("id") id: Int,
+        @Part backdrop: MultipartBody.Part
+    ): ImageUploadResponse
+
     @GET("api/search")
     suspend fun searchMovies(
         @Query("q") query: String,
@@ -49,6 +65,9 @@ interface MovieShelfApi {
 
     @POST("api/movies/{id}/watched")
     suspend fun toggleWatched(@Path("id") id: Int): Map<String, Any>
+
+    @POST("api/movies/{id}/wishlist")
+    suspend fun toggleWishlist(@Path("id") id: Int): WishlistToggleResponse
 
     @GET("api/info")
     suspend fun getServerInfo(): ServerInfo

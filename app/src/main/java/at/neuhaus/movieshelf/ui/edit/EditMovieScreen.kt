@@ -1,6 +1,10 @@
 package at.neuhaus.movieshelf.ui.edit
 
+import android.net.Uri
 import androidx.activity.compose.BackHandler
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
@@ -9,8 +13,10 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.DeleteOutline
+import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.Save
 import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material.icons.filled.Wallpaper
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -22,6 +28,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import at.neuhaus.movieshelf.MovieShelfApplication
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 private val COMMON_COLLECTION_TYPES = listOf("DVD", "Blu-ray", "4K UHD", "Digital", "Serie")
 
@@ -40,8 +49,36 @@ fun EditMovieScreen(
     )
 
     val snackbarHostState = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
     var showDeleteDialog by remember { mutableStateOf(false) }
     var showDiscardDialog by remember { mutableStateOf(false) }
+
+    // Bild aus Uri lesen (off-main) und hochladen
+    fun pickAndUpload(uri: Uri?, isCover: Boolean) {
+        if (uri == null) return
+        scope.launch {
+            val (bytes, mime) = withContext(Dispatchers.IO) {
+                val type = context.contentResolver.getType(uri) ?: "image/jpeg"
+                val data = context.contentResolver.openInputStream(uri)?.use { it.readBytes() }
+                data to type
+            }
+            if (bytes == null) {
+                snackbarHostState.showSnackbar("Bild konnte nicht gelesen werden.")
+            } else if (isCover) {
+                viewModel.uploadCover(bytes, mime)
+            } else {
+                viewModel.uploadBackdrop(bytes, mime)
+            }
+        }
+    }
+
+    val coverPicker = rememberLauncherForActivityResult(
+        ActivityResultContracts.PickVisualMedia()
+    ) { uri -> pickAndUpload(uri, isCover = true) }
+
+    val backdropPicker = rememberLauncherForActivityResult(
+        ActivityResultContracts.PickVisualMedia()
+    ) { uri -> pickAndUpload(uri, isCover = false) }
 
     val requestBack = {
         if (viewModel.hasUnsavedChanges && !viewModel.saved && !viewModel.deleted) {
@@ -65,6 +102,12 @@ fun EditMovieScreen(
         viewModel.error?.let {
             snackbarHostState.showSnackbar(it)
             viewModel.error = null
+        }
+    }
+    LaunchedEffect(viewModel.uploadMessage) {
+        viewModel.uploadMessage?.let {
+            snackbarHostState.showSnackbar(it)
+            viewModel.uploadMessage = null
         }
     }
 
@@ -196,6 +239,41 @@ fun EditMovieScreen(
                         modifier = Modifier.fillMaxWidth().heightIn(min = 120.dp),
                         minLines = 4
                     )
+
+                    // Bilder
+                    Text("Bilder", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        OutlinedButton(
+                            onClick = {
+                                coverPicker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+                            },
+                            modifier = Modifier.weight(1f),
+                            enabled = !viewModel.isUploadingCover
+                        ) {
+                            if (viewModel.isUploadingCover) {
+                                CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp)
+                            } else {
+                                Icon(Icons.Default.Image, contentDescription = null, modifier = Modifier.size(18.dp))
+                                Spacer(Modifier.width(8.dp))
+                                Text("Cover")
+                            }
+                        }
+                        OutlinedButton(
+                            onClick = {
+                                backdropPicker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+                            },
+                            modifier = Modifier.weight(1f),
+                            enabled = !viewModel.isUploadingBackdrop
+                        ) {
+                            if (viewModel.isUploadingBackdrop) {
+                                CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp)
+                            } else {
+                                Icon(Icons.Default.Wallpaper, contentDescription = null, modifier = Modifier.size(18.dp))
+                                Spacer(Modifier.width(8.dp))
+                                Text("Backdrop")
+                            }
+                        }
+                    }
 
                     Row(
                         modifier = Modifier.fillMaxWidth(),

@@ -181,6 +181,20 @@ private fun MovieDetailContent(
                     }
                     if (movie != null) {
                         IconButton(
+                            onClick = { viewModel.toggleWishlist() },
+                            colors = IconButtonDefaults.iconButtonColors(
+                                containerColor = Color.Black.copy(alpha = 0.4f * (1f - toolbarAlpha)),
+                                contentColor = if (movie.isWishlisted == true) Color(0xFFE53935) else iconContentColor
+                            )
+                        ) {
+                            Icon(
+                                imageVector = if (movie.isWishlisted == true) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                                contentDescription = "Zur Wunschliste"
+                            )
+                        }
+                    }
+                    if (movie != null) {
+                        IconButton(
                             onClick = { viewModel.toggleWatched() },
                             colors = IconButtonDefaults.iconButtonColors(
                                 containerColor = Color.Black.copy(alpha = 0.4f * (1f - toolbarAlpha)),

@@ -9,6 +9,9 @@ import androidx.lifecycle.viewModelScope
 import at.neuhaus.movieshelf.data.model.MovieUpdateRequest
 import at.neuhaus.movieshelf.data.repository.MovieRepository
 import kotlinx.coroutines.launch
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
+import okhttp3.MultipartBody
+import okhttp3.RequestBody.Companion.toRequestBody
 import retrofit2.HttpException
 
 class EditMovieViewModel(
@@ -28,6 +31,11 @@ class EditMovieViewModel(
         private set
     var deleted by mutableStateOf(false)
         private set
+    var isUploadingCover by mutableStateOf(false)
+        private set
+    var isUploadingBackdrop by mutableStateOf(false)
+        private set
+    var uploadMessage by mutableStateOf<String?>(null)
     var error by mutableStateOf<String?>(null)
 
     // Bearbeitbare Felder
@@ -177,6 +185,35 @@ class EditMovieViewModel(
                 error = "Verbindungsfehler: ${e.message}"
             } finally {
                 isDeleting = false
+            }
+        }
+    }
+
+    fun uploadCover(bytes: ByteArray, mime: String) = uploadImage(bytes, mime, isCover = true)
+    fun uploadBackdrop(bytes: ByteArray, mime: String) = uploadImage(bytes, mime, isCover = false)
+
+    private fun uploadImage(bytes: ByteArray, mime: String, isCover: Boolean) {
+        viewModelScope.launch {
+            if (isCover) isUploadingCover = true else isUploadingBackdrop = true
+            error = null
+            try {
+                val mediaType = mime.toMediaTypeOrNull()
+                val body = bytes.toRequestBody(mediaType)
+                val ext = if (mime.contains("png")) "png" else "jpg"
+                val field = if (isCover) "cover" else "backdrop"
+                val part = MultipartBody.Part.createFormData(field, "$field.$ext", body)
+                if (isCover) repository.uploadCover(movieId, part) else repository.uploadBackdrop(movieId, part)
+                uploadMessage = if (isCover) "Cover aktualisiert." else "Backdrop aktualisiert."
+            } catch (e: HttpException) {
+                error = when (e.code()) {
+                    403 -> "Keine Berechtigung."
+                    422 -> "Bild ungültig oder zu groß."
+                    else -> "Upload fehlgeschlagen (Fehler ${e.code()})."
+                }
+            } catch (e: Exception) {
+                error = "Verbindungsfehler: ${e.message}"
+            } finally {
+                if (isCover) isUploadingCover = false else isUploadingBackdrop = false
             }
         }
     }
