@@ -91,6 +91,33 @@ data class ListDetailResponse(
     val movies: List<Movie>? = null
 )
 
+data class ListMutationRequest(
+    val name: String,
+    @SerializedName("movie_remote_ids") val movieRemoteIds: List<Int> = emptyList()
+)
+
+data class ListMutationResponse(
+    val id: Int? = null,
+    val name: String? = null
+)
+
+// Trailer von TMDb holen
+data class FetchTrailerResponse(
+    @SerializedName("trailer_url") val trailerUrl: String? = null,
+    val found: Boolean? = null
+)
+
+// 2FA
+data class TwoFactorEnableResponse(
+    val secret: String? = null,
+    @SerializedName("otpauth_url") val otpauthUrl: String? = null
+)
+
+data class TwoFactorConfirmResponse(
+    val confirmed: Boolean? = null,
+    @SerializedName("recovery_codes") val recoveryCodes: List<String>? = null
+)
+
 data class Actor(
     val id: Int? = null,
     @SerializedName("name", alternate = ["full_name", "actor_name", "display_name"]) val name: String? = null,

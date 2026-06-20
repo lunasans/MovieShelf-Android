@@ -22,6 +22,11 @@ Priorität: 🔴 hoch · 🟡 mittel · ⚪ optional.
 - ✅ **Cover/Backdrop-Upload** — im Edit-Screen Bild via Photo-Picker auswählen → Multipart-Upload an `POST /api/admin/movies/{id}/cover|backdrop`, mit Fortschritt + Snackbar
 - ✅ **Listen / Wunschliste (ansehen)** — Server: neuer `GET /api/lists/{list}` (volle Filme, da Android keinen Komplett-Sync hat) + `movie_count` im Index. Android: „Meine Listen" im Profil → Listen-Übersicht → Filme einer Liste. *Listen anlegen/bearbeiten/löschen noch offen.* **Server-Teil (v2-saas) muss deployt werden.**
 - ✅ **Wishlist-Toggle** — Server: neuer `POST /api/movies/{id}/wishlist` (Toggle) + `is_wishlisted` im Detail. Android: Herz-Toggle in der Film-Detailansicht (optimistisch). **Server-Teil (v2-saas) muss deployt werden.**
+- ✅ **Listen anlegen/bearbeiten/löschen** — Android: Liste anlegen (FAB), umbenennen/löschen (Overflow), Film aus Liste entfernen, „Zu Liste hinzufügen" im Film-Detail (Bottom-Sheet). Nutzt bestehende `POST/PUT/DELETE /api/lists`.
+- ✅ **Film manuell anlegen** — Admin: Formular-Screen (`CreateMovieScreen`), erreichbar über „Film hinzufügen" → ✏️. Nutzt `POST /api/admin/movies`.
+- ✅ **Trailer von TMDb speichern** — Server: neuer Admin-Endpunkt `POST /api/admin/movies/{id}/fetch-trailer` (TMDb-Videos, Fallback YouTube-Suche). Android: „Trailer von TMDb holen"-Button im Detail (Admin, wenn kein Trailer). **Server-Teil muss deployt werden.**
+- ✅ **Echtes 2FA** — Server: neue Endpunkte `POST /api/user/2fa/enable|confirm|disable` (Google2FA, Secret + otpauth + Recovery-Codes). Android: 2FA-Verwaltungs-Screen im Profil (einrichten/bestätigen/deaktivieren). **Server-Teil muss deployt werden.**
+- ✅ **Akzent vereinheitlicht** — drei verschiedene Rottöne → ein kohärentes Marken-Rot, Theme-Sekundärtöne harmonisiert.
 
 ### ✨ Features (Backend-Endpunkte existieren bereits)
 

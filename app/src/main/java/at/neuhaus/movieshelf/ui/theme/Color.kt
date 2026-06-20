@@ -5,8 +5,8 @@ import androidx.compose.ui.graphics.Color
 // Modern Movie Dark Theme (Deep Navy & Vibrant Amber)
 val PrimaryDark = Color(0xFFFFC107) // Amber (TMDB Style)
 val OnPrimaryDark = Color(0xFF3E2723)
-val SecondaryDark = Color(0xFF263238) // Blue Grey
-val OnSecondaryDark = Color(0xFFECEFF1)
+val SecondaryDark = Color(0xFFCC1111) // Marken-Rot (harmonisiert mit Nav)
+val OnSecondaryDark = Color(0xFFFFFFFF)
 val SurfaceDark = Color(0xFF101418) // Deep Black-Navy
 val BackgroundDark = Color(0xFF080A0C) // Near Black
 val ErrorDark = Color(0xFFCF6679)
@@ -18,12 +18,12 @@ val SurfaceVariantDark = Color(0xFF1C232B) // Etwas hellere Navy-Fläche (Karten
 val OnSurfaceVariantDark = Color(0xFFB0BEC5) // Gedämpftes Blue Grey für Metadaten
 val PrimaryContainerDark = Color(0xFF4A3500) // Tiefes Amber-Braun
 val OnPrimaryContainerDark = Color(0xFFFFE082) // Helles Amber
-val SecondaryContainerDark = Color(0xFF37474F) // Blue Grey Container
-val OnSecondaryContainerDark = Color(0xFFCFD8DC)
-val TertiaryDark = Color(0xFFFF8A65) // Warmes Kino-Orange als Akzent
-val OnTertiaryDark = Color(0xFF3E1A0A)
-val TertiaryContainerDark = Color(0xFF5A2A18)
-val OnTertiaryContainerDark = Color(0xFFFFD3C2)
+val SecondaryContainerDark = Color(0xFF5A0E0E) // Tiefroter Container (passt zum Nav-Rot)
+val OnSecondaryContainerDark = Color(0xFFFFDAD6)
+val TertiaryDark = Color(0xFFE57373) // Sanftes, gedämpftes Rot als Tertiär-Akzent
+val OnTertiaryDark = Color(0xFF3E0A0A)
+val TertiaryContainerDark = Color(0xFF7A1A1A)
+val OnTertiaryContainerDark = Color(0xFFFFDAD6)
 val OutlineDark = Color(0xFF5F6A72) // Subtile Konturen
 val OutlineVariantDark = Color(0xFF2E363D)
 val OnErrorDark = Color(0xFF370B0E)
@@ -36,8 +36,8 @@ val ScrimDark = Color(0xFF000000)
 // Light Theme (Clean & Soft)
 val PrimaryLight = Color(0xFFE91E63) // Cinema Red
 val OnPrimaryLight = Color(0xFFFFFFFF)
-val SecondaryLight = Color(0xFF9E9E9E)
-val OnSecondaryLight = Color(0xFF1A1A1A) // Bugfix: eigener Light-Wert (vorher OnSecondaryDark)
+val SecondaryLight = Color(0xFFCC1111) // Marken-Rot (harmonisiert mit Nav)
+val OnSecondaryLight = Color(0xFFFFFFFF)
 val BackgroundLight = Color(0xFFF5F5F5)
 val SurfaceLight = Color(0xFFFFFFFF)
 
@@ -48,12 +48,12 @@ val SurfaceVariantLight = Color(0xFFEDE0E2) // Leicht rosé-graue Fläche (Karte
 val OnSurfaceVariantLight = Color(0xFF5C5458) // Gedämpft für Metadaten
 val PrimaryContainerLight = Color(0xFFFFD9E2) // Sanftes Rosé
 val OnPrimaryContainerLight = Color(0xFF3E001D) // Dunkles Weinrot
-val SecondaryContainerLight = Color(0xFFE0E0E0) // Heller Grau-Container
-val OnSecondaryContainerLight = Color(0xFF2A2A2A)
-val TertiaryLight = Color(0xFF8E5B00) // Warmes Amber als Akzent
+val SecondaryContainerLight = Color(0xFFFFDAD6) // Sanftes Rosé-Rot (passt zum Nav-Rot)
+val OnSecondaryContainerLight = Color(0xFF410002)
+val TertiaryLight = Color(0xFFB71C1C) // Tiefes Rot als Akzent (statt Amber)
 val OnTertiaryLight = Color(0xFFFFFFFF)
-val TertiaryContainerLight = Color(0xFFFFDDB3)
-val OnTertiaryContainerLight = Color(0xFF2D1A00)
+val TertiaryContainerLight = Color(0xFFFFDAD6)
+val OnTertiaryContainerLight = Color(0xFF410002)
 val OutlineLight = Color(0xFF8A8285)
 val OutlineVariantLight = Color(0xFFD8CCCF)
 val ErrorLight = Color(0xFFB3261E)
@@ -64,6 +64,9 @@ val InverseSurfaceLight = Color(0xFF2F2B2C)
 val InverseOnSurfaceLight = Color(0xFFF5EEEF)
 val ScrimLight = Color(0xFF000000)
 
-// Akzent-Rot für die Navigation (beide Themes)
-val NavAccentRed   = Color(0xFFCC1111) // Sattes Kino-Rot
-val NavAccentRedDark = Color(0xFF9B0000) // Tiefes Dunkelrot für Glow
+// === Marken-Akzent: EIN kohärentes Kino-Rot (beide Themes) ===
+// Einziger Akzent-Rotton der App. Wird in der Navigation und für die
+// rot-harmonisierten M3-Tokens (secondary/tertiary) verwendet.
+val NavAccentRed     = Color(0xFFCC1111) // Sattes Marken-Rot (Hauptakzent)
+val NavAccentRedDark = Color(0xFF9B0000) // Tiefes Dunkelrot (Glow/Schatten/Gradient-Enden)
+val NavAccentRedLight = Color(0xFFE12727) // Leicht hellerer Rotton (Gradient-Mitte, ersetzt 0xFFE53935)

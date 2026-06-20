@@ -28,7 +28,8 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 @Composable
 fun ProfileScreen(
     onBack: () -> Unit,
-    onListsClick: () -> Unit = {}
+    onListsClick: () -> Unit = {},
+    onTwoFactorClick: () -> Unit = {}
 ) {
     val viewModel: ProfileViewModel = viewModel()
     val snackbarHostState = remember { SnackbarHostState() }
@@ -154,6 +155,7 @@ fun ProfileScreen(
                 Spacer(Modifier.height(16.dp))
 
                 Card(
+                    onClick = onTwoFactorClick,
                     modifier = Modifier.fillMaxWidth(),
                     colors = CardDefaults.cardColors(
                         containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
@@ -163,29 +165,19 @@ fun ProfileScreen(
                         modifier = Modifier
                             .padding(16.dp)
                             .fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Row(modifier = Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically) {
-                            Icon(Icons.Default.Security, contentDescription = null)
-                            Spacer(Modifier.width(16.dp))
-                            Column {
-                                Text("Zwei-Faktor-Authentifizierung", fontWeight = FontWeight.Bold)
-                                Text(
-                                    "Wird über die Weboberfläche verwaltet",
-                                    style = MaterialTheme.typography.bodySmall
-                                )
-                            }
-                        }
-                        Switch(
-                            checked = viewModel.twoFactorEnabled,
-                            enabled = false,
-                            onCheckedChange = {},
-                            colors = SwitchDefaults.colors(
-                                checkedThumbColor = MaterialTheme.colorScheme.primary,
-                                checkedTrackColor = MaterialTheme.colorScheme.primaryContainer,
+                        Icon(Icons.Default.Security, contentDescription = null)
+                        Spacer(Modifier.width(16.dp))
+                        Column(Modifier.weight(1f)) {
+                            Text("Zwei-Faktor-Authentifizierung", fontWeight = FontWeight.Bold)
+                            Text(
+                                if (viewModel.twoFactorEnabled) "Aktiv – tippen zum Verwalten" else "Nicht aktiv – tippen zum Einrichten",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
-                        )
+                        }
+                        Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null, tint = MaterialTheme.colorScheme.outline)
                     }
                 }
 

@@ -12,15 +12,19 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import android.widget.Toast
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.PlaylistAdd
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
@@ -122,6 +126,22 @@ private fun MovieDetailContent(
     LaunchedEffect(reloadKey) {
         if (reloadKey > 0) viewModel.loadMovie(movieId)
     }
+
+    val ctx = LocalContext.current
+    var showListSheet by remember { mutableStateOf(false) }
+
+    LaunchedEffect(viewModel.listActionMessage) {
+        viewModel.listActionMessage?.let {
+            Toast.makeText(ctx, it, Toast.LENGTH_SHORT).show()
+            viewModel.listActionMessage = null
+        }
+    }
+    LaunchedEffect(viewModel.error) {
+        viewModel.error?.let {
+            Toast.makeText(ctx, it, Toast.LENGTH_SHORT).show()
+            viewModel.error = null
+        }
+    }
     val scrollState = rememberScrollState()
     val density = LocalDensity.current
     val uriHandler = LocalUriHandler.current
@@ -168,6 +188,20 @@ private fun MovieDetailContent(
                     }
                 },
                 actions = {
+                    if (movie != null) {
+                        IconButton(
+                            onClick = {
+                                viewModel.loadLists()
+                                showListSheet = true
+                            },
+                            colors = IconButtonDefaults.iconButtonColors(
+                                containerColor = Color.Black.copy(alpha = 0.4f * (1f - toolbarAlpha)),
+                                contentColor = iconContentColor
+                            )
+                        ) {
+                            Icon(Icons.AutoMirrored.Filled.PlaylistAdd, contentDescription = "Zu Liste hinzufügen")
+                        }
+                    }
                     if (movie != null && isAdmin) {
                         IconButton(
                             onClick = { onEditClick(movieId) },
@@ -243,6 +277,22 @@ private fun MovieDetailContent(
                         titleStartScroll = titleStartScroll
                     )
 
+                    if (isAdmin && movie.trailerUrl.isNullOrBlank()) {
+                        Spacer(Modifier.height(12.dp))
+                        OutlinedButton(
+                            onClick = { viewModel.fetchTrailer() },
+                            enabled = !viewModel.isFetchingTrailer
+                        ) {
+                            if (viewModel.isFetchingTrailer) {
+                                CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp)
+                            } else {
+                                Icon(Icons.Default.Movie, contentDescription = null, modifier = Modifier.size(18.dp))
+                                Spacer(Modifier.width(8.dp))
+                                Text("Trailer von TMDb holen")
+                            }
+                        }
+                    }
+
                     Spacer(Modifier.height(24.dp))
                     Text(text = "Handlung", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
                     Spacer(Modifier.height(8.dp))
@@ -279,6 +329,40 @@ private fun MovieDetailContent(
                     }
 
                     Spacer(Modifier.height(100.dp))
+                }
+            }
+        }
+    }
+
+    if (showListSheet) {
+        ModalBottomSheet(onDismissRequest = { showListSheet = false }) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 20.dp)
+                    .padding(bottom = 24.dp)
+            ) {
+                Text("Zu Liste hinzufügen", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                Spacer(Modifier.height(8.dp))
+                if (viewModel.availableLists.isEmpty()) {
+                    Text(
+                        "Keine Listen vorhanden. Lege eine unter „Meine Listen“ (Profil) an.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(vertical = 16.dp)
+                    )
+                } else {
+                    viewModel.availableLists.forEach { list ->
+                        ListItem(
+                            headlineContent = { Text(list.name ?: "Liste") },
+                            supportingContent = { Text("${list.movieCount ?: list.movieRemoteIds?.size ?: 0} Filme") },
+                            leadingContent = { Icon(Icons.AutoMirrored.Filled.PlaylistAdd, contentDescription = null) },
+                            modifier = Modifier.clickable {
+                                viewModel.addToList(list)
+                                showListSheet = false
+                            }
+                        )
+                    }
                 }
             }
         }

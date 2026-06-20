@@ -63,6 +63,33 @@ interface MovieShelfApi {
     @GET("api/lists/{id}")
     suspend fun getList(@Path("id") id: Int): ListDetailResponse
 
+    @POST("api/lists")
+    suspend fun createList(@Body request: ListMutationRequest): ListMutationResponse
+
+    @PUT("api/lists/{id}")
+    suspend fun updateList(@Path("id") id: Int, @Body request: ListMutationRequest): ListMutationResponse
+
+    @DELETE("api/lists/{id}")
+    suspend fun deleteList(@Path("id") id: Int): Map<String, Any>
+
+    // Film manuell anlegen (Admin) – gleiche Felder wie update
+    @POST("api/admin/movies")
+    suspend fun createMovie(@Body request: MovieUpdateRequest): SingleMovieResponse
+
+    // Trailer von TMDb holen & speichern (Admin)
+    @POST("api/admin/movies/{id}/fetch-trailer")
+    suspend fun fetchTrailer(@Path("id") id: Int): FetchTrailerResponse
+
+    // 2FA-Verwaltung
+    @POST("api/user/2fa/enable")
+    suspend fun enable2fa(): TwoFactorEnableResponse
+
+    @POST("api/user/2fa/confirm")
+    suspend fun confirm2fa(@Body request: Map<String, String>): TwoFactorConfirmResponse
+
+    @POST("api/user/2fa/disable")
+    suspend fun disable2fa(): Map<String, Any>
+
     @POST("api/movies/{id}/watched")
     suspend fun toggleWatched(@Path("id") id: Int): Map<String, Any>
 

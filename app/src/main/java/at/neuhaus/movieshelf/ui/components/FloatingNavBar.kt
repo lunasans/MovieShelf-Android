@@ -34,7 +34,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import at.neuhaus.movieshelf.ui.theme.NavAccentRed
-import at.neuhaus.movieshelf.ui.theme.NavAccentRedDark
+import at.neuhaus.movieshelf.ui.theme.NavAccentRedLight
 
 @Composable
 fun FloatingNavBar(
@@ -73,7 +73,7 @@ fun FloatingNavBar(
                         brush = Brush.linearGradient(
                             colors = listOf(
                                 NavAccentRed,
-                                Color(0xFFE53935),
+                                NavAccentRedLight,
                                 NavAccentRed
                             )
                         )

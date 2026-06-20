@@ -9,7 +9,9 @@ import androidx.lifecycle.viewModelScope
 import at.neuhaus.movieshelf.data.SessionManager
 import at.neuhaus.movieshelf.data.api.RetrofitClient
 import at.neuhaus.movieshelf.data.model.Actor
+import at.neuhaus.movieshelf.data.model.ListMutationRequest
 import at.neuhaus.movieshelf.data.model.Movie
+import at.neuhaus.movieshelf.data.model.MovieListSummary
 import at.neuhaus.movieshelf.data.repository.MovieRepository
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -21,6 +23,11 @@ class MovieDetailViewModel(
     var movie by mutableStateOf<Movie?>(null)
     var isLoading by mutableStateOf(false)
     var error by mutableStateOf<String?>(null)
+    var isFetchingTrailer by mutableStateOf(false)
+        private set
+    var availableLists by mutableStateOf<List<MovieListSummary>>(emptyList())
+        private set
+    var listActionMessage by mutableStateOf<String?>(null)
 
     init {
         loadMovie(initialMovieId)
@@ -150,6 +157,53 @@ class MovieDetailViewModel(
             } catch (e: Exception) {
                 movie = currentMovie // Rollback bei Fehler
                 error = "Fehler bei der Wunschliste: ${e.message}"
+            }
+        }
+    }
+
+    /** Trailer von TMDb holen & speichern (Admin). */
+    fun fetchTrailer() {
+        val current = movie ?: return
+        viewModelScope.launch {
+            isFetchingTrailer = true
+            error = null
+            try {
+                val response = RetrofitClient.api.fetchTrailer(current.id)
+                if (response.found == true && !response.trailerUrl.isNullOrBlank()) {
+                    movie = current.copy(trailerUrl = response.trailerUrl)
+                    listActionMessage = "Trailer gefunden und gespeichert."
+                } else {
+                    error = "Kein Trailer gefunden."
+                }
+            } catch (e: Exception) {
+                error = "Trailer konnte nicht geholt werden: ${e.message}"
+            } finally {
+                isFetchingTrailer = false
+            }
+        }
+    }
+
+    /** Eigene Listen des Nutzers laden (für „Zu Liste hinzufügen"). */
+    fun loadLists() {
+        viewModelScope.launch {
+            try {
+                availableLists = RetrofitClient.api.getLists().lists ?: emptyList()
+            } catch (e: Exception) {
+                // still ignorieren – Sheet zeigt dann leere Liste
+            }
+        }
+    }
+
+    /** Aktuellen Film zu einer Liste hinzufügen (ersetzt die ID-Menge inkl. neuem Film). */
+    fun addToList(list: MovieListSummary) {
+        val current = movie ?: return
+        viewModelScope.launch {
+            try {
+                val ids = ((list.movieRemoteIds ?: emptyList()) + current.id).distinct()
+                RetrofitClient.api.updateList(list.id, ListMutationRequest(list.name ?: "Liste", ids))
+                listActionMessage = "Zu \"${list.name ?: "Liste"}\" hinzugefügt."
+            } catch (e: Exception) {
+                error = "Konnte nicht zur Liste hinzufügen."
             }
         }
     }

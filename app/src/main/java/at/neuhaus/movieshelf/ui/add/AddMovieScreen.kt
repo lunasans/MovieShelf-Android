@@ -13,6 +13,7 @@ import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Download
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -32,9 +33,11 @@ import coil.compose.AsyncImage
 @Composable
 fun AddMovieScreen(
     onBack: () -> Unit,
-    onMovieImported: () -> Unit
+    onMovieImported: () -> Unit,
+    onCreateManual: () -> Unit = {}
 ) {
     val viewModel: AddMovieViewModel = viewModel()
+    val isAdmin = at.neuhaus.movieshelf.data.SessionManager.user?.isAdmin == true
     val context = LocalContext.current
     val snackbarHostState = remember { SnackbarHostState() }
     
@@ -78,6 +81,13 @@ fun AddMovieScreen(
                         navigationIcon = {
                             IconButton(onClick = onBack) {
                                 Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Zurück")
+                            }
+                        },
+                        actions = {
+                            if (isAdmin) {
+                                IconButton(onClick = onCreateManual) {
+                                    Icon(Icons.Default.Edit, contentDescription = "Manuell anlegen")
+                                }
                             }
                         }
                     )

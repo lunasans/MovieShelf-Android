@@ -32,10 +32,12 @@ import at.neuhaus.movieshelf.ui.actors.ActorDetailScreen
 import at.neuhaus.movieshelf.ui.add.AddMovieScreen
 import at.neuhaus.movieshelf.ui.dashboard.DashboardScreen
 import at.neuhaus.movieshelf.ui.details.MovieDetailScreen
+import at.neuhaus.movieshelf.ui.create.CreateMovieScreen
 import at.neuhaus.movieshelf.ui.edit.EditMovieScreen
 import at.neuhaus.movieshelf.ui.lists.ListDetailScreen
 import at.neuhaus.movieshelf.ui.lists.ListsScreen
 import at.neuhaus.movieshelf.ui.login.LoginScreen
+import at.neuhaus.movieshelf.ui.twofactor.TwoFactorScreen
 import at.neuhaus.movieshelf.ui.profile.ProfileScreen
 import at.neuhaus.movieshelf.ui.setup.SetupScreen
 import at.neuhaus.movieshelf.ui.stats.StatsScreen
@@ -254,7 +256,21 @@ fun MovieShelfApp(oauthCallbackUri: MutableState<Uri?> = mutableStateOf(null)) {
                 composable("profile") {
                     ProfileScreen(
                         onBack = { navController.popBackStack() },
-                        onListsClick = { navController.navigate("lists") }
+                        onListsClick = { navController.navigate("lists") },
+                        onTwoFactorClick = { navController.navigate("twofactor") }
+                    )
+                }
+                composable("twofactor") {
+                    TwoFactorScreen(onBack = { navController.popBackStack() })
+                }
+                composable("create_movie") {
+                    CreateMovieScreen(
+                        onBack = { navController.popBackStack() },
+                        onCreated = { newId ->
+                            navController.navigate("movie_details/$newId") {
+                                popUpTo("create_movie") { inclusive = true }
+                            }
+                        }
                     )
                 }
                 composable("stats") {
@@ -342,7 +358,8 @@ fun MovieShelfApp(oauthCallbackUri: MutableState<Uri?> = mutableStateOf(null)) {
                 composable("add_movie") {
                     AddMovieScreen(
                         onBack = { navController.popBackStack() },
-                        onMovieImported = { navController.popBackStack() }
+                        onMovieImported = { navController.popBackStack() },
+                        onCreateManual = { navController.navigate("create_movie") }
                     )
                 }
                 composable(
