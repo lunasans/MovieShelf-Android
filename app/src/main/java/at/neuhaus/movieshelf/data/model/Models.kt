@@ -59,6 +59,25 @@ data class TagResponse(
     val data: List<TagItem>
 )
 
+// --- Listen / Wunschliste ---
+data class MovieListSummary(
+    val id: Int,
+    val name: String? = null,
+    @SerializedName("movie_count") val movieCount: Int? = null,
+    @SerializedName("movie_remote_ids") val movieRemoteIds: List<Int>? = null,
+    @SerializedName("updated_at") val updatedAt: String? = null
+)
+
+data class ListsResponse(
+    val lists: List<MovieListSummary>? = null
+)
+
+data class ListDetailResponse(
+    val id: Int,
+    val name: String? = null,
+    val movies: List<Movie>? = null
+)
+
 data class Actor(
     val id: Int? = null,
     @SerializedName("name", alternate = ["full_name", "actor_name", "display_name"]) val name: String? = null,

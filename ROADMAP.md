@@ -19,6 +19,7 @@ Priorität: 🔴 hoch · 🟡 mittel · ⚪ optional.
 - ✅ **Autofill/Passwort-Manager im Login** — `ContentType.Username/EmailAddress/Password/SmsOtpCode` auf den Login-Feldern (inkl. Compose-BOM-Anhebung 2024.09 → 2025.06.01 für das `ContentType`-API)
 - ✅ **Nav-Leiste beim Scrollen ausblenden** — `NestedScrollConnection` + `AnimatedVisibility`; blendet beim Runter-Scrollen aus, beim Hoch-Scrollen ein
 - ✅ **Typisierte TMDb-DTOs** — `TmdbSearchResponse`/`TmdbSearchItem` statt `Map<String,Any>` für `api/tmdb/search` (UI unverändert)
+- ✅ **Listen / Wunschliste (ansehen)** — Server: neuer `GET /api/lists/{list}` (volle Filme, da Android keinen Komplett-Sync hat) + `movie_count` im Index. Android: „Meine Listen" im Profil → Listen-Übersicht → Filme einer Liste. *Anlegen/Bearbeiten/Löschen + Wishlist-Toggle noch offen.* **Server-Teil (v2-saas) muss deployt werden.**
 
 ### ✨ Features (Backend-Endpunkte existieren bereits)
 

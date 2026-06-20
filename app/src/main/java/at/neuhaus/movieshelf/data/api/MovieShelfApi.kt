@@ -40,6 +40,13 @@ interface MovieShelfApi {
     @GET("api/tags")
     suspend fun getTags(): TagResponse
 
+    // Listen / Wunschliste
+    @GET("api/lists")
+    suspend fun getLists(): ListsResponse
+
+    @GET("api/lists/{id}")
+    suspend fun getList(@Path("id") id: Int): ListDetailResponse
+
     @POST("api/movies/{id}/watched")
     suspend fun toggleWatched(@Path("id") id: Int): Map<String, Any>
 

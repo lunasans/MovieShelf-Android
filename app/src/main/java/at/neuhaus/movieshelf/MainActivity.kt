@@ -33,6 +33,8 @@ import at.neuhaus.movieshelf.ui.add.AddMovieScreen
 import at.neuhaus.movieshelf.ui.dashboard.DashboardScreen
 import at.neuhaus.movieshelf.ui.details.MovieDetailScreen
 import at.neuhaus.movieshelf.ui.edit.EditMovieScreen
+import at.neuhaus.movieshelf.ui.lists.ListDetailScreen
+import at.neuhaus.movieshelf.ui.lists.ListsScreen
 import at.neuhaus.movieshelf.ui.login.LoginScreen
 import at.neuhaus.movieshelf.ui.profile.ProfileScreen
 import at.neuhaus.movieshelf.ui.setup.SetupScreen
@@ -251,11 +253,31 @@ fun MovieShelfApp(oauthCallbackUri: MutableState<Uri?> = mutableStateOf(null)) {
                 }
                 composable("profile") {
                     ProfileScreen(
-                        onBack = { navController.popBackStack() }
+                        onBack = { navController.popBackStack() },
+                        onListsClick = { navController.navigate("lists") }
                     )
                 }
                 composable("stats") {
                     StatsScreen(onBack = { navController.popBackStack() })
+                }
+                composable("lists") {
+                    ListsScreen(
+                        onBack = { navController.popBackStack() },
+                        onListClick = { listId -> navController.navigate("list_detail/$listId") }
+                    )
+                }
+                composable(
+                    "list_detail/{listId}",
+                    arguments = listOf(
+                        androidx.navigation.navArgument("listId") { type = androidx.navigation.NavType.IntType }
+                    )
+                ) { backStackEntry ->
+                    val listId = backStackEntry.arguments?.getInt("listId") ?: 0
+                    ListDetailScreen(
+                        listId = listId,
+                        onBack = { navController.popBackStack() },
+                        onMovieClick = { movie: Movie -> navController.navigate("movie_details/${movie.id}") }
+                    )
                 }
                 composable(
                     "movie_details/{movieId}?allIds={allIds}",
