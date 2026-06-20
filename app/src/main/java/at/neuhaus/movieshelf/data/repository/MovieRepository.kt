@@ -79,6 +79,12 @@ class MovieRepository(
         return response.data?.also { movieDao.insertMovie(MovieEntity.fromMovie(it)) }
     }
 
+    /** Film löschen (Admin). Entfernt ihn bei Erfolg auch aus dem lokalen Cache. */
+    suspend fun deleteMovie(id: Int) {
+        api.deleteMovie(id)
+        movieDao.deleteById(id)
+    }
+
     /** Einzelnen Film laden — aus Cache wenn offline. */
     suspend fun getMovie(id: Int): Movie? {
         return try {

@@ -24,6 +24,10 @@ class EditMovieViewModel(
         private set
     var saved by mutableStateOf(false)
         private set
+    var isDeleting by mutableStateOf(false)
+        private set
+    var deleted by mutableStateOf(false)
+        private set
     var error by mutableStateOf<String?>(null)
 
     // Bearbeitbare Felder
@@ -38,6 +42,34 @@ class EditMovieViewModel(
     var tag by mutableStateOf("")
     var trailerUrl by mutableStateOf("")
     var inCollection by mutableStateOf(true)
+
+    // Momentaufnahme der Anfangswerte (nach dem Laden)
+    private var initialTitle = ""
+    private var initialYear = ""
+    private var initialCollectionType = ""
+    private var initialGenre = ""
+    private var initialDirector = ""
+    private var initialRuntime = ""
+    private var initialRating = ""
+    private var initialOverview = ""
+    private var initialTag = ""
+    private var initialTrailerUrl = ""
+    private var initialInCollection = true
+
+    val hasUnsavedChanges: Boolean
+        get() = !isLoading && (
+            title != initialTitle ||
+            year != initialYear ||
+            collectionType != initialCollectionType ||
+            genre != initialGenre ||
+            director != initialDirector ||
+            runtime != initialRuntime ||
+            rating != initialRating ||
+            overview != initialOverview ||
+            tag != initialTag ||
+            trailerUrl != initialTrailerUrl ||
+            inCollection != initialInCollection
+        )
 
     init {
         load()
@@ -65,6 +97,18 @@ class EditMovieViewModel(
                 tag            = movie.tag ?: ""
                 trailerUrl     = movie.trailerUrl ?: ""
                 inCollection   = movie.inCollection ?: true
+
+                initialTitle          = title
+                initialYear           = year
+                initialCollectionType = collectionType
+                initialGenre          = genre
+                initialDirector       = director
+                initialRuntime        = runtime
+                initialRating         = rating
+                initialOverview       = overview
+                initialTag            = tag
+                initialTrailerUrl     = trailerUrl
+                initialInCollection   = inCollection
             }
             isLoading = false
         }
@@ -112,6 +156,27 @@ class EditMovieViewModel(
                 error = "Verbindungsfehler: ${e.message}"
             } finally {
                 isSaving = false
+            }
+        }
+    }
+
+    fun deleteMovie() {
+        viewModelScope.launch {
+            isDeleting = true
+            error = null
+            try {
+                repository.deleteMovie(movieId)
+                deleted = true
+            } catch (e: HttpException) {
+                error = when (e.code()) {
+                    403 -> "Keine Berechtigung zum Löschen."
+                    404 -> "Film nicht gefunden."
+                    else -> "Löschen fehlgeschlagen (Fehler ${e.code()})."
+                }
+            } catch (e: Exception) {
+                error = "Verbindungsfehler: ${e.message}"
+            } finally {
+                isDeleting = false
             }
         }
     }

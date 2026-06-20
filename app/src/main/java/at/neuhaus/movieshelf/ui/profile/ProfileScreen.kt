@@ -141,14 +141,15 @@ fun ProfileScreen(
                             Column {
                                 Text("Zwei-Faktor-Authentifizierung", fontWeight = FontWeight.Bold)
                                 Text(
-                                    "Erhöht die Sicherheit deines Kontos",
+                                    "Wird über die Weboberfläche verwaltet",
                                     style = MaterialTheme.typography.bodySmall
                                 )
                             }
                         }
                         Switch(
                             checked = viewModel.twoFactorEnabled,
-                            onCheckedChange = { viewModel.twoFactorEnabled = it },
+                            enabled = false,
+                            onCheckedChange = {},
                             colors = SwitchDefaults.colors(
                                 checkedThumbColor = MaterialTheme.colorScheme.primary,
                                 checkedTrackColor = MaterialTheme.colorScheme.primaryContainer,

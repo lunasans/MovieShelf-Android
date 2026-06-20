@@ -27,6 +27,10 @@ interface MovieShelfApi {
         @Body request: MovieUpdateRequest
     ): SingleMovieResponse
 
+    // Film löschen (nur Admins)
+    @DELETE("api/admin/movies/{id}")
+    suspend fun deleteMovie(@Path("id") id: Int): Map<String, Any>
+
     @GET("api/search")
     suspend fun searchMovies(
         @Query("q") query: String,

@@ -12,7 +12,7 @@ android {
     compileSdk = 36
 
     defaultConfig {
-        applicationId = "at.neuhaus.movieshelf"
+        applicationId = "info.movieshelf"
         minSdk = 24
         targetSdk = 36
         versionCode = 18

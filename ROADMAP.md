@@ -5,6 +5,19 @@
 Aktueller Stand: 1.6.1. Die folgenden Punkte sind für 1.7.0 vorgemerkt.
 Priorität: 🔴 hoch · 🟡 mittel · ⚪ optional.
 
+### ✅ Bereits umgesetzt (Richtung 1.7.0 — noch nicht committet/getestet)
+
+- ✅ **Film löschen** (Edit-Screen + Bestätigungsdialog, Cache-Cleanup, Reload)
+- ✅ **2FA-Schalter entschärft** (deaktiviert + Hinweis „über Web verwaltet")
+- ✅ **Trailer suchen** → YouTube-Suche, wenn kein Trailer vorhanden *(TMDb-Variante noch offen)*
+- ✅ **Farbschemata vervollständigt** (volles M3-Token-Set, Light-`onSecondary`-Bug gefixt)
+- ✅ **Typografie-Skala ausgebaut**
+- ✅ **Fehler-/Retry-Zustände** auf Stats- & Actor-Screen *(Detail-Screen noch offen)*
+- ✅ **Karten-Politur** (runder Watched-Button + Rating-Badge)
+- ✅ **„Ungespeicherte Änderungen"-Warnung** im Edit-Screen
+- ✅ **Logout-Bestätigung**
+- ✅ **Autofill/Passwort-Manager im Login** — `ContentType.Username/EmailAddress/Password/SmsOtpCode` auf den Login-Feldern (inkl. Compose-BOM-Anhebung 2024.09 → 2025.06.01 für das `ContentType`-API)
+
 ### ✨ Features (Backend-Endpunkte existieren bereits)
 
 - 🔴 **Film löschen** — `DELETE /api/admin/movies/{id}` (Admin). Lösch-Button im Edit-Screen mit Bestätigungsdialog; rundet die in 1.6.1 ergänzte Bearbeitung ab. *Aufwand: klein.*

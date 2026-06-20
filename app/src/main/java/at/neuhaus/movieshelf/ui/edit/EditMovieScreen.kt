@@ -1,5 +1,6 @@
 package at.neuhaus.movieshelf.ui.edit
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
@@ -7,7 +8,9 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.filled.DeleteOutline
 import androidx.compose.material.icons.filled.Save
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -27,7 +30,8 @@ private val COMMON_COLLECTION_TYPES = listOf("DVD", "Blu-ray", "4K UHD", "Digita
 fun EditMovieScreen(
     movieId: Int,
     onBack: () -> Unit,
-    onSaved: () -> Unit
+    onSaved: () -> Unit,
+    onDeleted: () -> Unit = {}
 ) {
     val context = LocalContext.current
     val app = context.applicationContext as MovieShelfApplication
@@ -36,9 +40,26 @@ fun EditMovieScreen(
     )
 
     val snackbarHostState = remember { SnackbarHostState() }
+    var showDeleteDialog by remember { mutableStateOf(false) }
+    var showDiscardDialog by remember { mutableStateOf(false) }
+
+    val requestBack = {
+        if (viewModel.hasUnsavedChanges && !viewModel.saved && !viewModel.deleted) {
+            showDiscardDialog = true
+        } else {
+            onBack()
+        }
+    }
+
+    BackHandler(enabled = viewModel.hasUnsavedChanges && !viewModel.saved && !viewModel.deleted) {
+        showDiscardDialog = true
+    }
 
     LaunchedEffect(viewModel.saved) {
         if (viewModel.saved) onSaved()
+    }
+    LaunchedEffect(viewModel.deleted) {
+        if (viewModel.deleted) onDeleted()
     }
     LaunchedEffect(viewModel.error) {
         viewModel.error?.let {
@@ -53,7 +74,7 @@ fun EditMovieScreen(
             TopAppBar(
                 title = { Text("Film bearbeiten") },
                 navigationIcon = {
-                    IconButton(onClick = onBack) {
+                    IconButton(onClick = { requestBack() }) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Zurück")
                     }
                 },
@@ -200,7 +221,7 @@ fun EditMovieScreen(
                     Button(
                         onClick = { viewModel.save() },
                         modifier = Modifier.fillMaxWidth(),
-                        enabled = !viewModel.isSaving
+                        enabled = !viewModel.isSaving && !viewModel.isDeleting
                     ) {
                         if (viewModel.isSaving) {
                             CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp, color = MaterialTheme.colorScheme.onPrimary)
@@ -209,10 +230,69 @@ fun EditMovieScreen(
                         }
                     }
 
+                    Spacer(Modifier.height(8.dp))
+
+                    TextButton(
+                        onClick = { showDeleteDialog = true },
+                        modifier = Modifier.fillMaxWidth(),
+                        enabled = !viewModel.isSaving && !viewModel.isDeleting,
+                        colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
+                    ) {
+                        if (viewModel.isDeleting) {
+                            CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp, color = MaterialTheme.colorScheme.error)
+                        } else {
+                            Icon(Icons.Default.DeleteOutline, contentDescription = null)
+                            Spacer(Modifier.width(8.dp))
+                            Text("Film löschen")
+                        }
+                    }
+
                     Spacer(Modifier.height(32.dp))
                 }
             }
         }
+    }
+
+    if (showDeleteDialog) {
+        AlertDialog(
+            onDismissRequest = { showDeleteDialog = false },
+            icon = { Icon(Icons.Default.Warning, contentDescription = null, tint = MaterialTheme.colorScheme.error) },
+            title = { Text("Film löschen?") },
+            text = { Text("„${viewModel.title}\" wird dauerhaft aus der Sammlung entfernt. Das kann nicht rückgängig gemacht werden.") },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showDeleteDialog = false
+                        viewModel.deleteMovie()
+                    },
+                    colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
+                ) { Text("Löschen") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteDialog = false }) { Text("Abbrechen") }
+            }
+        )
+    }
+
+    if (showDiscardDialog) {
+        AlertDialog(
+            onDismissRequest = { showDiscardDialog = false },
+            icon = { Icon(Icons.Default.Warning, contentDescription = null, tint = MaterialTheme.colorScheme.error) },
+            title = { Text("Änderungen verwerfen?") },
+            text = { Text("Du hast ungespeicherte Änderungen. Wirklich verwerfen?") },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showDiscardDialog = false
+                        onBack()
+                    },
+                    colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
+                ) { Text("Verwerfen") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDiscardDialog = false }) { Text("Abbrechen") }
+            }
+        )
     }
 }
 

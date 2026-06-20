@@ -40,6 +40,9 @@ interface MovieDao {
     @Query("DELETE FROM movies WHERE cachedAt < :cutoff")
     suspend fun deleteOldCache(cutoff: Long)
 
+    @Query("DELETE FROM movies WHERE id = :id")
+    suspend fun deleteById(id: Int)
+
     @Query("DELETE FROM movies")
     suspend fun deleteAll()
 

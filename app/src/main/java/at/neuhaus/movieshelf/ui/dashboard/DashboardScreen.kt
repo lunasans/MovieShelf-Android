@@ -7,6 +7,8 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -37,13 +39,19 @@ import coil.compose.AsyncImage
 @Composable
 fun DashboardScreen(
     onMovieClick: (Movie, List<Int>) -> Unit,
-    onAboutClick: () -> Unit
+    onAboutClick: () -> Unit,
+    reloadKey: Int = 0
 ) {
     val context = LocalContext.current
     val app = context.applicationContext as MovieShelfApplication
     val viewModel: DashboardViewModel = viewModel(
         factory = DashboardViewModel.Factory(app.movieRepository)
     )
+
+    // Nach dem Löschen eines Films (vom Edit-Screen) die Liste neu laden
+    LaunchedEffect(reloadKey) {
+        if (reloadKey > 0) viewModel.loadMovies(refresh = true)
+    }
 
     var showSortMenu by remember { mutableStateOf(false) }
     var showFilterSheet by remember { mutableStateOf(false) }
@@ -517,6 +525,33 @@ fun MovieItem(
                 }
             }
 
+            // Rating-Badge (oben links)
+            if (!movie.rating.isNullOrBlank()) {
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.TopStart)
+                        .padding(6.dp)
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(Color.Black.copy(alpha = 0.55f))
+                        .padding(horizontal = 6.dp, vertical = 3.dp)
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            imageVector = Icons.Default.Star,
+                            contentDescription = null,
+                            tint = Color(0xFFFFC107),
+                            modifier = Modifier.size(14.dp)
+                        )
+                        Spacer(modifier = Modifier.width(3.dp))
+                        Text(
+                            text = movie.rating ?: "",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = Color.White
+                        )
+                    }
+                }
+            }
+
             // Gesehen-Indikator
             IconButton(
                 onClick = {
@@ -526,11 +561,11 @@ fun MovieItem(
                     .align(Alignment.TopEnd)
                     .padding(4.dp)
                     .size(32.dp)
+                    .clip(CircleShape)
                     .background(
                         color = if (movie.isWatched == true) MaterialTheme.colorScheme.primary else Color.Black.copy(alpha = 0.4f),
-                        shape = RectangleShape
+                        shape = CircleShape
                     )
-                    .clip(RectangleShape)
             ) {
                 Icon(
                     imageVector = if (movie.isWatched == true) Icons.Default.Visibility else Icons.Default.VisibilityOff,

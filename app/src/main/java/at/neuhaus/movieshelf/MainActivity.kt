@@ -10,6 +10,8 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.animation.*
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -110,6 +112,7 @@ fun MovieShelfApp(oauthCallbackUri: MutableState<Uri?> = mutableStateOf(null)) {
     var initializationError by remember { mutableStateOf(false) }
     var startDestination by remember { mutableStateOf("login") }
     var isLoadingAuth by remember { mutableStateOf(true) }
+    var showLogoutDialog by remember { mutableStateOf(false) }
 
     // Wenn der Server ein Token mit 401 ablehnt (abgelaufen/widerrufen): Token löschen
     // und zum Login zurückkehren, statt in einem Screen mit lauter 401-Fehlern zu landen.
@@ -211,8 +214,14 @@ fun MovieShelfApp(oauthCallbackUri: MutableState<Uri?> = mutableStateOf(null)) {
                     exitTransition = { fadeExit },
                     popEnterTransition = { fadeEnter },
                     popExitTransition = { fadeExit }
-                ) {
+                ) { backStackEntry ->
+                    // Wird hochgezählt, wenn ein Film gelöscht wurde -> Liste neu laden
+                    val refreshKey by backStackEntry.savedStateHandle
+                        .getStateFlow("needs_refresh", 0)
+                        .collectAsState()
+
                     DashboardScreen(
+                        reloadKey = refreshKey,
                         onMovieClick = { movie: Movie, allIds: List<Int> ->
                             val idsString = allIds.joinToString(",")
                             navController.navigate("movie_details/${movie.id}?allIds=$idsString")
@@ -310,6 +319,15 @@ fun MovieShelfApp(oauthCallbackUri: MutableState<Uri?> = mutableStateOf(null)) {
                                 handle["movie_edited"] = (handle.get<Int>("movie_edited") ?: 0) + 1
                             }
                             navController.popBackStack()
+                        },
+                        onDeleted = {
+                            // Gelöscht: zurück zum Dashboard (Detail überspringen) und neu laden
+                            runCatching {
+                                navController.getBackStackEntry("dashboard").savedStateHandle.let { handle ->
+                                    handle["needs_refresh"] = (handle.get<Int>("needs_refresh") ?: 0) + 1
+                                }
+                            }
+                            navController.popBackStack("dashboard", inclusive = false)
                         }
                     )
                 }
@@ -340,16 +358,45 @@ fun MovieShelfApp(oauthCallbackUri: MutableState<Uri?> = mutableStateOf(null)) {
                         }
                     },
                     onLogoutClick = {
-                        scope.launch {
-                            dataStoreManager.saveAuthToken(null)
-                            SessionManager.token = null
-                            navController.navigate("login") {
-                                popUpTo(0) { inclusive = true }
-                            }
-                        }
+                        showLogoutDialog = true
                     },
                     onAddClick = {
                         navController.navigate("add_movie")
+                    }
+                )
+            }
+
+            if (showLogoutDialog) {
+                AlertDialog(
+                    onDismissRequest = { showLogoutDialog = false },
+                    icon = {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.Logout,
+                            contentDescription = null
+                        )
+                    },
+                    title = { Text("Abmelden?") },
+                    text = { Text("Möchtest du dich wirklich abmelden?") },
+                    confirmButton = {
+                        TextButton(
+                            onClick = {
+                                showLogoutDialog = false
+                                scope.launch {
+                                    dataStoreManager.saveAuthToken(null)
+                                    SessionManager.token = null
+                                    navController.navigate("login") {
+                                        popUpTo(0) { inclusive = true }
+                                    }
+                                }
+                            }
+                        ) {
+                            Text("Abmelden")
+                        }
+                    },
+                    dismissButton = {
+                        TextButton(onClick = { showLogoutDialog = false }) {
+                            Text("Abbrechen")
+                        }
                     }
                 )
             }

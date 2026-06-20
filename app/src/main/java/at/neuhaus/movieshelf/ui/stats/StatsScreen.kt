@@ -44,14 +44,20 @@ fun StatsScreen(
             Box(Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
                 CircularProgressIndicator()
             }
-        } else if (error != null) {
-            Column(
-                Modifier.fillMaxSize().padding(padding),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center
-            ) {
-                Text(error, color = MaterialTheme.colorScheme.error)
-                Button(onClick = { viewModel.loadStats() }) { Text("Erneut versuchen") }
+        } else if (error != null && stats == null) {
+            Box(Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Icon(
+                        Icons.Default.CloudOff,
+                        null,
+                        Modifier.size(64.dp),
+                        tint = MaterialTheme.colorScheme.outline
+                    )
+                    Spacer(Modifier.height(16.dp))
+                    Text(error, style = MaterialTheme.typography.titleMedium)
+                    Spacer(Modifier.height(8.dp))
+                    Button(onClick = { viewModel.loadStats() }) { Text("Erneut versuchen") }
+                }
             }
         } else if (stats != null) {
             Column(

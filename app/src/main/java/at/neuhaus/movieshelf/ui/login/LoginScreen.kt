@@ -12,9 +12,13 @@ import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.autofill.ContentType
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.semantics.contentType
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
@@ -27,6 +31,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import at.neuhaus.movieshelf.R
 import at.neuhaus.movieshelf.data.local.DataStoreManager
 
+@OptIn(ExperimentalComposeUiApi::class)
 @Composable
 fun LoginScreen(
     onLoginSuccess: () -> Unit,
@@ -129,7 +134,9 @@ fun LoginScreen(
                                 value = viewModel.code2fa,
                                 onValueChange = { if (it.length <= 6) viewModel.code2fa = it },
                                 label = { Text("2FA Code") },
-                                modifier = Modifier.fillMaxWidth(),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .semantics { contentType = ContentType.SmsOtpCode },
                                 leadingIcon = { Icon(Icons.Default.Pin, contentDescription = null) },
                                 keyboardOptions = KeyboardOptions(
                                     keyboardType = KeyboardType.Number,
@@ -144,7 +151,9 @@ fun LoginScreen(
                                 value = viewModel.email,
                                 onValueChange = { viewModel.email = it },
                                 label = { Text("E-Mail") },
-                                modifier = Modifier.fillMaxWidth(),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .semantics { contentType = ContentType.Username + ContentType.EmailAddress },
                                 leadingIcon = { Icon(Icons.Default.Email, contentDescription = null) },
                                 keyboardOptions = KeyboardOptions(
                                     keyboardType = KeyboardType.Email,
@@ -159,7 +168,9 @@ fun LoginScreen(
                                 value = viewModel.password,
                                 onValueChange = { viewModel.password = it },
                                 label = { Text("Passwort") },
-                                modifier = Modifier.fillMaxWidth(),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .semantics { contentType = ContentType.Password },
                                 leadingIcon = { Icon(Icons.Default.Lock, contentDescription = null) },
                                 trailingIcon = {
                                     val icon = if (passwordVisible) Icons.Filled.Visibility else Icons.Filled.VisibilityOff

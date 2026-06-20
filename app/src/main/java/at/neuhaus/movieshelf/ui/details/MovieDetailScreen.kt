@@ -327,6 +327,28 @@ private fun MovieBackdropHeader(
                     modifier = Modifier.size(40.dp)
                 )
             }
+        } else {
+            FilledTonalButton(
+                onClick = {
+                    val query = listOfNotNull(movie.title, movie.year?.toString(), "Trailer").joinToString(" ")
+                    val searchUrl = "https://www.youtube.com/results?search_query=" +
+                        java.net.URLEncoder.encode(query, "UTF-8")
+                    onTrailerClick(searchUrl)
+                },
+                modifier = Modifier.align(Alignment.Center),
+                colors = ButtonDefaults.filledTonalButtonColors(
+                    containerColor = Color.Black.copy(alpha = 0.5f),
+                    contentColor = Color.White
+                )
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Search,
+                    contentDescription = null,
+                    modifier = Modifier.size(20.dp)
+                )
+                Spacer(modifier = Modifier.size(8.dp))
+                Text(text = "Trailer suchen")
+            }
         }
     }
 }
