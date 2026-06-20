@@ -37,7 +37,7 @@ fun LoginScreen(
     val viewModel: LoginViewModel = viewModel()
     val oauthViewModel: OAuthViewModel = viewModel()
     val context = LocalContext.current
-    val dataStoreManager = DataStoreManager(context)
+    val dataStoreManager = remember { DataStoreManager(context) }
     val serverUrl by dataStoreManager.serverUrl.collectAsState(initial = "")
 
     var passwordVisible by remember { mutableStateOf(false) }

@@ -29,6 +29,7 @@ import at.neuhaus.movieshelf.ui.actors.ActorDetailScreen
 import at.neuhaus.movieshelf.ui.add.AddMovieScreen
 import at.neuhaus.movieshelf.ui.dashboard.DashboardScreen
 import at.neuhaus.movieshelf.ui.details.MovieDetailScreen
+import at.neuhaus.movieshelf.ui.edit.EditMovieScreen
 import at.neuhaus.movieshelf.ui.login.LoginScreen
 import at.neuhaus.movieshelf.ui.profile.ProfileScreen
 import at.neuhaus.movieshelf.ui.setup.SetupScreen
@@ -60,8 +61,10 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun handleIntent(intent: Intent) {
-        val uri = intent.data
-        if (uri?.scheme == "movieshelf" && uri.host == "oauth") {
+        val uri = intent.data ?: return
+        // Nur den erwarteten OAuth-Callback akzeptieren (Scheme + Host + Pfad prüfen),
+        // um manipulierte Deeplinks abzuweisen.
+        if (uri.scheme == "movieshelf" && uri.host == "oauth" && uri.path == "/callback") {
             oauthCallbackUri.value = uri
         }
     }
@@ -108,6 +111,29 @@ fun MovieShelfApp(oauthCallbackUri: MutableState<Uri?> = mutableStateOf(null)) {
     var startDestination by remember { mutableStateOf("login") }
     var isLoadingAuth by remember { mutableStateOf(true) }
 
+    // Wenn der Server ein Token mit 401 ablehnt (abgelaufen/widerrufen): Token löschen
+    // und zum Login zurückkehren, statt in einem Screen mit lauter 401-Fehlern zu landen.
+    val sessionExpired by SessionManager.sessionExpired.collectAsState()
+    LaunchedEffect(sessionExpired) {
+        if (sessionExpired) {
+            dataStoreManager.saveAuthToken(null)
+            SessionManager.resetExpiredFlag()
+            navController.navigate("login") {
+                popUpTo(0) { inclusive = true }
+            }
+        }
+    }
+
+    // OAuth-Callback wird grundsätzlich auf dem Login-Screen verarbeitet. Falls er
+    // eintrifft, während gerade ein anderer Screen aktiv ist, dorthin navigieren.
+    LaunchedEffect(oauthCallbackUri.value) {
+        if (oauthCallbackUri.value != null && isInitialized && currentRoute != null && currentRoute != "login") {
+            navController.navigate("login") {
+                popUpTo(0) { inclusive = true }
+            }
+        }
+    }
+
     LaunchedEffect(serverUrl) {
         if (serverUrl.isNullOrBlank()) {
             isInitialized = false
@@ -121,6 +147,10 @@ fun MovieShelfApp(oauthCallbackUri: MutableState<Uri?> = mutableStateOf(null)) {
             if (!savedToken.isNullOrBlank()) {
                 SessionManager.token = savedToken
                 startDestination = "dashboard"
+                // Profil (inkl. is_admin) im Hintergrund nachladen; bei 401 greift der Auto-Logout
+                launch {
+                    try { SessionManager.user = RetrofitClient.api.getUser() } catch (_: Exception) {}
+                }
             } else {
                 startDestination = "login"
             }
@@ -192,8 +222,7 @@ fun MovieShelfApp(oauthCallbackUri: MutableState<Uri?> = mutableStateOf(null)) {
                 }
                 composable("profile") {
                     ProfileScreen(
-                        onBack = { navController.popBackStack() },
-                        onStatsClick = { navController.navigate("stats") }
+                        onBack = { navController.popBackStack() }
                     )
                 }
                 composable("stats") {
@@ -213,11 +242,17 @@ fun MovieShelfApp(oauthCallbackUri: MutableState<Uri?> = mutableStateOf(null)) {
                     val movieId = backStackEntry.arguments?.getInt("movieId") ?: 0
                     val allIdsString = backStackEntry.arguments?.getString("allIds")
                     val allMovieIds = allIdsString?.split(",")?.mapNotNull { it.toIntOrNull() } ?: emptyList()
+                    // Signal vom Edit-Screen: hochgezählt, sobald ein Film bearbeitet wurde
+                    val reloadKey by backStackEntry.savedStateHandle
+                        .getStateFlow("movie_edited", 0)
+                        .collectAsState()
 
                     MovieDetailScreen(
                         movieId = movieId,
                         allMovieIds = allMovieIds,
+                        reloadKey = reloadKey,
                         onBack = { navController.popBackStack() },
+                        onEditClick = { id -> navController.navigate("edit_movie/$id") },
                         onMovieClick = { movie: Movie ->
                             navController.navigate("movie_details/${movie.id}")
                         },
@@ -257,6 +292,25 @@ fun MovieShelfApp(oauthCallbackUri: MutableState<Uri?> = mutableStateOf(null)) {
                     AddMovieScreen(
                         onBack = { navController.popBackStack() },
                         onMovieImported = { navController.popBackStack() }
+                    )
+                }
+                composable(
+                    "edit_movie/{movieId}",
+                    arguments = listOf(
+                        androidx.navigation.navArgument("movieId") { type = androidx.navigation.NavType.IntType }
+                    )
+                ) { backStackEntry ->
+                    val movieId = backStackEntry.arguments?.getInt("movieId") ?: 0
+                    EditMovieScreen(
+                        movieId = movieId,
+                        onBack = { navController.popBackStack() },
+                        onSaved = {
+                            // Detail-Screen über die Bearbeitung informieren, damit er neu lädt
+                            navController.previousBackStackEntry?.savedStateHandle?.let { handle ->
+                                handle["movie_edited"] = (handle.get<Int>("movie_edited") ?: 0) + 1
+                            }
+                            navController.popBackStack()
+                        }
                     )
                 }
                 composable("about") {

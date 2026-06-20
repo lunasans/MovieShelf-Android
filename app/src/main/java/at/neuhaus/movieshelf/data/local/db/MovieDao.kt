@@ -24,6 +24,13 @@ interface MovieDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertMovies(movies: List<MovieEntity>)
 
+    /** Ersetzt den gesamten Cache atomar (verhindert leeren Cache bei abgebrochenem Insert). */
+    @Transaction
+    suspend fun replaceAll(movies: List<MovieEntity>) {
+        deleteAll()
+        insertMovies(movies)
+    }
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertMovie(movie: MovieEntity)
 

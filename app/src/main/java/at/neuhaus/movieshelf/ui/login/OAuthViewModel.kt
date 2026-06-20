@@ -126,9 +126,11 @@ class OAuthViewModel : ViewModel() {
                     email = userInfo.email
                 )
                 dataStoreManager.saveAuthToken(tokenResponse.accessToken)
+                // Vollständiges Profil inkl. is_admin nachladen (userinfo enthält es nicht)
+                try { SessionManager.user = RetrofitClient.api.getUser() } catch (_: Exception) {}
                 loginSuccess = true
 
-                Log.i("MovieShelf_OAuth", "OAuth erfolgreich für ${userInfo.email}")
+                Log.i("MovieShelf_OAuth", "OAuth-Login erfolgreich")
             } catch (e: Exception) {
                 Log.e("MovieShelf_OAuth", "Token-Austausch fehlgeschlagen", e)
                 error = "Anmeldung fehlgeschlagen. Bitte erneut versuchen."

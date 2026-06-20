@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<network-security-config>
+    <!--
+        Debug-Build: HTTP für lokale Entwicklung uneingeschränkt erlaubt
+        (z.B. Test gegen einen LAN-Server über http://192.168.x.x).
+        Diese Datei gilt NUR für Debug-Builds und überschreibt die Release-Config.
+    -->
+    <base-config cleartextTrafficPermitted="true">
+        <trust-anchors>
+            <certificates src="system" />
+            <certificates src="user" />
+        </trust-anchors>
+    </base-config>
+</network-security-config>

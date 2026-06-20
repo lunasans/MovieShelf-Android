@@ -15,7 +15,7 @@ class MovieShelfApplication : Application(), ImageLoaderFactory {
     val database by lazy { MovieShelfDatabase.getInstance(this) }
 
     val movieRepository by lazy {
-        MovieRepository(database.movieDao(), RetrofitClient.api)
+        MovieRepository(database.movieDao()) { RetrofitClient.api }
     }
 
     override fun newImageLoader(): ImageLoader {

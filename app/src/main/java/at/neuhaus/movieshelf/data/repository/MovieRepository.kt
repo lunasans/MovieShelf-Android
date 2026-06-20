@@ -4,13 +4,18 @@ import at.neuhaus.movieshelf.data.api.MovieShelfApi
 import at.neuhaus.movieshelf.data.local.db.MovieDao
 import at.neuhaus.movieshelf.data.local.db.MovieEntity
 import at.neuhaus.movieshelf.data.model.Movie
+import at.neuhaus.movieshelf.data.model.MovieUpdateRequest
 
 private const val CACHE_MAX_AGE_MS = 30 * 60 * 1000L // 30 Minuten
 
 class MovieRepository(
     private val movieDao: MovieDao,
-    private val api: MovieShelfApi
+    // Provider statt fester Instanz: so wird nach einem Server-Wechsel
+    // (RetrofitClient.initialize) immer die aktuelle API benutzt.
+    private val apiProvider: () -> MovieShelfApi
 ) {
+    private val api: MovieShelfApi get() = apiProvider()
+
     var isOffline: Boolean = false
         private set
 
@@ -23,16 +28,21 @@ class MovieRepository(
         return try {
             val response = api.getMovies(page = page, perPage = perPage, tag = tag)
             val movies = response.data ?: emptyList()
-            // Erste Seite ersetzt den Cache, weitere Seiten werden ergänzt
+            val entities = movies.map { MovieEntity.fromMovie(it) }
+            // Erste Seite ersetzt den Cache atomar, weitere Seiten werden ergänzt
             if (page == 1) {
-                movieDao.deleteAll()
+                movieDao.replaceAll(entities)
+            } else {
+                movieDao.insertMovies(entities)
             }
-            movieDao.insertMovies(movies.map { MovieEntity.fromMovie(it) })
             isOffline = false
             movies
         } catch (e: Exception) {
             isOffline = true
-            if (page == 1) movieDao.getAllMovies().map { it.toMovie() } else emptyList()
+            // Offline: konsistent aus dem Cache paginieren, statt bei Seite > 1
+            // eine leere Liste zu liefern (was die UI als "Ende erreicht" deutet).
+            val cached = movieDao.getAllMovies().map { it.toMovie() }
+            if (page <= 1) cached else cached.drop((page - 1) * perPage).take(perPage)
         }
     }
 
@@ -61,6 +71,12 @@ class MovieRepository(
             movieDao.updateWatched(movieId, currentState)
             throw e
         }
+    }
+
+    /** Film bearbeiten (Admin). Aktualisiert bei Erfolg auch den lokalen Cache. */
+    suspend fun updateMovie(id: Int, request: MovieUpdateRequest): Movie? {
+        val response = api.updateMovie(id, request)
+        return response.data?.also { movieDao.insertMovie(MovieEntity.fromMovie(it)) }
     }
 
     /** Einzelnen Film laden — aus Cache wenn offline. */

@@ -15,8 +15,8 @@ android {
         applicationId = "at.neuhaus.movieshelf"
         minSdk = 24
         targetSdk = 36
-        versionCode = 15
-        versionName = "1.6.0"
+        versionCode = 18
+        versionName = "1.6.1c"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -30,7 +30,10 @@ android {
                 "proguard-rules.pro"
             )
             ndk {
-                debugSymbolLevel = "FULL"
+                // Nativer Code kommt nur aus (bereits gestrippten) Drittanbieter-Libs
+                // (ML Kit, CameraX). SYMBOL_TABLE extrahiert die noch vorhandene
+                // Symboltabelle; FULL fände keine Debug-Infos. Erfordert installiertes NDK.
+                debugSymbolLevel = "SYMBOL_TABLE"
             }
         }
     }
@@ -42,6 +45,8 @@ android {
         compose = true
         buildConfig = true
     }
+    ndkVersion = "30.0.14904198 rc1"
+    buildToolsVersion = "36.0.0"
 }
 
 tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
@@ -68,6 +73,7 @@ dependencies {
     implementation(libs.okhttp.logging)
     implementation(libs.coil.compose)
     implementation(libs.androidx.datastore.preferences)
+    implementation(libs.androidx.security.crypto)
 
     // Room
     implementation(libs.androidx.room.runtime)

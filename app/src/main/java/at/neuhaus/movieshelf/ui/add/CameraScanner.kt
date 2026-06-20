@@ -164,6 +164,9 @@ fun CameraScanner(
     DisposableEffect(Unit) {
         onDispose {
             cameraExecutor.shutdown()
+            // ML-Kit-Detektoren halten native Ressourcen und müssen geschlossen werden.
+            textRecognizer.close()
+            barcodeScanner.close()
         }
     }
 }

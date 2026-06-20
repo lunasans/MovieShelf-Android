@@ -43,13 +43,37 @@ class SetupViewModel(private val dataStoreManager: DataStoreManager) : ViewModel
     }
 
     private fun formatUrl(input: String): String {
-        var formatted = if (!input.startsWith("http")) "http://$input" else input
+        val trimmed = input.trim()
+        var formatted = when {
+            trimmed.startsWith("http://", ignoreCase = true) ||
+                trimmed.startsWith("https://", ignoreCase = true) -> trimmed
+            // Lokale Adressen via HTTP, alles andere standardmäßig über HTTPS.
+            isLocalHost(trimmed.substringBefore("/").substringBefore(":")) -> "http://$trimmed"
+            else -> "https://$trimmed"
+        }
         if (formatted.contains("127.0.0.1")) {
             formatted = formatted.replace("127.0.0.1", "10.0.2.2")
         } else if (formatted.contains("localhost")) {
             formatted = formatted.replace("localhost", "10.0.2.2")
         }
         return if (formatted.endsWith("/")) formatted else "$formatted/"
+    }
+
+    /**
+     * Private/lokale Adressen -> HTTP-Default (selbst gehosteter LAN-Server),
+     * alles andere -> HTTPS-Default. Nur eine Voreinstellung; der Nutzer kann
+     * jederzeit explizit http:// oder https:// eintippen.
+     */
+    private fun isLocalHost(host: String): Boolean {
+        if (host == "localhost" || host == "127.0.0.1" || host == "10.0.2.2") return true
+        if (host.endsWith(".local")) return true
+        // Private IPv4-Bereiche (RFC 1918) + Link-Local
+        if (host.startsWith("192.168.") || host.startsWith("10.") || host.startsWith("169.254.")) return true
+        if (host.startsWith("172.")) {
+            val second = host.removePrefix("172.").substringBefore(".").toIntOrNull()
+            if (second != null && second in 16..31) return true
+        }
+        return false
     }
 
     fun testConnection() {

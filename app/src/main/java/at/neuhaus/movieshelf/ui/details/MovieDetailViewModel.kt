@@ -112,11 +112,21 @@ class MovieDetailViewModel(
             return
         }
         val currentMovie = movie ?: return
+        val currentState = currentMovie.isWatched ?: false
+
+        // Optimistisches UI-Update
+        movie = currentMovie.copy(isWatched = !currentState)
+
         viewModelScope.launch {
             try {
-                RetrofitClient.api.toggleWatched(currentMovie.id)
-                movie = currentMovie.copy(isWatched = !(currentMovie.isWatched ?: false))
+                // Über das Repository, damit auch der lokale Room-Cache aktualisiert wird.
+                if (repository != null) {
+                    repository.toggleWatched(currentMovie.id, currentState)
+                } else {
+                    RetrofitClient.api.toggleWatched(currentMovie.id)
+                }
             } catch (e: Exception) {
+                movie = currentMovie // Rollback bei Fehler
                 error = "Fehler beim Aktualisieren: ${e.message}"
             }
         }

@@ -41,6 +41,8 @@ data class Movie(
     @SerializedName("tmdb_id") val tmdbId: String? = null,
     @SerializedName("rating_age") val ratingAge: Int? = null,
     val tag: String? = null,
+    @SerializedName("collection_type") val collectionType: String? = null,
+    @SerializedName("created_at") val createdAt: String? = null,
     @SerializedName("in_collection") val inCollection: Boolean? = true,
     // Felder für Boxsets
     @SerializedName("is_boxset") val isBoxset: Boolean? = false,
@@ -123,6 +125,25 @@ data class TmdbImportRequest(
     @SerializedName("in_collection") val inCollection: Boolean = true
 )
 
+/**
+ * Request-Body für PUT /api/admin/movies/{id}.
+ * Pflichtfelder: title, year, collection_type. Null-Felder werden von Gson
+ * weggelassen und bleiben serverseitig unverändert erhalten.
+ */
+data class MovieUpdateRequest(
+    val title: String,
+    val year: Int,
+    @SerializedName("collection_type") val collectionType: String,
+    val genre: String? = null,
+    val director: String? = null,
+    val runtime: Int? = null,
+    val rating: Double? = null,
+    val overview: String? = null,
+    val tag: String? = null,
+    @SerializedName("trailer_url") val trailerUrl: String? = null,
+    @SerializedName("in_collection") val inCollection: Boolean? = null
+)
+
 data class LoginResponse(
     val token: String?,
     val user: User?,
@@ -135,6 +156,7 @@ data class User(
     val id: Int,
     val name: String? = null,
     val email: String? = null,
+    @SerializedName("is_admin") val isAdmin: Boolean? = false,
     @SerializedName("two_factor_enabled") val twoFactorEnabled: Boolean? = false,
     @SerializedName("two_factor_confirmed_at") val twoFactorConfirmedAt: String? = null
 )

@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<network-security-config>
+    <!--
+        Diese App wird selbst gehostet und läuft häufig im lokalen Netzwerk über
+        http://<beliebige-LAN-IP>. Da Android in der Network-Security-Config keine
+        IP-Bereiche/Wildcards (CIDR) erlaubt und Endnutzer diese Datei nicht
+        anpassen können, MUSS Klartext-HTTP generell erlaubt bleiben.
+
+        Hinweis: Die Übertragung über HTTP ist nur so sicher wie das Netzwerk des
+        Nutzers. Für Server, die aus dem Internet erreichbar sind, wird im Setup
+        standardmäßig HTTPS vorgeschlagen (siehe SetupViewModel.formatUrl).
+    -->
+    <base-config cleartextTrafficPermitted="true">
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </base-config>
+</network-security-config>

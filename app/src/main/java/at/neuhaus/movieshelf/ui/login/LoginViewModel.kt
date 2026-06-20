@@ -66,7 +66,7 @@ class LoginViewModel : ViewModel() {
             error = null
             try {
                 val deviceName = "${Build.MANUFACTURER} ${Build.MODEL}"
-                Log.i("MovieShelf_Login", "Schritt 1: Login-Anfrage für $email")
+                Log.i("MovieShelf_Login", "Schritt 1: Login-Anfrage wird gesendet")
                 
                 val response = RetrofitClient.api.login(mapOf(
                     "email" to email,
@@ -139,19 +139,30 @@ class LoginViewModel : ViewModel() {
         SessionManager.token = token
         SessionManager.user = response.user
         dataStoreManager.saveAuthToken(token)
+        // Vollständiges Profil inkl. is_admin nachladen (Login-Antwort enthält es nicht)
+        try { SessionManager.user = RetrofitClient.api.getUser() } catch (_: Exception) {}
         loginSuccess = true
     }
 
     private fun handleHttpError(e: HttpException) {
         val errorBody = e.response()?.errorBody()?.string()
-        if (e.code() == 422) {
-            error = if (errorBody?.contains("message") == true) {
-                errorBody.substringAfter("\"message\":\"").substringBefore("\"")
-            } else {
-                "Anmeldedaten ungültig."
-            }
-        } else {
-            error = "Serverfehler: ${e.code()}"
+        error = when (e.code()) {
+            422 -> parseServerMessage(errorBody) ?: "Anmeldedaten ungültig."
+            else -> "Serverfehler: ${e.code()}"
+        }
+    }
+
+    /** Liest das "message"-Feld aus einer JSON-Fehlerantwort robust aus. */
+    private fun parseServerMessage(body: String?): String? {
+        if (body.isNullOrBlank()) return null
+        return try {
+            com.google.gson.JsonParser.parseString(body)
+                .asJsonObject
+                .get("message")
+                ?.asString
+                ?.takeIf { it.isNotBlank() }
+        } catch (e: Exception) {
+            null
         }
     }
 }

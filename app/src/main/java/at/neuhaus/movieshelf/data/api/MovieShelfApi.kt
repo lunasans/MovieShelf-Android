@@ -20,6 +20,13 @@ interface MovieShelfApi {
     @GET("api/movies/{id}")
     suspend fun getMovie(@Path("id") id: Int): SingleMovieResponse
 
+    // Film bearbeiten (nur Admins – serverseitig durch admin-Middleware geschützt)
+    @PUT("api/admin/movies/{id}")
+    suspend fun updateMovie(
+        @Path("id") id: Int,
+        @Body request: MovieUpdateRequest
+    ): SingleMovieResponse
+
     @GET("api/search")
     suspend fun searchMovies(
         @Query("q") query: String,

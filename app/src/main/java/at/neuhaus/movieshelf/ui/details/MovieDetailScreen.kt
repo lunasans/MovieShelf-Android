@@ -18,6 +18,7 @@ import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -52,7 +53,9 @@ import coil.compose.AsyncImage
 fun MovieDetailScreen(
     movieId: Int,
     allMovieIds: List<Int> = emptyList(),
+    reloadKey: Int = 0,
     onBack: () -> Unit,
+    onEditClick: (Int) -> Unit = {},
     onActorClick: (Int) -> Unit = {},
     onActorNameClick: (String) -> Unit = {},
     onMovieClick: (Movie) -> Unit
@@ -73,7 +76,9 @@ fun MovieDetailScreen(
         ) { page ->
             MovieDetailContent(
                 movieId = allMovieIds[page],
+                reloadKey = reloadKey,
                 onBack = onBack,
+                onEditClick = onEditClick,
                 onActorClick = onActorClick,
                 onActorNameClick = onActorNameClick,
                 onMovieClick = onMovieClick,
@@ -83,7 +88,9 @@ fun MovieDetailScreen(
     } else {
         MovieDetailContent(
             movieId = movieId,
+            reloadKey = reloadKey,
             onBack = onBack,
+            onEditClick = onEditClick,
             onActorClick = onActorClick,
             onActorNameClick = onActorNameClick,
             onMovieClick = onMovieClick,
@@ -96,7 +103,9 @@ fun MovieDetailScreen(
 @Composable
 private fun MovieDetailContent(
     movieId: Int,
+    reloadKey: Int,
     onBack: () -> Unit,
+    onEditClick: (Int) -> Unit,
     onActorClick: (Int) -> Unit,
     onActorNameClick: (String) -> Unit,
     onMovieClick: (Movie) -> Unit,
@@ -107,6 +116,12 @@ private fun MovieDetailContent(
         factory = MovieDetailViewModel.Factory(movieId, repository)
     )
     val movie = viewModel.movie
+    val isAdmin = at.neuhaus.movieshelf.data.SessionManager.user?.isAdmin == true
+
+    // Nach erfolgreicher Bearbeitung den Film neu laden
+    LaunchedEffect(reloadKey) {
+        if (reloadKey > 0) viewModel.loadMovie(movieId)
+    }
     val scrollState = rememberScrollState()
     val density = LocalDensity.current
     val uriHandler = LocalUriHandler.current
@@ -153,6 +168,17 @@ private fun MovieDetailContent(
                     }
                 },
                 actions = {
+                    if (movie != null && isAdmin) {
+                        IconButton(
+                            onClick = { onEditClick(movieId) },
+                            colors = IconButtonDefaults.iconButtonColors(
+                                containerColor = Color.Black.copy(alpha = 0.4f * (1f - toolbarAlpha)),
+                                contentColor = iconContentColor
+                            )
+                        ) {
+                            Icon(Icons.Default.Edit, contentDescription = "Bearbeiten")
+                        }
+                    }
                     if (movie != null) {
                         IconButton(
                             onClick = { viewModel.toggleWatched() },
