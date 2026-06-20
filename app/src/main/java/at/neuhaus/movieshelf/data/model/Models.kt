@@ -126,6 +126,35 @@ data class TmdbImportRequest(
 )
 
 /**
+ * Antwort von GET /api/tmdb/search.
+ *
+ * Der Server (TmdbController::search -> TmdbService::searchMovie/searchTv)
+ * reicht die TMDb-Rohantwort (/search/movie bzw. /search/tv) unverändert
+ * durch: { page, results, total_pages, total_results }.
+ * Quelle: app/Http/Controllers/Api/TmdbController.php,
+ *         app/Services/TmdbService.php
+ */
+data class TmdbSearchResponse(
+    val page: Int? = null,
+    val results: List<TmdbSearchItem>? = null,
+    @SerializedName("total_pages") val totalPages: Int? = null,
+    @SerializedName("total_results") val totalResults: Int? = null
+)
+
+/**
+ * Einzelnes TMDb-Suchergebnis. Movie-Felder (title, release_date) und
+ * TV-Felder (name, first_air_date) werden über `alternate` zusammengeführt,
+ * passend zu dem, was AddMovieScreen/TmdbMovieItem aus den Map-Einträgen liest.
+ */
+data class TmdbSearchItem(
+    val id: Int? = null,
+    @SerializedName("title", alternate = ["name"]) val title: String? = null,
+    @SerializedName("release_date", alternate = ["first_air_date"]) val releaseDate: String? = null,
+    @SerializedName("poster_path") val posterPath: String? = null,
+    val overview: String? = null
+)
+
+/**
  * Request-Body für PUT /api/admin/movies/{id}.
  * Pflichtfelder: title, year, collection_type. Null-Felder werden von Gson
  * weggelassen und bleiben serverseitig unverändert erhalten.

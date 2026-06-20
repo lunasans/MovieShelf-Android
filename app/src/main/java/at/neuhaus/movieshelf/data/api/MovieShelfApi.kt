@@ -70,7 +70,7 @@ interface MovieShelfApi {
     @GET("api/tmdb/search")
     suspend fun searchTmdb(
         @Query("query") query: String
-    ): Map<String, Any>
+    ): TmdbSearchResponse
 
     @GET("api/tmdb/details")
     suspend fun getTmdbDetails(

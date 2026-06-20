@@ -17,6 +17,8 @@ Priorität: 🔴 hoch · 🟡 mittel · ⚪ optional.
 - ✅ **„Ungespeicherte Änderungen"-Warnung** im Edit-Screen
 - ✅ **Logout-Bestätigung**
 - ✅ **Autofill/Passwort-Manager im Login** — `ContentType.Username/EmailAddress/Password/SmsOtpCode` auf den Login-Feldern (inkl. Compose-BOM-Anhebung 2024.09 → 2025.06.01 für das `ContentType`-API)
+- ✅ **Nav-Leiste beim Scrollen ausblenden** — `NestedScrollConnection` + `AnimatedVisibility`; blendet beim Runter-Scrollen aus, beim Hoch-Scrollen ein
+- ✅ **Typisierte TMDb-DTOs** — `TmdbSearchResponse`/`TmdbSearchItem` statt `Map<String,Any>` für `api/tmdb/search` (UI unverändert)
 
 ### ✨ Features (Backend-Endpunkte existieren bereits)
 

@@ -7,6 +7,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import at.neuhaus.movieshelf.data.api.RetrofitClient
 import at.neuhaus.movieshelf.data.model.TmdbImportRequest
+import at.neuhaus.movieshelf.data.model.TmdbSearchItem
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -40,8 +41,7 @@ class AddMovieViewModel : ViewModel() {
         error = null
         try {
             val response = RetrofitClient.api.searchTmdb(query)
-            @Suppress("UNCHECKED_CAST")
-            searchResults = response["results"] as? List<Map<String, Any>> ?: emptyList()
+            searchResults = (response.results ?: emptyList()).map { it.toUiMap() }
         } catch (e: Exception) {
             error = "TMDb-Suche fehlgeschlagen: ${e.message}"
         } finally {
@@ -69,4 +69,29 @@ class AddMovieViewModel : ViewModel() {
             }
         }
     }
+}
+
+/**
+ * Bildet das typisierte DTO auf die von AddMovieScreen/TmdbMovieItem erwartete
+ * Map ab. Damit bleibt das UI (Map-Zugriffe via "id", "title"/"name",
+ * "release_date"/"first_air_date", "poster_path", "overview") unverändert und
+ * das Laufzeitverhalten identisch. Null-Werte werden weggelassen, sodass die
+ * `as? ...`-Fallbacks im UI genauso greifen wie zuvor.
+ */
+private fun TmdbSearchItem.toUiMap(): Map<String, Any> {
+    val map = mutableMapOf<String, Any>()
+    id?.let { map["id"] = it }
+    // Über `alternate` zusammengeführter Titel: unter beiden Keys ablegen,
+    // damit der title/name-Fallback im UI weiterhin funktioniert.
+    title?.let {
+        map["title"] = it
+        map["name"] = it
+    }
+    releaseDate?.let {
+        map["release_date"] = it
+        map["first_air_date"] = it
+    }
+    posterPath?.let { map["poster_path"] = it }
+    overview?.let { map["overview"] = it }
+    return map
 }

@@ -16,6 +16,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -108,6 +109,25 @@ fun MovieShelfApp(oauthCallbackUri: MutableState<Uri?> = mutableStateOf(null)) {
 
     val showNavBar = currentRoute in listOf("dashboard", "profile", "stats")
 
+    // Steuert das Ein-/Ausblenden der unteren NavBar beim Scrollen.
+    var bottomBarVisible by remember { mutableStateOf(true) }
+
+    val nestedScrollConnection = remember {
+        object : androidx.compose.ui.input.nestedscroll.NestedScrollConnection {
+            override fun onPreScroll(
+                available: androidx.compose.ui.geometry.Offset,
+                source: androidx.compose.ui.input.nestedscroll.NestedScrollSource
+            ): androidx.compose.ui.geometry.Offset {
+                if (available.y < -1f) bottomBarVisible = false
+                else if (available.y > 1f) bottomBarVisible = true
+                return androidx.compose.ui.geometry.Offset.Zero
+            }
+        }
+    }
+
+    // Beim Screen-Wechsel die NavBar wieder einblenden.
+    LaunchedEffect(currentRoute) { bottomBarVisible = true }
+
     var isInitialized by remember { mutableStateOf(false) }
     var initializationError by remember { mutableStateOf(false) }
     var startDestination by remember { mutableStateOf("login") }
@@ -176,7 +196,7 @@ fun MovieShelfApp(oauthCallbackUri: MutableState<Uri?> = mutableStateOf(null)) {
             CircularProgressIndicator()
         }
     } else {
-        Box(modifier = Modifier.fillMaxSize()) {
+        Box(modifier = Modifier.fillMaxSize().nestedScroll(nestedScrollConnection)) {
             NavHost(
                 navController = navController,
                 startDestination = startDestination,
@@ -336,9 +356,13 @@ fun MovieShelfApp(oauthCallbackUri: MutableState<Uri?> = mutableStateOf(null)) {
                 }
             }
 
-            if (showNavBar) {
+            AnimatedVisibility(
+                visible = showNavBar && bottomBarVisible,
+                modifier = Modifier.align(Alignment.BottomCenter),
+                enter = slideInVertically(initialOffsetY = { it }) + fadeIn(),
+                exit = slideOutVertically(targetOffsetY = { it }) + fadeOut()
+            ) {
                 FloatingNavBar(
-                    modifier = Modifier.align(Alignment.BottomCenter),
                     currentRoute = currentRoute,
                     onHomeClick = {
                         if (currentRoute != "dashboard") {
