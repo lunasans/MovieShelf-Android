@@ -32,7 +32,9 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
-private val COMMON_COLLECTION_TYPES = listOf("DVD", "Blu-ray", "4K UHD", "Digital", "Serie")
+// Kanonisches Schema wie in der Shelf: Typ = Film | Serie, das Medium steht im Tag.
+private val COMMON_COLLECTION_TYPES = listOf("Film", "Serie")
+private val MEDIA_TAGS = listOf("DVD", "BluRay", "4K", "Streaming", "Digital", "VHS", "Leihe")
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -214,12 +216,10 @@ fun EditMovieScreen(
                             singleLine = true,
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal)
                         )
-                        OutlinedTextField(
+                        TagDropdown(
                             value = viewModel.tag,
                             onValueChange = { viewModel.tag = it },
-                            label = { Text("Tag") },
-                            modifier = Modifier.weight(1f),
-                            singleLine = true
+                            modifier = Modifier.weight(1f)
                         )
                     }
 
@@ -393,9 +393,54 @@ private fun CollectionTypeDropdown(
         OutlinedTextField(
             value = value,
             onValueChange = onValueChange,
-            label = { Text("Sammlungstyp *") },
+            label = { Text("Typ *") },
             trailingIcon = { Icon(Icons.Default.ArrowDropDown, contentDescription = null) },
             isError = value.isBlank(),
+            singleLine = true,
+            modifier = Modifier
+                .fillMaxWidth()
+                .menuAnchor(MenuAnchorType.PrimaryEditable)
+        )
+        ExposedDropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false }
+        ) {
+            options.forEach { option ->
+                DropdownMenuItem(
+                    text = { Text(option) },
+                    onClick = {
+                        onValueChange(option)
+                        expanded = false
+                    }
+                )
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun TagDropdown(
+    value: String,
+    onValueChange: (String) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    var expanded by remember { mutableStateOf(false) }
+    // Bestehenden Wert mit aufnehmen, falls er nicht in der Standardliste ist
+    val options = remember(value) {
+        (MEDIA_TAGS + value).filter { it.isNotBlank() }.distinct()
+    }
+
+    ExposedDropdownMenuBox(
+        expanded = expanded,
+        onExpandedChange = { expanded = it },
+        modifier = modifier
+    ) {
+        OutlinedTextField(
+            value = value,
+            onValueChange = onValueChange,
+            label = { Text("Medium / Format") },
+            trailingIcon = { Icon(Icons.Default.ArrowDropDown, contentDescription = null) },
             singleLine = true,
             modifier = Modifier
                 .fillMaxWidth()

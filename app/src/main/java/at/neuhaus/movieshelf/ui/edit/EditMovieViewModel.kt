@@ -129,7 +129,7 @@ class EditMovieViewModel(
         when {
             title.isBlank() -> { error = "Titel darf nicht leer sein."; return }
             yearInt == null -> { error = "Bitte ein gültiges Jahr eingeben."; return }
-            collectionType.isBlank() -> { error = "Bitte einen Sammlungstyp wählen."; return }
+            collectionType.isBlank() -> { error = "Bitte einen Typ wählen."; return }
             rating.isNotBlank() && (ratingNum == null || ratingNum < 0 || ratingNum > 100) -> {
                 error = "Bewertung muss zwischen 0 und 100 liegen."; return
             }

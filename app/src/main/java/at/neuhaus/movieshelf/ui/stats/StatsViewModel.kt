@@ -49,7 +49,7 @@ class StatsViewModel : ViewModel() {
             watched = WatchedStats(count = 2, percentage = 100.0),
             years = YearStats(avgYear = 2009.0, oldestYear = 2008, newestYear = 2010),
             collections = listOf(
-                CollectionStats(collectionType = "Blu-ray", count = 2, percentage = 100.0)
+                CollectionStats(collectionType = "Film", count = 2, percentage = 100.0)
             ),
             ratings = listOf(
                 RatingStats(ratingAge = 12, count = 1),
