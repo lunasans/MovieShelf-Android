@@ -21,6 +21,21 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
+    // CI-Signierung: Der Play-Release-Workflow stellt den Upload-Keystore über
+    // Umgebungsvariablen bereit. Lokale Builds (Android-Studio-Wizard) bleiben
+    // unverändert, weil die Config nur bei gesetztem ANDROID_KEYSTORE_FILE greift.
+    val ciKeystorePath: String? = System.getenv("ANDROID_KEYSTORE_FILE")
+    if (ciKeystorePath != null) {
+        signingConfigs {
+            create("release") {
+                storeFile = file(ciKeystorePath)
+                storePassword = System.getenv("ANDROID_KEYSTORE_PASSWORD")
+                keyAlias = System.getenv("ANDROID_KEY_ALIAS")
+                keyPassword = System.getenv("ANDROID_KEY_PASSWORD")
+            }
+        }
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = true
@@ -34,6 +49,9 @@ android {
                 // (ML Kit, CameraX). SYMBOL_TABLE extrahiert die noch vorhandene
                 // Symboltabelle; FULL fände keine Debug-Infos. Erfordert installiertes NDK.
                 debugSymbolLevel = "SYMBOL_TABLE"
+            }
+            if (ciKeystorePath != null) {
+                signingConfig = signingConfigs.getByName("release")
             }
         }
     }
