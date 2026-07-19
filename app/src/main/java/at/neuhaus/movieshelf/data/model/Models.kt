@@ -48,7 +48,48 @@ data class Movie(
     // Felder für Boxsets
     @SerializedName("is_boxset") val isBoxset: Boolean? = false,
     @SerializedName("boxset_parent_id") val boxsetParentId: Int? = null,
-    @SerializedName("boxset_children", alternate = ["movies"]) val boxsetChildren: List<Movie>? = null
+    @SerializedName("boxset_children", alternate = ["movies"]) val boxsetChildren: List<Movie>? = null,
+    // Staffeln (nur bei Serien, von GET /api/movies/{id})
+    val seasons: List<ApiSeason>? = null
+)
+
+data class ApiSeason(
+    val id: Int,
+    @SerializedName("season_number") val seasonNumber: Int,
+    val title: String? = null,
+    val overview: String? = null,
+    val episodes: List<ApiEpisode>? = null
+)
+
+data class ApiEpisode(
+    val id: Int,
+    @SerializedName("episode_number") val episodeNumber: Int,
+    val title: String? = null,
+    val overview: String? = null,
+    val runtime: Int? = null
+)
+
+// --- Staffeln nachladen (TMDb über die Shelf) ---
+data class TmdbTvDetails(
+    val seasons: List<TmdbSeasonOption>? = null
+)
+
+data class TmdbSeasonOption(
+    @SerializedName("season_number") val seasonNumber: Int,
+    val name: String? = null,
+    @SerializedName("episode_count") val episodeCount: Int? = null,
+    @SerializedName("poster_path") val posterPath: String? = null
+)
+
+data class SeasonImportRequest(
+    @SerializedName("movie_id") val movieId: Int,
+    val seasons: List<Int>
+)
+
+data class SeasonImportResponse(
+    val success: Boolean? = null,
+    val imported: Int? = null,
+    val error: String? = null
 )
 
 data class TagItem(

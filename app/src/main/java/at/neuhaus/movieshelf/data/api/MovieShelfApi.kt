@@ -135,6 +135,19 @@ interface MovieShelfApi {
         @Body request: TmdbImportRequest
     ): SingleMovieResponse
 
+    // Staffel-Liste einer Serie (für das Nachladen)
+    @GET("api/tmdb/details")
+    suspend fun getTmdbTvDetails(
+        @Query("tmdb_id") tmdbId: Int,
+        @Query("type") type: String = "tv"
+    ): TmdbTvDetails
+
+    // Staffeln für eine bestehende Serie nachladen (vorhandene überspringt der Server)
+    @POST("api/tmdb/import-seasons")
+    suspend fun importSeasons(
+        @Body request: SeasonImportRequest
+    ): SeasonImportResponse
+
     // Stats - Rückgabe ist direkt das Stats Objekt
     @GET("api/stats")
     suspend fun getStats(): Stats
