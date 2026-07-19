@@ -148,6 +148,12 @@ interface MovieShelfApi {
         @Body request: SeasonImportRequest
     ): SeasonImportResponse
 
+    // Staffeln einer bestehenden Serie entfernen (Episoden cascaden auf dem Server)
+    @POST("api/tmdb/remove-seasons")
+    suspend fun removeSeasons(
+        @Body request: SeasonImportRequest
+    ): SeasonImportResponse
+
     // Stats - Rückgabe ist direkt das Stats Objekt
     @GET("api/stats")
     suspend fun getStats(): Stats
