@@ -6,6 +6,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
@@ -129,6 +130,7 @@ private fun MovieDetailContent(
 
     val ctx = LocalContext.current
     var showListSheet by remember { mutableStateOf(false) }
+    var expandedSeasons by remember { mutableStateOf(setOf<Int>()) }
 
     LaunchedEffect(viewModel.listActionMessage) {
         viewModel.listActionMessage?.let {
@@ -314,6 +316,76 @@ private fun MovieDetailContent(
                         }
                     }
 
+                    if (movie.collectionType == "Serie" && (!movie.seasons.isNullOrEmpty() || viewModel.canBackfillSeasons)) {
+                        Spacer(Modifier.height(32.dp))
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(text = "Staffeln", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                            if (viewModel.canBackfillSeasons) {
+                                TextButton(onClick = { viewModel.openSeasonDialog() }) {
+                                    Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(18.dp))
+                                    Spacer(Modifier.width(4.dp))
+                                    Text("Nachladen")
+                                }
+                            }
+                        }
+                        Spacer(Modifier.height(8.dp))
+                        if (movie.seasons.isNullOrEmpty()) {
+                            Text(
+                                "Noch keine Staffeln importiert.",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        } else {
+                            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                movie.seasons.forEach { season ->
+                                    val expanded = expandedSeasons.contains(season.id)
+                                    Card(
+                                        onClick = {
+                                            expandedSeasons = if (expanded) expandedSeasons - season.id else expandedSeasons + season.id
+                                        },
+                                        modifier = Modifier.fillMaxWidth()
+                                    ) {
+                                        Column(Modifier.padding(16.dp)) {
+                                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                                Column(Modifier.weight(1f)) {
+                                                    Text(
+                                                        "Staffel ${season.seasonNumber}" +
+                                                            (season.title?.takeIf { it.isNotBlank() && it != "Staffel ${season.seasonNumber}" }?.let { " – $it" } ?: ""),
+                                                        fontWeight = FontWeight.Bold
+                                                    )
+                                                    Text(
+                                                        "${season.episodes?.size ?: 0} Folgen",
+                                                        style = MaterialTheme.typography.bodySmall,
+                                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                                    )
+                                                }
+                                                Icon(
+                                                    if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                                                    contentDescription = null,
+                                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                                )
+                                            }
+                                            if (expanded) {
+                                                Spacer(Modifier.height(8.dp))
+                                                season.episodes?.forEach { ep ->
+                                                    Text(
+                                                        "E${ep.episodeNumber}  ${ep.title ?: "Folge ${ep.episodeNumber}"}",
+                                                        style = MaterialTheme.typography.bodyMedium,
+                                                        modifier = Modifier.padding(vertical = 2.dp)
+                                                    )
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+
                     if (!movie.actors.isNullOrEmpty()) {
                         Spacer(Modifier.height(32.dp))
                         Text(text = "Besetzung", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
@@ -367,6 +439,90 @@ private fun MovieDetailContent(
             }
         }
     }
+
+    if (viewModel.showSeasonDialog) {
+        SeasonBackfillDialog(viewModel)
+    }
+}
+
+@Composable
+private fun SeasonBackfillDialog(viewModel: MovieDetailViewModel) {
+    AlertDialog(
+        onDismissRequest = { if (!viewModel.seasonImporting) viewModel.showSeasonDialog = false },
+        title = { Text("Staffeln nachladen") },
+        text = {
+            if (viewModel.seasonDialogLoading) {
+                Box(Modifier.fillMaxWidth().padding(24.dp), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator()
+                }
+            } else {
+                Column {
+                    Text(
+                        "Wähle die Staffeln, die du besitzt – vorhandene sind gesperrt.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Spacer(Modifier.height(12.dp))
+                    LazyColumn(modifier = Modifier.heightIn(max = 400.dp)) {
+                        items(viewModel.seasonOptions) { season ->
+                            val existing = viewModel.existingSeasonNumbers.contains(season.seasonNumber)
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable(enabled = !existing) { viewModel.toggleSeasonSelection(season.seasonNumber) }
+                                    .padding(vertical = 4.dp)
+                            ) {
+                                Checkbox(
+                                    checked = viewModel.selectedSeasons.contains(season.seasonNumber),
+                                    onCheckedChange = { viewModel.toggleSeasonSelection(season.seasonNumber) },
+                                    enabled = !existing
+                                )
+                                Column(Modifier.weight(1f)) {
+                                    Text(
+                                        season.name ?: "Staffel ${season.seasonNumber}",
+                                        fontWeight = FontWeight.Bold,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis
+                                    )
+                                    Text(
+                                        "${season.episodeCount ?: 0} Episoden",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                                if (existing) {
+                                    Text(
+                                        "Vorhanden",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.primary
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = { viewModel.importSelectedSeasons() },
+                enabled = viewModel.selectedSeasons.isNotEmpty() && !viewModel.seasonImporting
+            ) {
+                if (viewModel.seasonImporting) {
+                    CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp)
+                    Spacer(Modifier.width(8.dp))
+                }
+                Text("${viewModel.selectedSeasons.size} Staffel(n) importieren")
+            }
+        },
+        dismissButton = {
+            TextButton(
+                onClick = { viewModel.showSeasonDialog = false },
+                enabled = !viewModel.seasonImporting
+            ) { Text("Abbrechen") }
+        }
+    )
 }
 
 @Composable

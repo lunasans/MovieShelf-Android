@@ -12,6 +12,8 @@ import at.neuhaus.movieshelf.data.model.Actor
 import at.neuhaus.movieshelf.data.model.ListMutationRequest
 import at.neuhaus.movieshelf.data.model.Movie
 import at.neuhaus.movieshelf.data.model.MovieListSummary
+import at.neuhaus.movieshelf.data.model.SeasonImportRequest
+import at.neuhaus.movieshelf.data.model.TmdbSeasonOption
 import at.neuhaus.movieshelf.data.repository.MovieRepository
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -179,6 +181,70 @@ class MovieDetailViewModel(
                 error = "Trailer konnte nicht geholt werden: ${e.message}"
             } finally {
                 isFetchingTrailer = false
+            }
+        }
+    }
+
+    // --- Staffeln nachladen (wie in der Shelf): Dialog mit Auswahl, vorhandene gesperrt ---
+    var showSeasonDialog by mutableStateOf(false)
+    var seasonOptions by mutableStateOf<List<TmdbSeasonOption>>(emptyList())
+        private set
+    var seasonDialogLoading by mutableStateOf(false)
+        private set
+    var seasonImporting by mutableStateOf(false)
+        private set
+    var selectedSeasons by mutableStateOf<Set<Int>>(emptySet())
+        private set
+
+    val existingSeasonNumbers: List<Int>
+        get() = movie?.seasons?.map { it.seasonNumber } ?: emptyList()
+
+    val canBackfillSeasons: Boolean
+        get() = movie?.collectionType == "Serie" && movie?.tmdbId?.toIntOrNull() != null && !SessionManager.isDemo
+
+    fun openSeasonDialog() {
+        val tmdbId = movie?.tmdbId?.toIntOrNull() ?: return
+        showSeasonDialog = true
+        selectedSeasons = emptySet()
+        if (seasonOptions.isNotEmpty()) return
+        viewModelScope.launch {
+            seasonDialogLoading = true
+            try {
+                val details = RetrofitClient.api.getTmdbTvDetails(tmdbId)
+                seasonOptions = (details.seasons ?: emptyList()).filter { it.seasonNumber > 0 }
+            } catch (e: Exception) {
+                error = "Staffeln konnten nicht geladen werden."
+                showSeasonDialog = false
+            } finally {
+                seasonDialogLoading = false
+            }
+        }
+    }
+
+    fun toggleSeasonSelection(seasonNumber: Int) {
+        if (existingSeasonNumbers.contains(seasonNumber)) return
+        selectedSeasons = if (selectedSeasons.contains(seasonNumber)) {
+            selectedSeasons - seasonNumber
+        } else {
+            selectedSeasons + seasonNumber
+        }
+    }
+
+    fun importSelectedSeasons() {
+        val current = movie ?: return
+        if (selectedSeasons.isEmpty() || seasonImporting) return
+        viewModelScope.launch {
+            seasonImporting = true
+            try {
+                RetrofitClient.api.importSeasons(SeasonImportRequest(current.id, selectedSeasons.sorted()))
+                listActionMessage = "${selectedSeasons.size} Staffel(n) importiert."
+                showSeasonDialog = false
+                selectedSeasons = emptySet()
+                loadMovie(current.id)
+            } catch (e: Exception) {
+                error = "Staffel-Import fehlgeschlagen: ${e.message}"
+            } finally {
+                seasonImporting = false
             }
         }
     }
