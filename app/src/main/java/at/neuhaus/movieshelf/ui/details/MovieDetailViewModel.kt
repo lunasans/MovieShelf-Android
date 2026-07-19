@@ -185,7 +185,8 @@ class MovieDetailViewModel(
         }
     }
 
-    // --- Staffeln nachladen (wie in der Shelf): Dialog mit Auswahl, vorhandene gesperrt ---
+    // --- Staffeln verwalten (wie in der Shelf): fehlende anhaken zum Nachladen,
+    // vorhandene abwählen zum Entfernen ---
     var showSeasonDialog by mutableStateOf(false)
     var seasonOptions by mutableStateOf<List<TmdbSeasonOption>>(emptyList())
         private set
@@ -202,10 +203,20 @@ class MovieDetailViewModel(
     val canBackfillSeasons: Boolean
         get() = movie?.collectionType == "Serie" && movie?.tmdbId?.toIntOrNull() != null && !SessionManager.isDemo
 
+    val seasonsToAdd: List<Int>
+        get() = selectedSeasons.filter { it !in existingSeasonNumbers }.sorted()
+
+    val seasonsToRemove: List<Int>
+        get() = existingSeasonNumbers.filter { it !in selectedSeasons }.sorted()
+
+    val hasSeasonChanges: Boolean
+        get() = seasonsToAdd.isNotEmpty() || seasonsToRemove.isNotEmpty()
+
     fun openSeasonDialog() {
         val tmdbId = movie?.tmdbId?.toIntOrNull() ?: return
         showSeasonDialog = true
-        selectedSeasons = emptySet()
+        // Vorhandene Staffeln vorbelegen: Abwählen = Entfernen, Anhaken = Nachladen
+        selectedSeasons = existingSeasonNumbers.toSet()
         if (seasonOptions.isNotEmpty()) return
         viewModelScope.launch {
             seasonDialogLoading = true
@@ -222,7 +233,6 @@ class MovieDetailViewModel(
     }
 
     fun toggleSeasonSelection(seasonNumber: Int) {
-        if (existingSeasonNumbers.contains(seasonNumber)) return
         selectedSeasons = if (selectedSeasons.contains(seasonNumber)) {
             selectedSeasons - seasonNumber
         } else {
@@ -230,19 +240,29 @@ class MovieDetailViewModel(
         }
     }
 
-    fun importSelectedSeasons() {
+    fun applySeasonChanges() {
         val current = movie ?: return
-        if (selectedSeasons.isEmpty() || seasonImporting) return
+        val toAdd = seasonsToAdd
+        val toRemove = seasonsToRemove
+        if ((toAdd.isEmpty() && toRemove.isEmpty()) || seasonImporting) return
         viewModelScope.launch {
             seasonImporting = true
             try {
-                RetrofitClient.api.importSeasons(SeasonImportRequest(current.id, selectedSeasons.sorted()))
-                listActionMessage = "${selectedSeasons.size} Staffel(n) importiert."
+                if (toAdd.isNotEmpty()) {
+                    RetrofitClient.api.importSeasons(SeasonImportRequest(current.id, toAdd))
+                }
+                if (toRemove.isNotEmpty()) {
+                    RetrofitClient.api.removeSeasons(SeasonImportRequest(current.id, toRemove))
+                }
+                val parts = mutableListOf<String>()
+                if (toAdd.isNotEmpty()) parts.add("${toAdd.size} nachgeladen")
+                if (toRemove.isNotEmpty()) parts.add("${toRemove.size} entfernt")
+                listActionMessage = "Staffeln: ${parts.joinToString(", ")}."
                 showSeasonDialog = false
                 selectedSeasons = emptySet()
                 loadMovie(current.id)
             } catch (e: Exception) {
-                error = "Staffel-Import fehlgeschlagen: ${e.message}"
+                error = "Staffel-Änderung fehlgeschlagen: ${e.message}"
             } finally {
                 seasonImporting = false
             }

@@ -326,9 +326,9 @@ private fun MovieDetailContent(
                             Text(text = "Staffeln", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
                             if (viewModel.canBackfillSeasons) {
                                 TextButton(onClick = { viewModel.openSeasonDialog() }) {
-                                    Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(18.dp))
+                                    Icon(Icons.Default.Edit, contentDescription = null, modifier = Modifier.size(18.dp))
                                     Spacer(Modifier.width(4.dp))
-                                    Text("Nachladen")
+                                    Text("Verwalten")
                                 }
                             }
                         }
@@ -449,7 +449,7 @@ private fun MovieDetailContent(
 private fun SeasonBackfillDialog(viewModel: MovieDetailViewModel) {
     AlertDialog(
         onDismissRequest = { if (!viewModel.seasonImporting) viewModel.showSeasonDialog = false },
-        title = { Text("Staffeln nachladen") },
+        title = { Text("Staffeln verwalten") },
         text = {
             if (viewModel.seasonDialogLoading) {
                 Box(Modifier.fillMaxWidth().padding(24.dp), contentAlignment = Alignment.Center) {
@@ -458,7 +458,7 @@ private fun SeasonBackfillDialog(viewModel: MovieDetailViewModel) {
             } else {
                 Column {
                     Text(
-                        "Wähle die Staffeln, die du besitzt – vorhandene sind gesperrt.",
+                        "Fehlende Staffeln anhaken zum Nachladen, vorhandene abwählen zum Entfernen.",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -466,17 +466,17 @@ private fun SeasonBackfillDialog(viewModel: MovieDetailViewModel) {
                     LazyColumn(modifier = Modifier.heightIn(max = 400.dp)) {
                         items(viewModel.seasonOptions) { season ->
                             val existing = viewModel.existingSeasonNumbers.contains(season.seasonNumber)
+                            val selected = viewModel.selectedSeasons.contains(season.seasonNumber)
                             Row(
                                 verticalAlignment = Alignment.CenterVertically,
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .clickable(enabled = !existing) { viewModel.toggleSeasonSelection(season.seasonNumber) }
+                                    .clickable { viewModel.toggleSeasonSelection(season.seasonNumber) }
                                     .padding(vertical = 4.dp)
                             ) {
                                 Checkbox(
-                                    checked = viewModel.selectedSeasons.contains(season.seasonNumber),
-                                    onCheckedChange = { viewModel.toggleSeasonSelection(season.seasonNumber) },
-                                    enabled = !existing
+                                    checked = selected,
+                                    onCheckedChange = { viewModel.toggleSeasonSelection(season.seasonNumber) }
                                 )
                                 Column(Modifier.weight(1f)) {
                                     Text(
@@ -491,7 +491,13 @@ private fun SeasonBackfillDialog(viewModel: MovieDetailViewModel) {
                                         color = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
                                 }
-                                if (existing) {
+                                if (existing && !selected) {
+                                    Text(
+                                        "Wird entfernt",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.error
+                                    )
+                                } else if (existing) {
                                     Text(
                                         "Vorhanden",
                                         style = MaterialTheme.typography.labelSmall,
@@ -501,19 +507,30 @@ private fun SeasonBackfillDialog(viewModel: MovieDetailViewModel) {
                             }
                         }
                     }
+                    if (viewModel.seasonsToRemove.isNotEmpty()) {
+                        Spacer(Modifier.height(8.dp))
+                        Text(
+                            "Achtung: Entfernen löscht auch alle Episoden der abgewählten Staffel(n).",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.error
+                        )
+                    }
                 }
             }
         },
         confirmButton = {
             Button(
-                onClick = { viewModel.importSelectedSeasons() },
-                enabled = viewModel.selectedSeasons.isNotEmpty() && !viewModel.seasonImporting
+                onClick = { viewModel.applySeasonChanges() },
+                enabled = viewModel.hasSeasonChanges && !viewModel.seasonImporting
             ) {
                 if (viewModel.seasonImporting) {
                     CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp)
                     Spacer(Modifier.width(8.dp))
                 }
-                Text("${viewModel.selectedSeasons.size} Staffel(n) importieren")
+                val parts = mutableListOf<String>()
+                if (viewModel.seasonsToAdd.isNotEmpty()) parts.add("${viewModel.seasonsToAdd.size} nachladen")
+                if (viewModel.seasonsToRemove.isNotEmpty()) parts.add("${viewModel.seasonsToRemove.size} entfernen")
+                Text(if (parts.isEmpty()) "Keine Änderungen" else parts.joinToString(", "))
             }
         },
         dismissButton = {
