@@ -9,6 +9,7 @@ import androidx.lifecycle.viewModelScope
 import at.neuhaus.movieshelf.data.SessionManager
 import at.neuhaus.movieshelf.data.api.RetrofitClient
 import at.neuhaus.movieshelf.data.model.Actor
+import at.neuhaus.movieshelf.data.model.ListItemRef
 import at.neuhaus.movieshelf.data.model.ListMutationRequest
 import at.neuhaus.movieshelf.data.model.Movie
 import at.neuhaus.movieshelf.data.model.MovieListSummary
@@ -285,8 +286,9 @@ class MovieDetailViewModel(
         val current = movie ?: return
         viewModelScope.launch {
             try {
-                val ids = ((list.movieRemoteIds ?: emptyList()) + current.id).distinct()
-                RetrofitClient.api.updateList(list.id, ListMutationRequest(list.name ?: "Liste", ids))
+                val items = ((list.items ?: emptyList()) + ListItemRef("movie", current.id))
+                    .distinctBy { it.type to it.id }
+                RetrofitClient.api.updateList(list.id, ListMutationRequest(list.name ?: "Liste", items))
                 listActionMessage = "Zu \"${list.name ?: "Liste"}\" hinzugefügt."
             } catch (e: Exception) {
                 error = "Konnte nicht zur Liste hinzufügen."

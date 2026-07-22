@@ -1,7 +1,6 @@
 package at.neuhaus.movieshelf.ui.dashboard
 
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
@@ -47,7 +46,6 @@ class DashboardViewModel(private val repository: MovieRepository) : ViewModel() 
     var isOffline by mutableStateOf(false)
 
     var searchQuery by mutableStateOf("")
-    var selectedTab by mutableIntStateOf(0)
     var sortOption by mutableStateOf(SortOption.BY_NEWEST)
     var filterState by mutableStateOf(FilterState())
 
@@ -59,6 +57,14 @@ class DashboardViewModel(private val repository: MovieRepository) : ViewModel() 
     var yearRange by mutableStateOf<Pair<Int, Int>?>(null)
         private set
 
+    // Vertikale "Shelf"-Reihen der Startseite (unabhängig von Suche/Filter)
+    var newMoviesShelf by mutableStateOf<List<Movie>>(emptyList())
+        private set
+    var filmeShelf by mutableStateOf<List<Movie>>(emptyList())
+        private set
+    var seriesShelf by mutableStateOf<List<Movie>>(emptyList())
+        private set
+
     private var allLoadedMovies: List<Movie> = emptyList()
     private var currentPage = 1
     private val pageSize = 30
@@ -66,6 +72,7 @@ class DashboardViewModel(private val repository: MovieRepository) : ViewModel() 
 
     init {
         loadMovies()
+        loadNewMoviesShelf()
     }
 
     fun loadMovies(refresh: Boolean = false) {
@@ -82,8 +89,7 @@ class DashboardViewModel(private val repository: MovieRepository) : ViewModel() 
             }
             error = null
             try {
-                val tagFilter = if (selectedTab == 0) "new" else null
-                val result = repository.getMovies(page = 1, perPage = pageSize, tag = tagFilter)
+                val result = repository.getMovies(page = 1, perPage = pageSize, tag = null)
                 isOffline = repository.isOffline
                 allLoadedMovies = result.filter { it.boxsetParentId == null }
                 currentPage = 1
@@ -99,14 +105,26 @@ class DashboardViewModel(private val repository: MovieRepository) : ViewModel() 
         }
     }
 
+    /** Lädt die "Neue Filme"-Shelf-Reihe (Server-Tag "new"), unabhängig von der Haupt-Pagination. */
+    private fun loadNewMoviesShelf() {
+        if (SessionManager.isDemo) return
+        viewModelScope.launch {
+            try {
+                newMoviesShelf = repository.getMovies(page = 1, perPage = 20, tag = "new")
+                    .filter { it.boxsetParentId == null }
+            } catch (_: Exception) {
+                // Shelf bleibt leer, kein kritischer Fehler
+            }
+        }
+    }
+
     fun loadMore() {
         if (!hasMore || isLoadingMore || isLoading || searchQuery.isNotBlank() || isOffline) return
         viewModelScope.launch {
             isLoadingMore = true
             try {
                 val nextPage = currentPage + 1
-                val tagFilter = if (selectedTab == 0) "new" else null
-                val newItems = repository.getMovies(page = nextPage, perPage = pageSize, tag = tagFilter)
+                val newItems = repository.getMovies(page = nextPage, perPage = pageSize, tag = null)
                     .filter { it.boxsetParentId == null }
                 if (newItems.isNotEmpty()) {
                     currentPage = nextPage
@@ -120,14 +138,6 @@ class DashboardViewModel(private val repository: MovieRepository) : ViewModel() 
                 isLoadingMore = false
             }
         }
-    }
-
-    fun onTabSelected(index: Int) {
-        if (selectedTab == index) return
-        selectedTab = index
-        // Setze Standard-Sortierung basierend auf dem Tab
-        sortOption = if (index == 0) SortOption.BY_NEWEST else SortOption.BY_ALPHA
-        loadMovies()
     }
 
     fun onSortSelected(option: SortOption) {
@@ -184,6 +194,8 @@ class DashboardViewModel(private val repository: MovieRepository) : ViewModel() 
     }
 
     private fun recompute() {
+        seriesShelf = allLoadedMovies.filter { it.collectionType == "Serie" }
+        filmeShelf = allLoadedMovies.filter { it.collectionType != "Serie" }
         viewModelScope.launch {
             val result = withContext(Dispatchers.Default) { computeFilteredSorted() }
             movies = result
@@ -301,6 +313,7 @@ class DashboardViewModel(private val repository: MovieRepository) : ViewModel() 
             availableGenres = listOf("Sci-Fi", "Action")
             availableDirectors = listOf("Christopher Nolan")
             yearRange = 2008 to 2014
+            newMoviesShelf = allLoadedMovies.take(2)
             isLoading = false
         }
     }
@@ -328,19 +341,25 @@ class DashboardViewModel(private val repository: MovieRepository) : ViewModel() 
             overview = "Ein Dieb, der Geheimnisse aus dem Unterbewusstsein stiehlt.",
             coverUrl = "res:inception_cover", backdropUrl = "res:inception_backdrop",
             runtime = 148, director = "Christopher Nolan", actors = emptyList(),
-            viewCount = 5, isWatched = true, tmdbId = "27205",
+            viewCount = 5, isWatched = true, tmdbId = "27205", tag = "blu-ray",
             trailerUrl = "https://www.youtube.com/watch?v=YoHD9XEInc0"),
         Movie(id = 2, title = "The Dark Knight", year = 2008, rating = "9.0", genre = "Action",
             overview = "Batman kämpft gegen den Joker in Gotham City.",
             coverUrl = "res:dark_knight_cover", backdropUrl = "res:dark_knight_backdrop",
             runtime = 152, director = "Christopher Nolan", actors = emptyList(),
-            viewCount = 10, isWatched = true, tmdbId = "155",
+            viewCount = 10, isWatched = true, tmdbId = "155", tag = "dvd",
             trailerUrl = "https://www.youtube.com/watch?v=EXeTwQWaywY"),
         Movie(id = 3, title = "Interstellar", year = 2014, rating = "8.7", genre = "Sci-Fi",
             overview = "Eine Reise durch ein Wurmloch.", coverUrl = null, backdropUrl = null,
             runtime = 169, director = "Christopher Nolan", actors = emptyList(),
-            viewCount = 8, isWatched = false, tmdbId = "157336",
-            trailerUrl = "https://www.youtube.com/watch?v=zSWdZVtXT7E")
+            viewCount = 8, isWatched = false, tmdbId = "157336", tag = "4k",
+            trailerUrl = "https://www.youtube.com/watch?v=zSWdZVtXT7E"),
+        Movie(id = 4, title = "True Detective", year = 2014, rating = "9.0", genre = "Krimi",
+            overview = "Zwei Detectives jagen einen Serienmörder in Louisiana.",
+            coverUrl = null, backdropUrl = null,
+            runtime = 55, director = "Cary Fukunaga", actors = emptyList(),
+            viewCount = 3, isWatched = false, tmdbId = "46648", tag = "streaming",
+            collectionType = "Serie")
     )
 
     class Factory(private val repository: MovieRepository) : ViewModelProvider.Factory {

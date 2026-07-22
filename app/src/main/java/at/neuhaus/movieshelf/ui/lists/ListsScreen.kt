@@ -71,7 +71,7 @@ fun ListsScreen(
                         items(viewModel.lists, key = { it.id }) { list ->
                             ListCard(
                                 name = list.name ?: "Unbenannte Liste",
-                                count = list.movieCount ?: list.movieRemoteIds?.size ?: 0,
+                                count = list.movieCount,
                                 onClick = { onListClick(list.id) },
                                 onRename = { renameTarget = list },
                                 onDelete = { deleteTarget = list }

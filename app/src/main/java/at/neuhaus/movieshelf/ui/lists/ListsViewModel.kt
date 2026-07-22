@@ -55,7 +55,7 @@ class ListsViewModel : ViewModel() {
             try {
                 RetrofitClient.api.updateList(
                     summary.id,
-                    ListMutationRequest(newName, summary.movieRemoteIds ?: emptyList())
+                    ListMutationRequest(newName, summary.items ?: emptyList())
                 )
                 load()
             } catch (e: Exception) {

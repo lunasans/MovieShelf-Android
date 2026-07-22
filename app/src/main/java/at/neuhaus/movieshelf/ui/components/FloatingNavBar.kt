@@ -15,15 +15,12 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.draw.shadow
@@ -33,8 +30,9 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import at.neuhaus.movieshelf.ui.theme.NavAccentBlue
+import at.neuhaus.movieshelf.ui.theme.NavAccentBlueDark
 import at.neuhaus.movieshelf.ui.theme.NavAccentRed
-import at.neuhaus.movieshelf.ui.theme.NavAccentRedLight
 
 @Composable
 fun FloatingNavBar(
@@ -54,68 +52,51 @@ fun FloatingNavBar(
             .padding(bottom = 14.dp),
         contentAlignment = Alignment.BottomCenter
     ) {
-        // Haupt-Pill
-        Surface(
-            modifier = Modifier
-                .fillMaxWidth()
-                .shadow(
-                    elevation = 16.dp,
-                    shape = RoundedCornerShape(32.dp),
-                    ambientColor = NavAccentRed.copy(alpha = 0.4f),
-                    spotColor = NavAccentRed.copy(alpha = 0.6f)
-                ),
-            shape = RoundedCornerShape(32.dp),
-            color = Color.Transparent
+        // Haupt-Pill: frosted glass statt Verlaufs-Fläche ("Shelf"-Look).
+        // Bewusst ohne .shadow() – die Elevation-Schlagschatten-API rendert auf
+        // manchen Geräten/Emulatoren als grauer Blob statt als sanftes Glow;
+        // die Glasfläche wirkt durch Transparenz + hellen Rand bereits erhaben.
+        GlassSurface(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(32.dp)
         ) {
-            Box(
+            Row(
                 modifier = Modifier
-                    .background(
-                        brush = Brush.linearGradient(
-                            colors = listOf(
-                                NavAccentRed,
-                                NavAccentRedLight,
-                                NavAccentRed
-                            )
-                        )
-                    )
+                    .fillMaxWidth()
+                    .height(64.dp)
+                    .padding(horizontal = 12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceEvenly
             ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(64.dp)
-                        .padding(horizontal = 12.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceEvenly
-                ) {
-                    NavPillItem(
-                        icon = Icons.Default.Home,
-                        label = "Filme",
-                        selected = currentRoute == "dashboard",
-                        onClick = onHomeClick
-                    )
-                    NavPillItem(
-                        icon = Icons.Default.BarChart,
-                        label = "Statistik",
-                        selected = currentRoute == "stats",
-                        onClick = onStatsClick
-                    )
+                NavPillItem(
+                    icon = Icons.Default.Home,
+                    label = "Filme",
+                    selected = currentRoute == "dashboard",
+                    onClick = onHomeClick
+                )
+                NavPillItem(
+                    icon = Icons.Default.BarChart,
+                    label = "Statistik",
+                    selected = currentRoute == "stats",
+                    onClick = onStatsClick
+                )
 
-                    // Zentraler Add-Button
-                    AddCenterButton(onClick = onAddClick)
+                // Zentraler Add-Button
+                AddCenterButton(onClick = onAddClick)
 
-                    NavPillItem(
-                        icon = Icons.Default.Person,
-                        label = "Profil",
-                        selected = currentRoute == "profile",
-                        onClick = onProfileClick
-                    )
-                    NavPillItem(
-                        icon = Icons.AutoMirrored.Filled.Logout,
-                        label = "Abmelden",
-                        selected = false,
-                        onClick = onLogoutClick
-                    )
-                }
+                NavPillItem(
+                    icon = Icons.Default.Person,
+                    label = "Profil",
+                    selected = currentRoute == "profile",
+                    onClick = onProfileClick
+                )
+                NavPillItem(
+                    icon = Icons.AutoMirrored.Filled.Logout,
+                    label = "Abmelden",
+                    selected = false,
+                    accentColor = NavAccentRed,
+                    onClick = onLogoutClick
+                )
             }
         }
     }
@@ -126,7 +107,8 @@ private fun NavPillItem(
     icon: ImageVector,
     label: String,
     selected: Boolean,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    accentColor: Color = NavAccentBlue
 ) {
     val iconColor by animateColorAsState(
         targetValue = if (selected) Color.White else Color.White.copy(alpha = 0.55f),
@@ -134,7 +116,7 @@ private fun NavPillItem(
         label = "nav_icon_color"
     )
     val bgAlpha by animateFloatAsState(
-        targetValue = if (selected) 0.22f else 0f,
+        targetValue = if (selected) 0.9f else 0f,
         animationSpec = tween(200),
         label = "nav_bg_alpha"
     )
@@ -161,20 +143,20 @@ private fun NavPillItem(
             modifier = Modifier
                 .size(34.dp)
                 .clip(RoundedCornerShape(10.dp))
-                .background(Color.White.copy(alpha = bgAlpha)),
+                .background(accentColor.copy(alpha = bgAlpha)),
             contentAlignment = Alignment.Center
         ) {
             Icon(
                 imageVector = icon,
                 contentDescription = label,
-                tint = iconColor,
+                tint = if (accentColor == NavAccentBlue) iconColor else accentColor.copy(alpha = 0.85f),
                 modifier = Modifier.size(20.dp)
             )
         }
         Spacer(Modifier.height(2.dp))
         Text(
             text = label,
-            color = iconColor,
+            color = if (accentColor == NavAccentBlue) iconColor else accentColor.copy(alpha = 0.85f),
             fontSize = 9.sp,
             fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
             letterSpacing = 0.2.sp
@@ -190,11 +172,15 @@ private fun AddCenterButton(onClick: () -> Unit) {
             .shadow(
                 elevation = 8.dp,
                 shape = CircleShape,
-                ambientColor = Color.White.copy(alpha = 0.3f),
-                spotColor = Color.White.copy(alpha = 0.5f)
+                ambientColor = NavAccentBlue.copy(alpha = 0.4f),
+                spotColor = NavAccentBlue.copy(alpha = 0.6f)
             )
             .clip(CircleShape)
-            .background(Color.White)
+            .background(
+                Brush.linearGradient(
+                    colors = listOf(NavAccentBlue, NavAccentBlueDark)
+                )
+            )
             .clickable(
                 interactionSource = remember { MutableInteractionSource() },
                 indication = null,
@@ -205,7 +191,7 @@ private fun AddCenterButton(onClick: () -> Unit) {
         Icon(
             imageVector = Icons.Default.Add,
             contentDescription = "Film hinzufügen",
-            tint = NavAccentRed,
+            tint = Color.White,
             modifier = Modifier.size(28.dp)
         )
     }

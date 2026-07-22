@@ -7,6 +7,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import at.neuhaus.movieshelf.data.api.RetrofitClient
+import at.neuhaus.movieshelf.data.model.ListItemRef
 import at.neuhaus.movieshelf.data.model.ListMutationRequest
 import at.neuhaus.movieshelf.data.model.Movie
 import kotlinx.coroutines.launch
@@ -33,7 +34,7 @@ class ListDetailViewModel(private val listId: Int) : ViewModel() {
             try {
                 val response = RetrofitClient.api.getList(listId)
                 name = response.name ?: ""
-                movies = response.movies ?: emptyList()
+                movies = response.items ?: emptyList()
             } catch (e: Exception) {
                 error = "Liste konnte nicht geladen werden."
             } finally {
@@ -46,8 +47,9 @@ class ListDetailViewModel(private val listId: Int) : ViewModel() {
         viewModelScope.launch {
             error = null
             try {
-                val newIds = movies.map { it.id } - movieId
-                RetrofitClient.api.updateList(listId, ListMutationRequest(name, newIds))
+                val newItems = movies.filter { it.id != movieId }
+                    .map { ListItemRef(it.itemType ?: "movie", it.id) }
+                RetrofitClient.api.updateList(listId, ListMutationRequest(name, newItems))
                 load()
             } catch (e: Exception) {
                 error = "Film konnte nicht aus der Liste entfernt werden."

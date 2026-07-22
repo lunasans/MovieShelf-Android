@@ -50,7 +50,10 @@ data class Movie(
     @SerializedName("boxset_parent_id") val boxsetParentId: Int? = null,
     @SerializedName("boxset_children", alternate = ["movies"]) val boxsetChildren: List<Movie>? = null,
     // Staffeln (nur bei Serien, von GET /api/movies/{id})
-    val seasons: List<ApiSeason>? = null
+    val seasons: List<ApiSeason>? = null,
+    // Nur in Listen-Items gesetzt ("movie" oder "external"), um beim Speichern
+    // einer Liste den richtigen Item-Typ zurückzusenden (GET/PUT /api/lists/{id}).
+    @SerializedName("item_type") val itemType: String? = null
 )
 
 data class ApiSeason(
@@ -114,13 +117,21 @@ data class ImageUploadResponse(
     @SerializedName("backdrop_url") val backdropUrl: String? = null
 )
 
+// Ein Listen-Eintrag laut Server: entweder ein Film aus der eigenen Sammlung
+// ("movie") oder ein extern importierter TMDb-Titel ohne eigene Sammlung ("external").
+data class ListItemRef(
+    val type: String,
+    val id: Int
+)
+
 data class MovieListSummary(
     val id: Int,
     val name: String? = null,
-    @SerializedName("movie_count") val movieCount: Int? = null,
-    @SerializedName("movie_remote_ids") val movieRemoteIds: List<Int>? = null,
+    val items: List<ListItemRef>? = null,
     @SerializedName("updated_at") val updatedAt: String? = null
-)
+) {
+    val movieCount: Int get() = items?.size ?: 0
+}
 
 data class ListsResponse(
     val lists: List<MovieListSummary>? = null
@@ -129,12 +140,12 @@ data class ListsResponse(
 data class ListDetailResponse(
     val id: Int,
     val name: String? = null,
-    val movies: List<Movie>? = null
+    val items: List<Movie>? = null
 )
 
 data class ListMutationRequest(
     val name: String,
-    @SerializedName("movie_remote_ids") val movieRemoteIds: List<Int> = emptyList()
+    val items: List<ListItemRef> = emptyList()
 )
 
 data class ListMutationResponse(

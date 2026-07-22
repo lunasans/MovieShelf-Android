@@ -67,11 +67,9 @@ Priorität: 🔴 hoch · 🟡 mittel · ⚪ optional.
 
 ### 🖌️ Design & Theme
 
-- 🔴 **Farbschemata vervollständigen** — in `Theme.kt` werden nur wenige M3-Tokens gesetzt; `onSurface`, `onBackground`, `surfaceVariant`, `onSurfaceVariant`, `primaryContainer`, `secondaryContainer`, `outline` u. a. fehlen → Material nutzt seine Default-Baseline (lila-ish), die überall in der UI durchschlägt (Karten/Chips/Suchfeld/Metadaten). Volles Token-Set passend zu Amber/Navy bzw. Rot definieren. Größter Hebel, nur Theme.kt/Color.kt. *Aufwand: klein–mittel.*
-- 🟡 **Akzent vereinheitlichen** — `primary` (Amber/Pink-Rot) vs. Nav-Leiste (`#CC1111`) sind drei verschiedene Akzente; kohärentes Akzent-System festlegen.
-- 🟡 **Typografie ausbauen** — `Type.kt` definiert nur `bodyLarge`; vollständige Typo-Skala + Marken-/Display-Font für Titel/Headlines („Kino"-Look).
-- 🟡 **Light-Theme finalisieren oder Dark-only** — Light-Schema ist unvollständig und hat einen Copy-Paste-Bug (`onSecondary = OnSecondaryDark`). Entweder sauber ausbauen oder bewusst nur Dark.
-- ⚪ **Karten-Politur** — Watched-Button von `RectangleShape` auf abgerundet; optional Rating-/FSK-Badge aufs Poster; einheitliche Eckenradien/Elevation.
+- ✅ **"Shelf"-Look übernommen** — Layout/Design an die MovieShelf-Web-Oberfläche angeglichen: fast-schwarzer Hintergrund (`#0C0C0E`), blauer Haupt-Akzent (statt Amber/Pink-Rot), Rosé-Rot als Sekundärakzent, volles M3-Token-Set in `Color.kt`/`Theme.kt`, Outfit (Headlines) + Plus Jakarta Sans (Fließtext) als gebündelte Fonts (`Font.kt`/`Type.kt`), zentrale Shape-Skala (`Shape.kt`, sehr runde Ecken), neue geteilte Komponenten (`PosterCard`, `MediaBadge`, `GlassSurface`, `ShelfButton`, `HeadingText`), `FloatingNavBar` als Frosted-Glass-Pill mit Blau-Akzent statt Rot-Verlauf.
+- ⚪ **Light-Theme finalisieren oder Dark-only** — Light-Schema nutzt jetzt ebenfalls Blau/Rosé, ist aber weiterhin nicht so durchgetestet wie Dark (Haupt-Look der App).
+- ⚪ **Restliche Screens auf neue Komponenten migrieren** — Dashboard und Detail-Screen nutzen bereits `PosterCard`/`MediaBadge`/`GlassSurface`; Lists/ActorDetail/Stats/Profile/About/Auth/Add/Edit erben Farben/Fonts/Shapes global, könnten aber ihre Poster-Grids ebenfalls auf `PosterCard` umstellen.
 - ⚪ **Material You (optional)** — Dynamic-Color-Schalter (aktuell bewusst deaktiviert).
 
 ---

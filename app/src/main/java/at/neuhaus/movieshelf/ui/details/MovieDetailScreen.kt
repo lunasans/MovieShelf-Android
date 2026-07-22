@@ -28,6 +28,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
@@ -50,6 +51,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import at.neuhaus.movieshelf.data.model.Actor
 import at.neuhaus.movieshelf.data.model.Movie
+import at.neuhaus.movieshelf.ui.theme.NavAccentRed
 import at.neuhaus.movieshelf.ui.util.resolveImageUrl
 import coil.compose.AsyncImage
 
@@ -220,7 +222,7 @@ private fun MovieDetailContent(
                             onClick = { viewModel.toggleWishlist() },
                             colors = IconButtonDefaults.iconButtonColors(
                                 containerColor = Color.Black.copy(alpha = 0.4f * (1f - toolbarAlpha)),
-                                contentColor = if (movie.isWishlisted == true) Color(0xFFE53935) else iconContentColor
+                                contentColor = if (movie.isWishlisted == true) NavAccentRed else iconContentColor
                             )
                         ) {
                             Icon(
@@ -307,7 +309,20 @@ private fun MovieDetailContent(
 
                     if (movie.isBoxset == true && !movie.boxsetChildren.isNullOrEmpty()) {
                         Spacer(Modifier.height(32.dp))
-                        Text(text = "Enthaltene Filme", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(text = "Enthaltene Filme", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                            Spacer(Modifier.width(10.dp))
+                            Text(
+                                text = "BOXSET",
+                                style = MaterialTheme.typography.labelSmall,
+                                fontWeight = FontWeight.Black,
+                                color = Color.White,
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .background(NavAccentRed)
+                                    .padding(horizontal = 8.dp, vertical = 3.dp)
+                            )
+                        }
                         Spacer(Modifier.height(16.dp))
                         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                             movie.boxsetChildren.forEach { childMovie ->
@@ -427,7 +442,7 @@ private fun MovieDetailContent(
                     viewModel.availableLists.forEach { list ->
                         ListItem(
                             headlineContent = { Text(list.name ?: "Liste") },
-                            supportingContent = { Text("${list.movieCount ?: list.movieRemoteIds?.size ?: 0} Filme") },
+                            supportingContent = { Text("${list.movieCount} Filme") },
                             leadingContent = { Icon(Icons.AutoMirrored.Filled.PlaylistAdd, contentDescription = null) },
                             modifier = Modifier.clickable {
                                 viewModel.addToList(list)
@@ -560,6 +575,12 @@ private fun MovieBackdropHeader(
                 translationY = scrollState.value * 0.5f
                 alpha = 1f - (scrollState.value / headerHeightPx).coerceIn(0f, 0.7f)
             }
+            .clip(
+                RoundedCornerShape(
+                    bottomStart = 40.dp,
+                    bottomEnd = 40.dp
+                )
+            )
     ) {
         if (backdropUrl != null) {
             val model: Any? = remember(backdropUrl) { resolveImageUrl(context, backdropUrl) }

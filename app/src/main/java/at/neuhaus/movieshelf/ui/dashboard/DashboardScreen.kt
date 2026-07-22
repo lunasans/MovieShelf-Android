@@ -3,6 +3,10 @@ package at.neuhaus.movieshelf.ui.dashboard
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items as lazyRowItems
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
@@ -31,6 +35,9 @@ import at.neuhaus.movieshelf.MovieShelfApplication
 import at.neuhaus.movieshelf.R
 import at.neuhaus.movieshelf.data.model.Movie
 import at.neuhaus.movieshelf.ui.components.FloatingNavBar
+import at.neuhaus.movieshelf.ui.components.HeadingText
+import at.neuhaus.movieshelf.ui.components.PosterCard
+import at.neuhaus.movieshelf.ui.components.RatingBadge
 import at.neuhaus.movieshelf.ui.util.MovieCardSkeleton
 import at.neuhaus.movieshelf.ui.util.resolveImageUrl
 import coil.compose.AsyncImage
@@ -220,24 +227,6 @@ fun DashboardScreen(
                         )
                     )
 
-                    SecondaryTabRow(
-                        selectedTabIndex = viewModel.selectedTab,
-                        containerColor = Color.Transparent,
-                        divider = {}
-                    ) {
-                        Tab(
-                            selected = viewModel.selectedTab == 0,
-                            onClick = { viewModel.onTabSelected(0) },
-                            text = { Text("Neu", style = MaterialTheme.typography.labelLarge) },
-                            icon = { Icon(Icons.Default.NewReleases, null, modifier = Modifier.size(18.dp)) }
-                        )
-                        Tab(
-                            selected = viewModel.selectedTab == 1,
-                            onClick = { viewModel.onTabSelected(1) },
-                            text = { Text("Alle", style = MaterialTheme.typography.labelLarge) },
-                            icon = { Icon(Icons.Default.Movie, null, modifier = Modifier.size(18.dp)) }
-                        )
-                    }
                 }
             }
         }
@@ -247,7 +236,63 @@ fun DashboardScreen(
             onRefresh = { viewModel.loadMovies(refresh = true) },
             modifier = Modifier.padding(innerPadding)
         ) {
-            if (viewModel.isLoading && viewModel.movies.isEmpty()) {
+            val isBrowsing = !viewModel.filterState.isActive && viewModel.searchQuery.isBlank()
+
+            if (isBrowsing) {
+                // "Shelf"-Gruppierung: vertikal gestapelte, horizontal scrollbare Reihen
+                // ("Neue Filme" / "Filme" / "Serien"), wie im Web-Dashboard.
+                val hasAnyShelfContent = viewModel.newMoviesShelf.isNotEmpty() ||
+                    viewModel.filmeShelf.isNotEmpty() || viewModel.seriesShelf.isNotEmpty()
+
+                if (viewModel.isLoading && !hasAnyShelfContent) {
+                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        CircularProgressIndicator()
+                    }
+                } else if (!hasAnyShelfContent && !viewModel.isLoading) {
+                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Icon(Icons.Default.SearchOff, null, Modifier.size(64.dp), tint = MaterialTheme.colorScheme.outline)
+                            Spacer(Modifier.height(16.dp))
+                            Text("Keine Filme gefunden", style = MaterialTheme.typography.titleMedium)
+                        }
+                    }
+                } else {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .verticalScroll(rememberScrollState())
+                            .padding(bottom = 100.dp)
+                    ) {
+                        if (viewModel.newMoviesShelf.isNotEmpty()) {
+                            MovieShelfRow(
+                                title = "Neue Filme",
+                                movies = viewModel.newMoviesShelf,
+                                onClick = { movie ->
+                                    onMovieClick(movie, viewModel.newMoviesShelf.map { it.id })
+                                }
+                            )
+                        }
+                        if (viewModel.filmeShelf.isNotEmpty()) {
+                            MovieShelfRow(
+                                title = "Filme",
+                                movies = viewModel.filmeShelf,
+                                onClick = { movie ->
+                                    onMovieClick(movie, viewModel.filmeShelf.map { it.id })
+                                }
+                            )
+                        }
+                        if (viewModel.seriesShelf.isNotEmpty()) {
+                            MovieShelfRow(
+                                title = "Serien",
+                                movies = viewModel.seriesShelf,
+                                onClick = { movie ->
+                                    onMovieClick(movie, viewModel.seriesShelf.map { it.id })
+                                }
+                            )
+                        }
+                    }
+                }
+            } else if (viewModel.isLoading && viewModel.movies.isEmpty()) {
                 LazyVerticalGrid(
                     columns = GridCells.Adaptive(minSize = 150.dp),
                     contentPadding = PaddingValues(top = 8.dp, start = 8.dp, end = 8.dp, bottom = 100.dp)
@@ -425,6 +470,41 @@ fun YearPicker(label: String, value: Int?, onValueChange: (Int?) -> Unit) {
     )
 }
 
+/**
+ * "Shelf"-Gruppierung: eine horizontal scrollbare, betitelte Filmreihe
+ * ("Neue Filme" / "Filme" / "Serien"), analog zu den Sektionen im Web-Dashboard.
+ */
+@Composable
+fun MovieShelfRow(
+    title: String,
+    movies: List<Movie>,
+    onClick: (Movie) -> Unit
+) {
+    val context = LocalContext.current
+    Column(modifier = Modifier.padding(top = 8.dp, bottom = 4.dp)) {
+        HeadingText(
+            text = title,
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
+            style = MaterialTheme.typography.titleMedium
+        )
+        LazyRow(
+            modifier = Modifier.height(180.dp),
+            contentPadding = PaddingValues(horizontal = 16.dp),
+            horizontalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            lazyRowItems(movies, key = { it.id }) { movie ->
+                PosterCard(
+                    imageUrl = resolveImageUrl(context, movie.coverUrl ?: ""),
+                    title = movie.title ?: "",
+                    subtitle = movie.year?.toString(),
+                    modifier = Modifier.width(110.dp),
+                    onClick = { onClick(movie) }
+                )
+            }
+        }
+    }
+}
+
 @OptIn(ExperimentalLayoutApi::class, ExperimentalMaterial3Api::class)
 @Composable
 fun ActiveFilterChips(
@@ -484,82 +564,21 @@ fun MovieItem(
     onWatchedToggle: () -> Unit
 ) {
     val context = LocalContext.current
-    Card(
+    PosterCard(
+        imageUrl = resolveImageUrl(context, movie.coverUrl ?: ""),
+        title = movie.title ?: "",
+        subtitle = movie.year?.toString(),
+        modifier = Modifier.padding(6.dp),
         onClick = onClick,
-        modifier = Modifier
-            .padding(6.dp)
-            .fillMaxWidth()
-            .aspectRatio(0.68f),
-        shape = MaterialTheme.shapes.medium,
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-    ) {
-        Box(modifier = Modifier.fillMaxSize()) {
-            AsyncImage(
-                model = resolveImageUrl(context, movie.coverUrl ?: ""),
-                contentDescription = movie.title,
-                modifier = Modifier.fillMaxSize(),
-                contentScale = ContentScale.Crop,
-                placeholder = painterResource(id = R.drawable.ic_launcher_background)
-            )
-
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .align(Alignment.BottomCenter)
-                    .background(Color.Black.copy(alpha = 0.6f))
-                    .padding(8.dp)
-            ) {
-                Column {
-                    Text(
-                        text = movie.title ?: "",
-                        style = MaterialTheme.typography.labelLarge,
-                        color = Color.White,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                    Text(
-                        text = movie.year?.toString() ?: "",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = Color.White.copy(alpha = 0.8f)
-                    )
-                }
-            }
-
-            // Rating-Badge (oben links)
+        topStart = {
             if (!movie.rating.isNullOrBlank()) {
-                Box(
-                    modifier = Modifier
-                        .align(Alignment.TopStart)
-                        .padding(6.dp)
-                        .clip(RoundedCornerShape(8.dp))
-                        .background(Color.Black.copy(alpha = 0.55f))
-                        .padding(horizontal = 6.dp, vertical = 3.dp)
-                ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(
-                            imageVector = Icons.Default.Star,
-                            contentDescription = null,
-                            tint = Color(0xFFFFC107),
-                            modifier = Modifier.size(14.dp)
-                        )
-                        Spacer(modifier = Modifier.width(3.dp))
-                        Text(
-                            text = movie.rating ?: "",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = Color.White
-                        )
-                    }
-                }
+                RatingBadge(rating = movie.rating)
             }
-
-            // Gesehen-Indikator
+        },
+        topEnd = {
             IconButton(
-                onClick = {
-                    onWatchedToggle()
-                },
+                onClick = onWatchedToggle,
                 modifier = Modifier
-                    .align(Alignment.TopEnd)
-                    .padding(4.dp)
                     .size(32.dp)
                     .clip(CircleShape)
                     .background(
@@ -575,7 +594,7 @@ fun MovieItem(
                 )
             }
         }
-    }
+    )
 }
 
 fun movieTagStyle(tag: String): Pair<Color, String> {
