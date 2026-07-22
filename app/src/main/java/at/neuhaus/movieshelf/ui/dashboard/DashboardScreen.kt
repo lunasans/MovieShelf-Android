@@ -8,6 +8,7 @@ import androidx.compose.foundation.lazy.items as lazyRowItems
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
@@ -236,7 +237,8 @@ fun DashboardScreen(
             onRefresh = { viewModel.loadMovies(refresh = true) },
             modifier = Modifier.padding(innerPadding)
         ) {
-            val isBrowsing = !viewModel.filterState.isActive && viewModel.searchQuery.isBlank()
+            val isBrowsing = !viewModel.filterState.isActive && viewModel.searchQuery.isBlank() &&
+                viewModel.selectedShelf == null
 
             if (isBrowsing) {
                 // "Shelf"-Gruppierung: vertikal gestapelte, horizontal scrollbare Reihen
@@ -269,7 +271,8 @@ fun DashboardScreen(
                                 movies = viewModel.newMoviesShelf,
                                 onClick = { movie ->
                                     onMovieClick(movie, viewModel.newMoviesShelf.map { it.id })
-                                }
+                                },
+                                onShowAll = { viewModel.onShelfSelected(ShelfCategory.NEW) }
                             )
                         }
                         if (viewModel.filmeShelf.isNotEmpty()) {
@@ -278,7 +281,8 @@ fun DashboardScreen(
                                 movies = viewModel.filmeShelf,
                                 onClick = { movie ->
                                     onMovieClick(movie, viewModel.filmeShelf.map { it.id })
-                                }
+                                },
+                                onShowAll = { viewModel.onShelfSelected(ShelfCategory.FILME) }
                             )
                         }
                         if (viewModel.seriesShelf.isNotEmpty()) {
@@ -287,7 +291,8 @@ fun DashboardScreen(
                                 movies = viewModel.seriesShelf,
                                 onClick = { movie ->
                                     onMovieClick(movie, viewModel.seriesShelf.map { it.id })
-                                }
+                                },
+                                onShowAll = { viewModel.onShelfSelected(ShelfCategory.SERIEN) }
                             )
                         }
                     }
@@ -305,10 +310,13 @@ fun DashboardScreen(
                         Icon(Icons.Default.SearchOff, null, Modifier.size(64.dp), tint = MaterialTheme.colorScheme.outline)
                         Spacer(Modifier.height(16.dp))
                         Text("Keine Filme gefunden", style = MaterialTheme.typography.titleMedium)
-                        if (viewModel.filterState.isActive || viewModel.searchQuery.isNotEmpty()) {
+                        if (viewModel.filterState.isActive || viewModel.searchQuery.isNotEmpty() ||
+                            viewModel.selectedShelf != null
+                        ) {
                             TextButton(onClick = {
                                 viewModel.onSearchQueryChange("")
                                 viewModel.clearFilters()
+                                viewModel.clearShelf()
                             }) {
                                 Text("Filter zurücksetzen")
                             }
@@ -322,6 +330,19 @@ fun DashboardScreen(
                     contentPadding = PaddingValues(top = 8.dp, start = 8.dp, end = 8.dp, bottom = 100.dp),
                     modifier = Modifier.fillMaxSize()
                 ) {
+                    // "Alle anzeigen"-Modus: Kategorie-Chip als Rückweg zu den Shelf-Reihen
+                    viewModel.selectedShelf?.let { shelf ->
+                        item(span = { GridItemSpan(maxLineSpan) }) {
+                            Row(modifier = Modifier.padding(horizontal = 8.dp)) {
+                                InputChip(
+                                    selected = true,
+                                    onClick = { viewModel.clearShelf() },
+                                    label = { Text("${shelf.label} · ${viewModel.movies.size}") },
+                                    trailingIcon = { Icon(Icons.Default.Close, null, Modifier.size(14.dp)) }
+                                )
+                            }
+                        }
+                    }
                     items(viewModel.movies, key = { it.id }) { movie ->
                         MovieItem(
                             movie = movie,
@@ -478,15 +499,30 @@ fun YearPicker(label: String, value: Int?, onValueChange: (Int?) -> Unit) {
 fun MovieShelfRow(
     title: String,
     movies: List<Movie>,
-    onClick: (Movie) -> Unit
+    onClick: (Movie) -> Unit,
+    onShowAll: (() -> Unit)? = null
 ) {
     val context = LocalContext.current
     Column(modifier = Modifier.padding(top = 8.dp, bottom = 4.dp)) {
-        HeadingText(
-            text = title,
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
-            style = MaterialTheme.typography.titleMedium
-        )
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            HeadingText(
+                text = title,
+                modifier = Modifier.padding(vertical = 4.dp),
+                style = MaterialTheme.typography.titleMedium
+            )
+            if (onShowAll != null) {
+                TextButton(onClick = onShowAll, contentPadding = PaddingValues(horizontal = 8.dp)) {
+                    Text("Alle anzeigen", style = MaterialTheme.typography.labelMedium)
+                    Icon(Icons.Default.KeyboardArrowRight, null, Modifier.size(16.dp))
+                }
+            }
+        }
         LazyRow(
             modifier = Modifier.height(180.dp),
             contentPadding = PaddingValues(horizontal = 16.dp),

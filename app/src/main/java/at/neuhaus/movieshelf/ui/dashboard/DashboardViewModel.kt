@@ -24,6 +24,13 @@ enum class SortOption(val label: String) {
     BY_RATING("Nach Bewertung")
 }
 
+/** Kategorie einer Dashboard-Shelf-Reihe, für die "Alle anzeigen"-Rasteransicht. */
+enum class ShelfCategory(val label: String) {
+    NEW("Neue Filme"),
+    FILME("Filme"),
+    SERIEN("Serien")
+}
+
 data class FilterState(
     val selectedGenres: Set<String> = emptySet(),
     val selectedDirectors: Set<String> = emptySet(),
@@ -65,10 +72,15 @@ class DashboardViewModel(private val repository: MovieRepository) : ViewModel() 
     var seriesShelf by mutableStateOf<List<Movie>>(emptyList())
         private set
 
+    // "Alle anzeigen" einer Shelf-Reihe: zeigt die Kategorie als Raster
+    var selectedShelf by mutableStateOf<ShelfCategory?>(null)
+        private set
+
     private var allLoadedMovies: List<Movie> = emptyList()
     private var currentPage = 1
     private val pageSize = 30
     private var searchJob: Job? = null
+    private var autoLoadJob: Job? = null
 
     init {
         loadMovies()
@@ -80,6 +92,7 @@ class DashboardViewModel(private val repository: MovieRepository) : ViewModel() 
             loadDemoMovies()
             return
         }
+        autoLoadJob?.cancel()
         viewModelScope.launch {
             if (refresh) {
                 isRefreshing = true
@@ -96,11 +109,44 @@ class DashboardViewModel(private val repository: MovieRepository) : ViewModel() 
                 hasMore = result.size >= pageSize && !isOffline
                 recompute()
                 refreshFilterOptions()
+                loadAllRemainingPages()
             } catch (e: Exception) {
                 error = friendlyError(e)
             } finally {
                 isLoading = false
                 isRefreshing = false
+            }
+        }
+    }
+
+    /**
+     * Lädt nach der ersten Seite alle weiteren Seiten im Hintergrund nach, damit die
+     * Shelf-Reihen ("Filme"/"Serien") die komplette Sammlung zeigen — die Reihen haben
+     * keinen Scroll-Trigger für Pagination, und Serien tauchen sonst u.U. gar nicht auf,
+     * wenn sie nicht unter den neuesten [pageSize] Titeln sind.
+     */
+    private fun loadAllRemainingPages() {
+        if (SessionManager.isDemo || isOffline) return
+        autoLoadJob?.cancel()
+        autoLoadJob = viewModelScope.launch {
+            while (hasMore) {
+                try {
+                    val nextPage = currentPage + 1
+                    val raw = repository.getMovies(page = nextPage, perPage = pageSize, tag = null)
+                    if (repository.isOffline) { isOffline = true; break }
+                    currentPage = nextPage
+                    val existing = allLoadedMovies.mapTo(HashSet()) { it.id }
+                    val newItems = raw.filter { it.boxsetParentId == null && it.id !in existing }
+                    if (newItems.isNotEmpty()) {
+                        allLoadedMovies = allLoadedMovies + newItems
+                        recompute()
+                    }
+                    // Rohgröße prüfen, nicht die gefilterte: eine volle Seite aus
+                    // Boxset-Kindern darf die Pagination nicht vorzeitig beenden.
+                    hasMore = raw.size >= pageSize
+                } catch (_: Exception) {
+                    break // Reihen zeigen dann den bisher geladenen Stand
+                }
             }
         }
     }
@@ -120,24 +166,40 @@ class DashboardViewModel(private val repository: MovieRepository) : ViewModel() 
 
     fun loadMore() {
         if (!hasMore || isLoadingMore || isLoading || searchQuery.isNotBlank() || isOffline) return
+        // Der Hintergrund-Nachlader füllt bereits alle Seiten auf — nicht doppelt laden
+        if (autoLoadJob?.isActive == true) return
         viewModelScope.launch {
             isLoadingMore = true
             try {
                 val nextPage = currentPage + 1
-                val newItems = repository.getMovies(page = nextPage, perPage = pageSize, tag = null)
-                    .filter { it.boxsetParentId == null }
+                val raw = repository.getMovies(page = nextPage, perPage = pageSize, tag = null)
+                currentPage = nextPage
+                val existing = allLoadedMovies.mapTo(HashSet()) { it.id }
+                val newItems = raw.filter { it.boxsetParentId == null && it.id !in existing }
                 if (newItems.isNotEmpty()) {
-                    currentPage = nextPage
                     allLoadedMovies = allLoadedMovies + newItems
                     recompute()
                 }
-                hasMore = newItems.size >= pageSize
+                hasMore = raw.size >= pageSize
             } catch (_: Exception) {
                 // Pagination-Fehler still ignorieren
             } finally {
                 isLoadingMore = false
             }
         }
+    }
+
+    /** "Alle anzeigen" einer Shelf-Reihe: Kategorie als Raster öffnen. */
+    fun onShelfSelected(category: ShelfCategory) {
+        selectedShelf = category
+        sortOption = if (category == ShelfCategory.NEW) SortOption.BY_NEWEST else SortOption.BY_ALPHA
+        recompute()
+    }
+
+    /** Rasteransicht schließen, zurück zu den Shelf-Reihen. */
+    fun clearShelf() {
+        selectedShelf = null
+        recompute()
     }
 
     fun onSortSelected(option: SortOption) {
@@ -158,6 +220,8 @@ class DashboardViewModel(private val repository: MovieRepository) : ViewModel() 
     fun onSearchQueryChange(newQuery: String) {
         searchQuery = newQuery
         searchJob?.cancel()
+        // Suche ersetzt allLoadedMovies — paralleles Anhängen des Nachladers verhindern
+        if (newQuery.isNotBlank()) autoLoadJob?.cancel()
         searchJob = viewModelScope.launch {
             delay(500)
             if (newQuery.isBlank()) {
@@ -217,6 +281,17 @@ class DashboardViewModel(private val repository: MovieRepository) : ViewModel() 
             Comparator { a, b -> collator.compare(titleSortKey(a.title), titleSortKey(b.title)) }
 
         var filtered = allLoadedMovies
+
+        // Shelf-Kategorie ("Alle anzeigen" einer Reihe)
+        when (selectedShelf) {
+            ShelfCategory.FILME -> filtered = filtered.filter { it.collectionType != "Serie" }
+            ShelfCategory.SERIEN -> filtered = filtered.filter { it.collectionType == "Serie" }
+            ShelfCategory.NEW -> {
+                val newIds = newMoviesShelf.mapTo(HashSet()) { it.id }
+                filtered = filtered.filter { it.id in newIds }
+            }
+            null -> {}
+        }
 
         // Genre-Filter (Komma-separierte Genre-Spalte)
         if (filterState.selectedGenres.isNotEmpty()) {
