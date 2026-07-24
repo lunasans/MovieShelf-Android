@@ -35,6 +35,12 @@ data class Movie(
     @SerializedName("cover_url") val coverUrl: String? = null,
     @SerializedName("backdrop_url") val backdropUrl: String? = null,
     @SerializedName("trailer_url") val trailerUrl: String? = null,
+    val edition: String? = null,
+    @SerializedName("region_code") val regionCode: String? = null,
+    @SerializedName("disc_location") val discLocation: String? = null,
+    @SerializedName("purchase_date") val purchaseDate: String? = null,
+    @SerializedName("purchase_price") val purchasePrice: Double? = null,
+    val condition: String? = null,
     @SerializedName("view_count") val viewCount: Int? = null,
     @SerializedName("is_watched") val isWatched: Boolean? = null,
     @SerializedName("actors", alternate = ["cast", "credits"]) val actors: List<Actor>? = null,
@@ -281,6 +287,12 @@ data class MovieUpdateRequest(
     val overview: String? = null,
     val tag: String? = null,
     @SerializedName("trailer_url") val trailerUrl: String? = null,
+    val edition: String? = null,
+    @SerializedName("region_code") val regionCode: String? = null,
+    @SerializedName("disc_location") val discLocation: String? = null,
+    @SerializedName("purchase_date") val purchaseDate: String? = null,
+    @SerializedName("purchase_price") val purchasePrice: Double? = null,
+    val condition: String? = null,
     @SerializedName("in_collection") val inCollection: Boolean? = null
 )
 
