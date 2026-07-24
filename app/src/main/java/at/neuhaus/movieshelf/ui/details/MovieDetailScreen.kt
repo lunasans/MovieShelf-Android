@@ -697,6 +697,39 @@ private fun MovieHeader(
             modifier = fadeModifier
         )
     }
+
+    if (!movie.edition.isNullOrBlank()) {
+        Spacer(Modifier.height(8.dp))
+        MetadataItem(icon = Icons.Default.Album, text = "Edition: ${movie.edition}", modifier = fadeModifier)
+    }
+    if (!movie.regionCode.isNullOrBlank()) {
+        Spacer(Modifier.height(8.dp))
+        MetadataItem(icon = Icons.Default.Public, text = "Region: ${movie.regionCode}", modifier = fadeModifier)
+    }
+    if (!movie.discLocation.isNullOrBlank()) {
+        Spacer(Modifier.height(8.dp))
+        MetadataItem(icon = Icons.Default.LocationOn, text = "Standort: ${movie.discLocation}", modifier = fadeModifier)
+    }
+    if (!movie.condition.isNullOrBlank()) {
+        val conditionLabel = when (movie.condition) {
+            "new" -> "Neu"
+            "like_new" -> "Wie neu"
+            "good" -> "Gut"
+            "acceptable" -> "Akzeptabel"
+            "damaged" -> "Beschädigt"
+            else -> movie.condition
+        }
+        Spacer(Modifier.height(8.dp))
+        MetadataItem(icon = Icons.Default.Verified, text = "Zustand: $conditionLabel", modifier = fadeModifier)
+    }
+    if (!movie.purchaseDate.isNullOrBlank()) {
+        Spacer(Modifier.height(8.dp))
+        MetadataItem(icon = Icons.Default.CalendarToday, text = "Gekauft: ${movie.purchaseDate}", modifier = fadeModifier)
+    }
+    movie.purchasePrice?.let {
+        Spacer(Modifier.height(8.dp))
+        MetadataItem(icon = Icons.Default.Euro, text = "Kaufpreis: $it €", modifier = fadeModifier)
+    }
 }
 
 @Composable

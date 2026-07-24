@@ -49,6 +49,12 @@ class EditMovieViewModel(
     var overview by mutableStateOf("")
     var tag by mutableStateOf("")
     var trailerUrl by mutableStateOf("")
+    var edition by mutableStateOf("")
+    var regionCode by mutableStateOf("")
+    var discLocation by mutableStateOf("")
+    var purchaseDate by mutableStateOf("")
+    var purchasePrice by mutableStateOf("")
+    var condition by mutableStateOf("")
     var inCollection by mutableStateOf(true)
 
     // Momentaufnahme der Anfangswerte (nach dem Laden)
@@ -62,6 +68,12 @@ class EditMovieViewModel(
     private var initialOverview = ""
     private var initialTag = ""
     private var initialTrailerUrl = ""
+    private var initialEdition = ""
+    private var initialRegionCode = ""
+    private var initialDiscLocation = ""
+    private var initialPurchaseDate = ""
+    private var initialPurchasePrice = ""
+    private var initialCondition = ""
     private var initialInCollection = true
 
     val hasUnsavedChanges: Boolean
@@ -76,6 +88,12 @@ class EditMovieViewModel(
             overview != initialOverview ||
             tag != initialTag ||
             trailerUrl != initialTrailerUrl ||
+            edition != initialEdition ||
+            regionCode != initialRegionCode ||
+            discLocation != initialDiscLocation ||
+            purchaseDate != initialPurchaseDate ||
+            purchasePrice != initialPurchasePrice ||
+            condition != initialCondition ||
             inCollection != initialInCollection
         )
 
@@ -104,6 +122,12 @@ class EditMovieViewModel(
                 overview       = movie.overview ?: ""
                 tag            = movie.tag ?: ""
                 trailerUrl     = movie.trailerUrl ?: ""
+                edition        = movie.edition ?: ""
+                regionCode     = movie.regionCode ?: ""
+                discLocation   = movie.discLocation ?: ""
+                purchaseDate   = movie.purchaseDate ?: ""
+                purchasePrice  = movie.purchasePrice?.toString() ?: ""
+                condition      = movie.condition ?: ""
                 inCollection   = movie.inCollection ?: true
 
                 initialTitle          = title
@@ -116,6 +140,12 @@ class EditMovieViewModel(
                 initialOverview       = overview
                 initialTag            = tag
                 initialTrailerUrl     = trailerUrl
+                initialEdition        = edition
+                initialRegionCode     = regionCode
+                initialDiscLocation   = discLocation
+                initialPurchaseDate   = purchaseDate
+                initialPurchasePrice  = purchasePrice
+                initialCondition      = condition
                 initialInCollection   = inCollection
             }
             isLoading = false
@@ -150,6 +180,12 @@ class EditMovieViewModel(
                     overview       = overview.trim().ifBlank { null },
                     tag            = tag.trim().ifBlank { null },
                     trailerUrl     = trailerUrl.trim().ifBlank { null },
+                    edition        = edition.trim().ifBlank { null },
+                    regionCode     = regionCode.trim().ifBlank { null },
+                    discLocation   = discLocation.trim().ifBlank { null },
+                    purchaseDate   = purchaseDate.trim().ifBlank { null },
+                    purchasePrice  = purchasePrice.trim().replace(',', '.').toDoubleOrNull(),
+                    condition      = condition.trim().ifBlank { null },
                     inCollection   = inCollection
                 )
                 repository.updateMovie(movieId, request)
