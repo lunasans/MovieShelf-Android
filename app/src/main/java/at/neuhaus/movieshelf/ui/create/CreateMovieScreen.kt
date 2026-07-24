@@ -156,6 +156,62 @@ fun CreateMovieScreen(
                 minLines = 4
             )
 
+            // Physische Sammlung
+            Text("Physische Sammlung", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+
+            OutlinedTextField(
+                value = viewModel.edition,
+                onValueChange = { viewModel.edition = it },
+                label = { Text("Edition / Auflage") },
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true,
+                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next)
+            )
+
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                OutlinedTextField(
+                    value = viewModel.regionCode,
+                    onValueChange = { viewModel.regionCode = it },
+                    label = { Text("Regionalcode") },
+                    modifier = Modifier.weight(1f),
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next)
+                )
+                OutlinedTextField(
+                    value = viewModel.discLocation,
+                    onValueChange = { viewModel.discLocation = it },
+                    label = { Text("Standort im Regal") },
+                    modifier = Modifier.weight(1f),
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next)
+                )
+            }
+
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                OutlinedTextField(
+                    value = viewModel.purchaseDate,
+                    onValueChange = { viewModel.purchaseDate = it },
+                    label = { Text("Kaufdatum (JJJJ-MM-TT)") },
+                    modifier = Modifier.weight(1f),
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next)
+                )
+                OutlinedTextField(
+                    value = viewModel.purchasePrice,
+                    onValueChange = { viewModel.purchasePrice = it },
+                    label = { Text("Kaufpreis (€)") },
+                    modifier = Modifier.weight(1f),
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal, imeAction = ImeAction.Next)
+                )
+            }
+
+            ConditionDropdown(
+                value = viewModel.condition,
+                onValueChange = { viewModel.condition = it },
+                modifier = Modifier.fillMaxWidth()
+            )
+
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
@@ -233,6 +289,59 @@ private fun CollectionTypeDropdown(
                     text = { Text(option) },
                     onClick = {
                         onValueChange(option)
+                        expanded = false
+                    }
+                )
+            }
+        }
+    }
+}
+
+// Zustand: gespeichert wird der Enum-Wert, angezeigt das deutsche Label.
+private val CONDITION_OPTIONS = listOf(
+    "" to "—",
+    "new" to "Neu",
+    "like_new" to "Wie neu",
+    "good" to "Gut",
+    "acceptable" to "Akzeptabel",
+    "damaged" to "Beschädigt"
+)
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun ConditionDropdown(
+    value: String,
+    onValueChange: (String) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    var expanded by remember { mutableStateOf(false) }
+    val label = CONDITION_OPTIONS.firstOrNull { it.first == value }?.second ?: value
+
+    ExposedDropdownMenuBox(
+        expanded = expanded,
+        onExpandedChange = { expanded = it },
+        modifier = modifier
+    ) {
+        OutlinedTextField(
+            value = label,
+            onValueChange = {},
+            readOnly = true,
+            label = { Text("Zustand") },
+            trailingIcon = { Icon(Icons.Default.ArrowDropDown, contentDescription = null) },
+            singleLine = true,
+            modifier = Modifier
+                .fillMaxWidth()
+                .menuAnchor(MenuAnchorType.PrimaryNotEditable)
+        )
+        ExposedDropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false }
+        ) {
+            CONDITION_OPTIONS.forEach { (optValue, optLabel) ->
+                DropdownMenuItem(
+                    text = { Text(optLabel) },
+                    onClick = {
+                        onValueChange(optValue)
                         expanded = false
                     }
                 )

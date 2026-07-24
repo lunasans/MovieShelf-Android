@@ -29,6 +29,12 @@ class CreateMovieViewModel : ViewModel() {
     var overview by mutableStateOf("")
     var tag by mutableStateOf("")
     var trailerUrl by mutableStateOf("")
+    var edition by mutableStateOf("")
+    var regionCode by mutableStateOf("")
+    var discLocation by mutableStateOf("")
+    var purchaseDate by mutableStateOf("")
+    var purchasePrice by mutableStateOf("")
+    var condition by mutableStateOf("")
     var inCollection by mutableStateOf(true)
 
     fun save() {
@@ -59,6 +65,12 @@ class CreateMovieViewModel : ViewModel() {
                     overview       = overview.trim().ifBlank { null },
                     tag            = tag.trim().ifBlank { null },
                     trailerUrl     = trailerUrl.trim().ifBlank { null },
+                    edition        = edition.trim().ifBlank { null },
+                    regionCode     = regionCode.trim().ifBlank { null },
+                    discLocation   = discLocation.trim().ifBlank { null },
+                    purchaseDate   = purchaseDate.trim().ifBlank { null },
+                    purchasePrice  = purchasePrice.trim().replace(',', '.').toDoubleOrNull(),
+                    condition      = condition.trim().ifBlank { null },
                     inCollection   = inCollection
                 )
                 val response = RetrofitClient.api.createMovie(request)
