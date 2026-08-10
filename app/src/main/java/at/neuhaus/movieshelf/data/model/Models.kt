@@ -49,6 +49,10 @@ data class Movie(
     val tag: String? = null,
     @SerializedName("collection_type") val collectionType: String? = null,
     @SerializedName("created_at") val createdAt: String? = null,
+    @SerializedName("updated_at") val updatedAt: String? = null,
+    // Nur im Export gesetzt: eine geloeschte Zeile kommt als Grabstein mit,
+    // damit der Client sie auch lokal entfernen kann.
+    @SerializedName("is_deleted") val isDeleted: Boolean? = false,
     @SerializedName("is_wishlisted") val isWishlisted: Boolean? = null,
     @SerializedName("in_collection") val inCollection: Boolean? = true,
     // Felder für Boxsets
@@ -304,6 +308,15 @@ data class MovieUpdateRequest(
     @SerializedName("purchase_price") val purchasePrice: Double? = null,
     val condition: String? = null,
     @SerializedName("in_collection") val inCollection: Boolean? = null
+)
+
+/** Antwort von GET api/admin/export. */
+data class ExportResponse(
+    @SerializedName("exported_at") val exportedAt: String? = null,
+    @SerializedName("is_delta") val isDelta: Boolean? = false,
+    val since: String? = null,
+    val count: Int? = null,
+    val movies: List<Movie>? = null
 )
 
 data class LoginResponse(

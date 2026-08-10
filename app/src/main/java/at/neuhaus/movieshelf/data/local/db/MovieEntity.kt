@@ -124,6 +124,30 @@ data class MovieEntity(
     }
 
     /**
+     * Die Zeile als Anfrage an den Server. Gegenstueck zu [withRequest] und
+     * vom Push benutzt, um lokale Aenderungen hochzuladen.
+     */
+    fun toUpdateRequest(): MovieUpdateRequest = MovieUpdateRequest(
+        title = title.orEmpty(),
+        year = year ?: 0,
+        collectionType = collectionType ?: "Film",
+        genre = genre,
+        director = director,
+        runtime = runtime,
+        rating = rating?.toDoubleOrNull(),
+        overview = overview,
+        tag = tag,
+        trailerUrl = trailerUrl,
+        edition = edition,
+        regionCode = regionCode,
+        discLocation = discLocation,
+        purchaseDate = purchaseDate,
+        purchasePrice = purchasePrice,
+        condition = condition,
+        inCollection = inCollection
+    )
+
+    /**
      * Formulareingaben auf die Zeile anwenden.
      *
      * [syncedAt] bleibt absichtlich unangetastet: die Zeile gilt damit als
@@ -231,8 +255,11 @@ data class MovieEntity(
                 inCollection = movie.inCollection,
                 collectionType = movie.collectionType,
                 createdAt = movie.createdAt,
-                updatedAt = movie.createdAt,
-                syncedAt = syncedAt ?: movie.createdAt,
+                // Der Server-Zeitstempel entscheidet, ob eine Zeile neuer ist
+                // als der lokale Stand — nie die Geraeteuhr.
+                updatedAt = movie.updatedAt ?: movie.createdAt,
+                syncedAt = syncedAt ?: movie.updatedAt ?: movie.createdAt,
+                isDeleted = movie.isDeleted == true,
                 actorsJson = if (!movie.actors.isNullOrEmpty()) gson.toJson(movie.actors) else null,
                 boxsetChildrenJson = if (!movie.boxsetChildren.isNullOrEmpty()) gson.toJson(movie.boxsetChildren) else null
             )

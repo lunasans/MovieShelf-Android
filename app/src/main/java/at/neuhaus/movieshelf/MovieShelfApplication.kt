@@ -7,6 +7,10 @@ import at.neuhaus.movieshelf.data.local.db.MovieShelfDatabase
 import at.neuhaus.movieshelf.data.repository.ActorRepository
 import at.neuhaus.movieshelf.data.repository.ListRepository
 import at.neuhaus.movieshelf.data.repository.MovieRepository
+import at.neuhaus.movieshelf.data.api.MovieShelfApi
+import at.neuhaus.movieshelf.data.model.MovieUpdateRequest
+import at.neuhaus.movieshelf.data.sync.SyncApi
+import at.neuhaus.movieshelf.data.sync.SyncEngine
 import coil.ImageLoader
 import coil.ImageLoaderFactory
 import coil.disk.DiskCache
@@ -33,6 +37,23 @@ class MovieShelfApplication : Application(), ImageLoaderFactory {
 
     val actorRepository by lazy {
         ActorRepository { RetrofitClient.api }
+    }
+
+    val syncEngine by lazy {
+        SyncEngine(
+            movieDao = database.movieDao(),
+            settingDao = database.settingDao(),
+            apiProvider = { RetrofitApi(RetrofitClient.api) },
+            flushPendingUploads = { movieRepository.flushPendingUploads() }
+        )
+    }
+
+    /** Bindet die schmale [SyncApi] an die vollständige Shelf-Schnittstelle. */
+    private class RetrofitApi(private val api: MovieShelfApi) : SyncApi {
+        override suspend fun exportMovies(since: String?) = api.exportMovies(since)
+        override suspend fun createMovie(request: MovieUpdateRequest) = api.createMovie(request)
+        override suspend fun updateMovie(id: Int, request: MovieUpdateRequest) = api.updateMovie(id, request)
+        override suspend fun deleteMovie(id: Int) { api.deleteMovie(id) }
     }
 
     override fun newImageLoader(): ImageLoader {
