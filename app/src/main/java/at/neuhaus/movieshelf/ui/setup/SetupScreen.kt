@@ -124,7 +124,13 @@ class SetupViewModel(private val dataStoreManager: DataStoreManager) : ViewModel
 @Composable
 fun SetupScreen(
     dataStoreManager: DataStoreManager,
-    onSetupComplete: () -> Unit
+    onSetupComplete: () -> Unit,
+    /**
+     * Zurueck in den eigenstaendigen Betrieb. Ohne diesen Weg sitzt fest, wer
+     * "mit Shelf" gewaehlt hat und dann keine URL eintragen will oder kann —
+     * die Moduswahl erscheint nur, solange gar keine Betriebsart feststeht.
+     */
+    onUseWithoutAccount: () -> Unit = {}
 ) {
     val currentYear = Calendar.getInstance().get(Calendar.YEAR)
     val viewModel: SetupViewModel = viewModel(factory = SetupViewModel.Factory(dataStoreManager))
@@ -265,6 +271,15 @@ fun SetupScreen(
                     }
                 }
                 
+                TextButton(onClick = onUseWithoutAccount) {
+                    Text("Ohne Konto weitermachen")
+                }
+                Text(
+                    text = "Die Sammlung bleibt dann nur auf diesem Gerät.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+
                 Spacer(Modifier.height(32.dp))
                 Text(
                     text = "© $currentYear René Neuhaus",

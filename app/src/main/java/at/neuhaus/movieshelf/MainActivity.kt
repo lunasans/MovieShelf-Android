@@ -300,7 +300,10 @@ fun MovieShelfApp(oauthCallbackUri: MutableState<Uri?> = mutableStateOf(null)) {
     } else if (appMode == AppMode.SHELF && (serverUrl.isNullOrBlank() || initializationError)) {
         SetupScreen(
             dataStoreManager = dataStoreManager,
-            onSetupComplete = { initializationError = false }
+            onSetupComplete = { initializationError = false },
+            onUseWithoutAccount = {
+                scope.launch { app.setAppMode(AppMode.STANDALONE) }
+            }
         )
     } else if (!isInitialized || isLoadingAuth) {
         Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
