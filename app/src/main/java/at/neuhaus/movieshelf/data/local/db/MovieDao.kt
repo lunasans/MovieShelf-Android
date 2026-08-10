@@ -8,10 +8,14 @@ interface MovieDao {
     // ── Lesen ────────────────────────────────────────────────────────────────
     // Gelöschte Zeilen bleiben bis zum nächsten Push als Grabstein liegen und
     // sind deshalb überall auszufiltern.
+    //
+    // Von einem Boxset zählen die Teile, nicht die Hülle: sie sind die Filme,
+    // die man tatsächlich besitzt. Damit stimmen die Zahlen an den Kategorien
+    // mit der Gesamtzahl der Statistik überein, die genauso zählt.
 
     @Query("""
         SELECT * FROM movies
-        WHERE isDeleted = 0 AND boxsetParentLocalId IS NULL
+        WHERE isDeleted = 0 AND (isBoxset = 0 OR isBoxset IS NULL)
           AND (inCollection = 1 OR inCollection IS NULL)
     """)
     suspend fun getAllMovies(): List<MovieEntity>
@@ -25,7 +29,7 @@ interface MovieDao {
      */
     @Query("""
         SELECT * FROM movies
-        WHERE isDeleted = 0 AND boxsetParentLocalId IS NULL
+        WHERE isDeleted = 0 AND (isBoxset = 0 OR isBoxset IS NULL)
           AND (inCollection = 1 OR inCollection IS NULL)
         ORDER BY COALESCE(createdAt, '') DESC, localId DESC
         LIMIT :limit
@@ -38,9 +42,16 @@ interface MovieDao {
     @Query("SELECT localId FROM movies WHERE remoteId = :remoteId LIMIT 1")
     suspend fun findLocalIdByRemoteId(remoteId: Int): Long?
 
+    /**
+     * Suche über die ganze Sammlung — anders als die Listen **mit** Boxsets.
+     *
+     * Ein Boxset taucht in den Kategorien nicht auf, weil dort seine Teile
+     * stehen. Über die Suche bleibt es erreichbar; genauso hebt die
+     * Desktop-App bei einer Suche ihren Boxset-Filter auf.
+     */
     @Query("""
         SELECT * FROM movies
-        WHERE isDeleted = 0 AND boxsetParentLocalId IS NULL
+        WHERE isDeleted = 0
           AND (inCollection = 1 OR inCollection IS NULL)
           AND (title LIKE '%' || :query || '%'
                OR director LIKE '%' || :query || '%'
@@ -183,7 +194,7 @@ interface MovieDao {
 
     @Query("""
         SELECT COUNT(*) FROM movies
-        WHERE isDeleted = 0 AND boxsetParentLocalId IS NULL
+        WHERE isDeleted = 0 AND (isBoxset = 0 OR isBoxset IS NULL)
           AND (inCollection = 1 OR inCollection IS NULL)
     """)
     suspend fun getMovieCount(): Int

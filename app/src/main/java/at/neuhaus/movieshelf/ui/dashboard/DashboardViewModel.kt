@@ -71,7 +71,7 @@ class DashboardViewModel(private val repository: MovieRepository) : ViewModel() 
             try {
                 val result = repository.getMovies(page = 1, perPage = pageSize, tag = null)
                 isOffline = repository.isOffline
-                allLoadedMovies = result.filter { it.boxsetParentId == null }
+                allLoadedMovies = result
                 currentPage = 1
                 hasMore = result.size >= pageSize && !isOffline
                 recompute()
@@ -102,13 +102,14 @@ class DashboardViewModel(private val repository: MovieRepository) : ViewModel() 
                     if (repository.isOffline) { isOffline = true; break }
                     currentPage = nextPage
                     val existing = allLoadedMovies.mapTo(HashSet()) { it.id }
-                    val newItems = raw.filter { it.boxsetParentId == null && it.id !in existing }
+                    val newItems = raw.filter { it.id !in existing }
                     if (newItems.isNotEmpty()) {
                         allLoadedMovies = allLoadedMovies + newItems
                         recompute()
                     }
-                    // Rohgröße prüfen, nicht die gefilterte: eine volle Seite aus
-                    // Boxset-Kindern darf die Pagination nicht vorzeitig beenden.
+                    // Rohgröße prüfen, nicht die entdoppelte: eine volle Seite
+                    // bereits bekannter Titel darf die Pagination nicht
+                    // vorzeitig beenden.
                     hasMore = raw.size >= pageSize
                 } catch (_: Exception) {
                     break // Reihen zeigen dann den bisher geladenen Stand
@@ -122,7 +123,6 @@ class DashboardViewModel(private val repository: MovieRepository) : ViewModel() 
         viewModelScope.launch {
             try {
                 newMoviesShelf = repository.getMovies(page = 1, perPage = 20, tag = "new")
-                    .filter { it.boxsetParentId == null }
             } catch (_: Exception) {
                 // Shelf bleibt leer, kein kritischer Fehler
             }
@@ -140,7 +140,7 @@ class DashboardViewModel(private val repository: MovieRepository) : ViewModel() 
                 val raw = repository.getMovies(page = nextPage, perPage = pageSize, tag = null)
                 currentPage = nextPage
                 val existing = allLoadedMovies.mapTo(HashSet()) { it.id }
-                val newItems = raw.filter { it.boxsetParentId == null && it.id !in existing }
+                val newItems = raw.filter { it.id !in existing }
                 if (newItems.isNotEmpty()) {
                     allLoadedMovies = allLoadedMovies + newItems
                     recompute()
@@ -243,7 +243,7 @@ class DashboardViewModel(private val repository: MovieRepository) : ViewModel() 
         error = null
         try {
             val result = repository.searchMovies(query)
-            allLoadedMovies = result.filter { it.boxsetParentId == null }
+            allLoadedMovies = result
             isOffline = repository.isOffline
             recompute()
             hasMore = false

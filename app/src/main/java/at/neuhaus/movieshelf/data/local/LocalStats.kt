@@ -26,7 +26,8 @@ object LocalStats {
         // Boxset selbst nicht. Sonst stünde die Hülle als eigener Titel in der
         // Summe und die Gesamtzahl läge über der tatsächlichen Sammlung.
         val relevant = movies.filter {
-            !it.isDeleted && it.inCollection != false && !it.isBoxset
+            // isBoxset ist nullbar; `!!` wuerde bei Zeilen ohne Wert abstuerzen.
+            !it.isDeleted && it.inCollection != false && it.isBoxset != true
         }
         val total = relevant.size
 
