@@ -13,7 +13,6 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import java.util.Locale
 
 /** Kategorie einer Dashboard-Shelf-Reihe, für die "Alle anzeigen"-Rasteransicht. */
 enum class ShelfCategory(val label: String) {
@@ -203,8 +202,12 @@ class DashboardViewModel(private val repository: MovieRepository) : ViewModel() 
     }
 
     private fun recompute() {
-        seriesShelf = allLoadedMovies.filter { it.collectionType == "Serie" }
-        filmeShelf = allLoadedMovies.filter { it.collectionType != "Serie" }
+        // Alphabetisch wie das Raster hinter "Alle anzeigen" — sonst stuenden
+        // dieselben Titel in der Reihe und im Raster in anderer Folge. Ohne
+        // eigene Sortierung kaeme hier die Reihenfolge der Datenbank heraus.
+        val byTitle = compareBy<Movie>(String.CASE_INSENSITIVE_ORDER) { it.title.orEmpty() }
+        seriesShelf = allLoadedMovies.filter { it.collectionType == "Serie" }.sortedWith(byTitle)
+        filmeShelf = allLoadedMovies.filter { it.collectionType != "Serie" }.sortedWith(byTitle)
         viewModelScope.launch {
             val result = withContext(Dispatchers.Default) { sortedForDisplay() }
             movies = result
@@ -212,11 +215,17 @@ class DashboardViewModel(private val repository: MovieRepository) : ViewModel() 
     }
 
     /**
-     * Reine Berechnung: waehlt die Reihe aus [allLoadedMovies] und sortiert nach
-     * Zugangsdatum; gibt die fertige Liste zurueck (kein State-Schreiben).
+     * Reine Berechnung: waehlt die Reihe aus [allLoadedMovies] und sortiert sie;
+     * gibt die fertige Liste zurueck (kein State-Schreiben).
+     *
+     * Sortiert wird nach dem, was die Auswahl bedeutet: "Neue Filme" nach
+     * Zugangsdatum, alles andere alphabetisch — wie in der Desktop-App, die
+     * `title ASC` als Vorgabe hat. Nach Zugangsdatum zu sortieren sagt bei
+     * "Filme" oder "Serien" nichts aus und macht einen Titel unauffindbar.
      */
     private fun sortedForDisplay(): List<Movie> {
         var filtered = allLoadedMovies
+        var byDateAdded = false
 
         // Shelf-Kategorie ("Alle anzeigen" einer Reihe)
         when (selectedShelf) {
@@ -225,15 +234,22 @@ class DashboardViewModel(private val repository: MovieRepository) : ViewModel() 
             ShelfCategory.NEW -> {
                 val newIds = newMoviesShelf.mapTo(HashSet()) { it.id }
                 filtered = filtered.filter { it.id in newIds }
+                byDateAdded = true
             }
             null -> {}
         }
 
-        // Zuletzt hinzugefuegt: nach Server-Datum (created_at, ISO-8601 sortiert
-        // lexikografisch), fehlendes Datum ans Ende, bei Gleichstand hoechste ID zuerst.
-        return filtered.sortedWith(
-            compareByDescending<Movie> { it.createdAt ?: "" }.thenByDescending { it.id }
-        )
+        return if (byDateAdded) {
+            // Nach Server-Datum (created_at, ISO-8601 sortiert lexikografisch),
+            // fehlendes Datum ans Ende, bei Gleichstand hoechste ID zuerst.
+            filtered.sortedWith(
+                compareByDescending<Movie> { it.createdAt ?: "" }.thenByDescending { it.id }
+            )
+        } else {
+            filtered.sortedWith(
+                compareBy(String.CASE_INSENSITIVE_ORDER) { it.title.orEmpty() }
+            )
+        }
     }
 
 
