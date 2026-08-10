@@ -6,7 +6,6 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
-import at.neuhaus.movieshelf.data.SessionManager
 import at.neuhaus.movieshelf.data.model.Movie
 import at.neuhaus.movieshelf.data.repository.MovieRepository
 import kotlinx.coroutines.Dispatchers
@@ -88,10 +87,6 @@ class DashboardViewModel(private val repository: MovieRepository) : ViewModel() 
     }
 
     fun loadMovies(refresh: Boolean = false) {
-        if (SessionManager.isDemo) {
-            loadDemoMovies()
-            return
-        }
         autoLoadJob?.cancel()
         viewModelScope.launch {
             if (refresh) {
@@ -126,7 +121,7 @@ class DashboardViewModel(private val repository: MovieRepository) : ViewModel() 
      * wenn sie nicht unter den neuesten [pageSize] Titeln sind.
      */
     private fun loadAllRemainingPages() {
-        if (SessionManager.isDemo || isOffline) return
+        if (isOffline) return
         autoLoadJob?.cancel()
         autoLoadJob = viewModelScope.launch {
             while (hasMore) {
@@ -153,7 +148,6 @@ class DashboardViewModel(private val repository: MovieRepository) : ViewModel() 
 
     /** Lädt die "Neue Filme"-Shelf-Reihe (Server-Tag "new"), unabhängig von der Haupt-Pagination. */
     private fun loadNewMoviesShelf() {
-        if (SessionManager.isDemo) return
         viewModelScope.launch {
             try {
                 newMoviesShelf = repository.getMovies(page = 1, perPage = 20, tag = "new")
@@ -241,8 +235,6 @@ class DashboardViewModel(private val repository: MovieRepository) : ViewModel() 
             if (it.id == movieId) it.copy(isWatched = !currentState) else it
         }
         recompute()
-
-        if (SessionManager.isDemo) return
 
         viewModelScope.launch {
             try {
@@ -360,12 +352,7 @@ class DashboardViewModel(private val repository: MovieRepository) : ViewModel() 
         isLoading = true
         error = null
         try {
-            val result = if (SessionManager.isDemo) {
-                delay(300)
-                getDemoMovies().filter { it.title?.contains(query, ignoreCase = true) == true }
-            } else {
-                repository.searchMovies(query)
-            }
+            val result = repository.searchMovies(query)
             allLoadedMovies = result.filter { it.boxsetParentId == null }
             isOffline = repository.isOffline
             recompute()
@@ -377,21 +364,6 @@ class DashboardViewModel(private val repository: MovieRepository) : ViewModel() 
         }
     }
 
-    private fun loadDemoMovies() {
-        viewModelScope.launch {
-            isLoading = true
-            delay(500)
-            allLoadedMovies = getDemoMovies()
-            isOffline = false
-            hasMore = false
-            recompute()
-            availableGenres = listOf("Sci-Fi", "Action")
-            availableDirectors = listOf("Christopher Nolan")
-            yearRange = 2008 to 2014
-            newMoviesShelf = allLoadedMovies.take(2)
-            isLoading = false
-        }
-    }
 
     private fun friendlyError(e: Exception): String {
         val msg = e.message ?: ""
@@ -411,31 +383,6 @@ class DashboardViewModel(private val repository: MovieRepository) : ViewModel() 
         }
     }
 
-    private fun getDemoMovies(): List<Movie> = listOf(
-        Movie(id = 1, title = "Inception", year = 2010, rating = "8.8", genre = "Sci-Fi",
-            overview = "Ein Dieb, der Geheimnisse aus dem Unterbewusstsein stiehlt.",
-            coverUrl = "res:inception_cover", backdropUrl = "res:inception_backdrop",
-            runtime = 148, director = "Christopher Nolan", actors = emptyList(),
-            viewCount = 5, isWatched = true, tmdbId = "27205", tag = "blu-ray",
-            trailerUrl = "https://www.youtube.com/watch?v=YoHD9XEInc0"),
-        Movie(id = 2, title = "The Dark Knight", year = 2008, rating = "9.0", genre = "Action",
-            overview = "Batman kämpft gegen den Joker in Gotham City.",
-            coverUrl = "res:dark_knight_cover", backdropUrl = "res:dark_knight_backdrop",
-            runtime = 152, director = "Christopher Nolan", actors = emptyList(),
-            viewCount = 10, isWatched = true, tmdbId = "155", tag = "dvd",
-            trailerUrl = "https://www.youtube.com/watch?v=EXeTwQWaywY"),
-        Movie(id = 3, title = "Interstellar", year = 2014, rating = "8.7", genre = "Sci-Fi",
-            overview = "Eine Reise durch ein Wurmloch.", coverUrl = null, backdropUrl = null,
-            runtime = 169, director = "Christopher Nolan", actors = emptyList(),
-            viewCount = 8, isWatched = false, tmdbId = "157336", tag = "4k",
-            trailerUrl = "https://www.youtube.com/watch?v=zSWdZVtXT7E"),
-        Movie(id = 4, title = "True Detective", year = 2014, rating = "9.0", genre = "Krimi",
-            overview = "Zwei Detectives jagen einen Serienmörder in Louisiana.",
-            coverUrl = null, backdropUrl = null,
-            runtime = 55, director = "Cary Fukunaga", actors = emptyList(),
-            viewCount = 3, isWatched = false, tmdbId = "46648", tag = "streaming",
-            collectionType = "Serie")
-    )
 
     class Factory(private val repository: MovieRepository) : ViewModelProvider.Factory {
         override fun <T : ViewModel> create(modelClass: Class<T>): T {

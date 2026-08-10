@@ -6,7 +6,6 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
-import at.neuhaus.movieshelf.data.SessionManager
 import at.neuhaus.movieshelf.data.api.RetrofitClient
 import at.neuhaus.movieshelf.data.model.Actor
 import at.neuhaus.movieshelf.data.model.ListItemRef
@@ -16,7 +15,6 @@ import at.neuhaus.movieshelf.data.model.MovieListSummary
 import at.neuhaus.movieshelf.data.model.SeasonImportRequest
 import at.neuhaus.movieshelf.data.model.TmdbSeasonOption
 import at.neuhaus.movieshelf.data.repository.MovieRepository
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 /**
@@ -52,22 +50,11 @@ class MovieDetailViewModel(
             isLoading = true
             error = null
             try {
-                if (SessionManager.isDemo) {
-                    delay(300)
-                    // Demo-Filme haben keine lokalen IDs — ohne die Fallunter-
-                    // scheidung würde `localId == 0` auf jeden von ihnen passen
-                    // und immer der erste Film erscheinen.
-                    movie = getDemoMovies().find {
-                        if (localId != 0L) it.localId == localId else it.id == initialRemoteId
-                    }
-                    if (movie == null) error = "Film nicht gefunden"
-                } else {
-                    movie = load()
-                    if (movie == null) error = "Film nicht gefunden"
-                    // Kam der Film über die Server-ID herein, ist ab jetzt seine
-                    // lokale ID bekannt — sonst liefe "Bearbeiten" gegen 0.
-                    movie?.localId?.takeIf { it != 0L }?.let { localId = it }
-                }
+                movie = load()
+                if (movie == null) error = "Film nicht gefunden"
+                // Kam der Film über die Server-ID herein, ist ab jetzt seine
+                // lokale ID bekannt — sonst liefe "Bearbeiten" gegen 0.
+                movie?.localId?.takeIf { it != 0L }?.let { localId = it }
             } catch (e: Exception) {
                 error = "Film konnte nicht geladen werden."
             } finally {
@@ -94,67 +81,8 @@ class MovieDetailViewModel(
         return null
     }
 
-    private fun getDemoMovies(): List<Movie> {
-        return listOf(
-            Movie(
-                id = 1,
-                title = "Inception",
-                year = 2010,
-                rating = "8.8",
-                genre = "Sci-Fi",
-                overview = "Ein Dieb, der Geheimnisse aus dem Unterbewusstsein stiehlt. {!Actor}Leonardo DiCaprio} spielt die Hauptrolle.",
-                coverUrl = "res:inception_cover",
-                backdropUrl = "res:inception_backdrop",
-                runtime = 148,
-                director = "Christopher Nolan",
-                actors = listOf(Actor(id = 1, name = "Leonardo DiCaprio", role = "Dom Cobb")),
-                viewCount = 5,
-                isWatched = true,
-                tmdbId = "27205",
-                trailerUrl = "https://www.youtube.com/watch?v=YoHD9XEInc0"
-            ),
-            Movie(
-                id = 2,
-                title = "The Dark Knight",
-                year = 2008,
-                rating = "9.0",
-                genre = "Action",
-                overview = "Batman kämpft gegen den Joker in Gotham City. {!Actor}Christian Bale} ist Batman.",
-                coverUrl = "res:dark_knight_cover",
-                backdropUrl = "res:dark_knight_backdrop",
-                runtime = 152,
-                director = "Christopher Nolan",
-                actors = listOf(Actor(id = 2, name = "Christian Bale", role = "Bruce Wayne / Batman")),
-                viewCount = 10,
-                isWatched = true,
-                tmdbId = "155",
-                trailerUrl = "https://www.youtube.com/watch?v=EXeTwQWaywY"
-            ),
-            Movie(
-                id = 3,
-                title = "Interstellar",
-                year = 2014,
-                rating = "8.7",
-                genre = "Sci-Fi",
-                overview = "Eine Reise durch ein Wurmloch zur Rettung der Menschheit. {!Actor}Matthew McConaughey} führt die Mission an.",
-                coverUrl = null,
-                backdropUrl = null,
-                runtime = 169,
-                director = "Christopher Nolan",
-                actors = listOf(Actor(id = 3, name = "Matthew McConaughey", role = "Cooper")),
-                viewCount = 8,
-                isWatched = true,
-                tmdbId = "157336",
-                trailerUrl = "https://www.youtube.com/watch?v=zSWdZVtXT7E"
-            )
-        )
-    }
 
     fun toggleWatched() {
-        if (SessionManager.isDemo) {
-            movie = movie?.copy(isWatched = !(movie?.isWatched ?: false))
-            return
-        }
         val currentMovie = movie ?: return
         val currentState = currentMovie.isWatched ?: false
 
@@ -177,10 +105,6 @@ class MovieDetailViewModel(
     }
 
     fun toggleWishlist() {
-        if (SessionManager.isDemo) {
-            movie = movie?.copy(isWishlisted = !(movie?.isWishlisted ?: false))
-            return
-        }
         val currentMovie = movie ?: return
         val newState = !(currentMovie.isWishlisted ?: false)
 
@@ -236,7 +160,7 @@ class MovieDetailViewModel(
         get() = movie?.seasons?.map { it.seasonNumber } ?: emptyList()
 
     val canBackfillSeasons: Boolean
-        get() = movie?.collectionType == "Serie" && movie?.tmdbId?.toIntOrNull() != null && !SessionManager.isDemo
+        get() = movie?.collectionType == "Serie" && movie?.tmdbId?.toIntOrNull() != null
 
     val seasonsToAdd: List<Int>
         get() = selectedSeasons.filter { it !in existingSeasonNumbers }.sorted()

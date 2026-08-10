@@ -12,7 +12,6 @@ import at.neuhaus.movieshelf.data.api.RetrofitClient
 import at.neuhaus.movieshelf.data.local.DataStoreManager
 import at.neuhaus.movieshelf.data.model.LoginResponse
 import at.neuhaus.movieshelf.data.model.User
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import retrofit2.HttpException
 
@@ -37,29 +36,6 @@ class LoginViewModel : ViewModel() {
             return
         }
 
-        // LOKALER DEMO MODUS für Play Store Review
-        val demoEmail = "demo@movieshelf.info"
-        if (email.lowercase() == demoEmail && password == "playstore") {
-            viewModelScope.launch {
-                isLoading = true
-                delay(1000) // Simulation Netzwerkverzögerung
-                
-                val demoUser = User(
-                    id = 999,
-                    name = "Demo User",
-                    email = demoEmail
-                )
-                val demoResponse = LoginResponse(
-                    token = "demo_token_123456789",
-                    user = demoUser,
-                    requires2fa = false
-                )
-                
-                completeLogin(demoResponse, dataStoreManager)
-                isLoading = false
-            }
-            return
-        }
 
         viewModelScope.launch {
             isLoading = true
