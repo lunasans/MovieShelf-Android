@@ -35,6 +35,12 @@ import at.neuhaus.movieshelf.data.local.DataStoreManager
 fun LoginScreen(
     onLoginSuccess: () -> Unit,
     onResetUrl: () -> Unit,
+    /**
+     * Zurueck zur Moduswahl. Ohne diesen Weg sitzt fest, wer sich abmeldet:
+     * die Betriebsart steht auf "mit Shelf" und der Login ist die einzige
+     * Tuer.
+     */
+    onLeaveShelfMode: () -> Unit = {},
     oauthCallbackUri: Uri? = null,
     onOAuthCallbackConsumed: () -> Unit = {}
 ) {
@@ -248,6 +254,16 @@ fun LoginScreen(
                     Spacer(Modifier.width(8.dp))
                     Text("Server-URL ändern")
                 }
+
+                TextButton(onClick = onLeaveShelfMode) {
+                    Text("Ohne Konto weitermachen")
+                }
+                Text(
+                    text = "Deine bereits geladene Sammlung bleibt auf dem Gerät.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    textAlign = TextAlign.Center
+                )
             }
         }
     }

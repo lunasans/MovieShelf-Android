@@ -316,6 +316,9 @@ fun MovieShelfApp(oauthCallbackUri: MutableState<Uri?> = mutableStateOf(null)) {
                                 dataStoreManager.saveAuthToken(null)
                             }
                         },
+                        onLeaveShelfMode = {
+                            scope.launch { app.setAppMode(AppMode.STANDALONE) }
+                        },
                         oauthCallbackUri = oauthCallbackUri.value,
                         onOAuthCallbackConsumed = { oauthCallbackUri.value = null }
                     )
