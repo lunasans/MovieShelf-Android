@@ -23,7 +23,9 @@ enum class SyncDirection { PULL, PUSH, BOTH }
 class SyncViewModel(
     private val syncEngine: SyncEngine,
     private val listSyncEngine: ListSyncEngine,
-    private val settingDao: SettingDao
+    private val settingDao: SettingDao,
+    /** Zeigt den Stand in der Statusleiste; ohne Melder laeuft alles wie bisher. */
+    private val notifier: SyncNotifier? = null
 ) : ViewModel() {
 
     var lastSyncAt by mutableStateOf<String?>(null)
@@ -46,7 +48,10 @@ class SyncViewModel(
             lastSyncAt = syncEngine.lastSyncAt()
         }
         viewModelScope.launch {
-            syncEngine.progress.collectLatest { progress = it }
+            syncEngine.progress.collectLatest {
+                progress = it
+                it?.let { current -> notifier?.show(current) }
+            }
         }
     }
 
@@ -102,6 +107,9 @@ class SyncViewModel(
             } finally {
                 isBusy = false
                 progress = null
+                // Auch nach einem Fehlschlag: eine stehengebliebene Meldung
+                // liesse einen Abgleich vortaeuschen, der laengst vorbei ist.
+                notifier?.clear()
             }
         }
     }
@@ -112,14 +120,20 @@ class SyncViewModel(
         listResult = null
     }
 
+    override fun onCleared() {
+        notifier?.clear()
+        super.onCleared()
+    }
+
     class Factory(
         private val syncEngine: SyncEngine,
         private val listSyncEngine: ListSyncEngine,
-        private val settingDao: SettingDao
+        private val settingDao: SettingDao,
+        private val notifier: SyncNotifier? = null
     ) : ViewModelProvider.Factory {
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
             @Suppress("UNCHECKED_CAST")
-            return SyncViewModel(syncEngine, listSyncEngine, settingDao) as T
+            return SyncViewModel(syncEngine, listSyncEngine, settingDao, notifier) as T
         }
     }
 }

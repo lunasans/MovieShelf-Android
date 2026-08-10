@@ -25,6 +25,12 @@ import at.neuhaus.movieshelf.MovieShelfApplication
 import at.neuhaus.movieshelf.data.sync.SyncPhase
 import at.neuhaus.movieshelf.data.local.db.SyncClock
 import at.neuhaus.movieshelf.data.sync.SyncAction
+import android.content.pm.PackageManager
+import android.os.Build
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.content.ContextCompat
+import androidx.compose.runtime.remember
 import at.neuhaus.movieshelf.data.sync.SyncDirection
 import at.neuhaus.movieshelf.data.sync.SyncPreview
 import at.neuhaus.movieshelf.data.sync.SyncPreviewItem
@@ -36,14 +42,36 @@ import at.neuhaus.movieshelf.ui.theme.PillShape
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SyncScreen(onBack: () -> Unit) {
-    val app = LocalContext.current.applicationContext as MovieShelfApplication
+    val context = LocalContext.current
+    val app = context.applicationContext as MovieShelfApplication
+    val notifier = remember(app) { SyncNotifier(app) }
     val viewModel: SyncViewModel = viewModel(
         factory = SyncViewModel.Factory(
             app.syncEngine,
             app.listSyncEngine,
-            app.database.settingDao()
+            app.database.settingDao(),
+            notifier
         )
     )
+
+    // Ab Android 13 muss man um Meldungen bitten. Gefragt wird erst beim
+    // Starten eines Abgleichs, nicht beim Oeffnen des Bildschirms: dort waere
+    // nicht zu erkennen, wofuer. Die Antwort haelt nichts auf — ohne Erlaubnis
+    // laeuft der Abgleich einfach ohne Anzeige in der Statusleiste.
+    val askForNotifications = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { }
+    fun startingSync(start: () -> Unit) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+            ContextCompat.checkSelfPermission(
+                context,
+                android.Manifest.permission.POST_NOTIFICATIONS
+            ) != PackageManager.PERMISSION_GRANTED
+        ) {
+            askForNotifications.launch(android.Manifest.permission.POST_NOTIFICATIONS)
+        }
+        start()
+    }
 
     Scaffold(
         topBar = {
@@ -78,12 +106,7 @@ fun SyncScreen(onBack: () -> Unit) {
             viewModel.progress?.let { progress ->
                 ShelfFormSection(title = "Läuft", icon = Icons.Default.Sync) {
                     Text(
-                        text = when (progress.phase) {
-                            SyncPhase.PUSH -> "Änderungen hochladen"
-                            SyncPhase.PULL -> "Metadaten laden"
-                            SyncPhase.MEDIA -> "Bilder herunterladen"
-                            SyncPhase.DONE -> "Fertig"
-                        },
+                        text = progress.phase.label,
                         style = MaterialTheme.typography.titleSmall,
                         fontWeight = FontWeight.Bold
                     )
@@ -126,7 +149,7 @@ fun SyncScreen(onBack: () -> Unit) {
                     Text("Vorschau", fontWeight = FontWeight.SemiBold)
                 }
                 Button(
-                    onClick = { viewModel.runSync() },
+                    onClick = { startingSync { viewModel.runSync() } },
                     modifier = Modifier.weight(1f),
                     shape = PillShape,
                     // Bewusst erst nach der Vorschau: niemand soll Löschungen
@@ -146,7 +169,7 @@ fun SyncScreen(onBack: () -> Unit) {
                 )
                 Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     OutlinedButton(
-                        onClick = { viewModel.runPullOnly() },
+                        onClick = { startingSync { viewModel.runPullOnly() } },
                         modifier = Modifier.weight(1f),
                         shape = PillShape,
                         enabled = !viewModel.isBusy
@@ -156,7 +179,7 @@ fun SyncScreen(onBack: () -> Unit) {
                         Text("Shelf → App")
                     }
                     OutlinedButton(
-                        onClick = { viewModel.runPushOnly() },
+                        onClick = { startingSync { viewModel.runPushOnly() } },
                         modifier = Modifier.weight(1f),
                         shape = PillShape,
                         enabled = !viewModel.isBusy
