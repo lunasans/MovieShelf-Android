@@ -187,15 +187,25 @@ interface SeriesDao {
     @Query("DELETE FROM seasons WHERE movieLocalId = :movieLocalId")
     suspend fun deleteSeasonsOf(movieLocalId: Long)
 
+    @Query("DELETE FROM seasons WHERE movieLocalId = :movieLocalId AND seasonNumber NOT IN (:keep)")
+    suspend fun pruneSeasonsKeeping(movieLocalId: Long, keep: List<Int>)
+
     /**
      * Staffeln entfernen, die der Server nicht mehr kennt.
      *
      * Gerichtetes Spiegeln wie in der Desktop-App: beim Pull bestimmt die
      * Shelf, welche Staffeln es gibt. Ohne diesen Schritt bliebe eine dort
      * entfernte Staffel lokal fuer immer stehen.
+     *
+     * Die leere Liste braucht einen eigenen Weg: aus ihr entstuende
+     * `NOT IN ()`, und daran scheitert SQLite mit einem Syntaxfehler. Genau
+     * dieser Fall tritt bei jeder Serie auf, zu der die Shelf keine Staffeln
+     * kennt.
      */
-    @Query("DELETE FROM seasons WHERE movieLocalId = :movieLocalId AND seasonNumber NOT IN (:keep)")
-    suspend fun pruneSeasons(movieLocalId: Long, keep: List<Int>)
+    @Transaction
+    suspend fun pruneSeasons(movieLocalId: Long, keep: List<Int>) {
+        if (keep.isEmpty()) deleteSeasonsOf(movieLocalId) else pruneSeasonsKeeping(movieLocalId, keep)
+    }
 
     /**
      * Staffeln und Episoden einer Serie einspielen. Vorhandene Nummern werden

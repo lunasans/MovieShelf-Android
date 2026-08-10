@@ -205,7 +205,7 @@ class DashboardViewModel(private val repository: MovieRepository) : ViewModel() 
         // Alphabetisch wie das Raster hinter "Alle anzeigen" — sonst stuenden
         // dieselben Titel in der Reihe und im Raster in anderer Folge. Ohne
         // eigene Sortierung kaeme hier die Reihenfolge der Datenbank heraus.
-        val byTitle = compareBy<Movie>(String.CASE_INSENSITIVE_ORDER) { it.title.orEmpty() }
+        val byTitle = compareBy(String.CASE_INSENSITIVE_ORDER) { movie: Movie -> movie.title.orEmpty() }
         seriesShelf = allLoadedMovies.filter { it.collectionType == "Serie" }.sortedWith(byTitle)
         filmeShelf = allLoadedMovies.filter { it.collectionType != "Serie" }.sortedWith(byTitle)
         viewModelScope.launch {
