@@ -59,11 +59,12 @@ import coil.compose.AsyncImage
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MovieDetailScreen(
-    movieId: Int,
-    allMovieIds: List<Int> = emptyList(),
+    movieLocalId: Long,
+    movieRemoteId: Int = 0,
+    allMovieIds: List<Long> = emptyList(),
     reloadKey: Int = 0,
     onBack: () -> Unit,
-    onEditClick: (Int) -> Unit = {},
+    onEditClick: (Long) -> Unit = {},
     onActorClick: (Int) -> Unit = {},
     onActorNameClick: (String) -> Unit = {},
     onMovieClick: (Movie) -> Unit
@@ -71,9 +72,11 @@ fun MovieDetailScreen(
     val context = LocalContext.current
     val app = context.applicationContext as at.neuhaus.movieshelf.MovieShelfApplication
 
-    if (allMovieIds.isNotEmpty()) {
+    // Wischen zwischen den Filmen einer Reihe gibt es nur für lokal bekannte
+    // Filme — ein per Server-ID geöffneter Film hat keine Nachbarn.
+    if (allMovieIds.isNotEmpty() && movieLocalId != 0L) {
         val pagerState = androidx.compose.foundation.pager.rememberPagerState(
-            initialPage = allMovieIds.indexOf(movieId).coerceAtLeast(0),
+            initialPage = allMovieIds.indexOf(movieLocalId).coerceAtLeast(0),
             pageCount = { allMovieIds.size }
         )
 
@@ -83,7 +86,8 @@ fun MovieDetailScreen(
             beyondViewportPageCount = 1
         ) { page ->
             MovieDetailContent(
-                movieId = allMovieIds[page],
+                movieLocalId = allMovieIds[page],
+                movieRemoteId = 0,
                 reloadKey = reloadKey,
                 onBack = onBack,
                 onEditClick = onEditClick,
@@ -95,7 +99,8 @@ fun MovieDetailScreen(
         }
     } else {
         MovieDetailContent(
-            movieId = movieId,
+            movieLocalId = movieLocalId,
+            movieRemoteId = movieRemoteId,
             reloadKey = reloadKey,
             onBack = onBack,
             onEditClick = onEditClick,
@@ -110,25 +115,26 @@ fun MovieDetailScreen(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun MovieDetailContent(
-    movieId: Int,
+    movieLocalId: Long,
+    movieRemoteId: Int,
     reloadKey: Int,
     onBack: () -> Unit,
-    onEditClick: (Int) -> Unit,
+    onEditClick: (Long) -> Unit,
     onActorClick: (Int) -> Unit,
     onActorNameClick: (String) -> Unit,
     onMovieClick: (Movie) -> Unit,
     repository: at.neuhaus.movieshelf.data.repository.MovieRepository
 ) {
     val viewModel: MovieDetailViewModel = viewModel(
-        key = movieId.toString(),
-        factory = MovieDetailViewModel.Factory(movieId, repository)
+        key = "$movieLocalId-$movieRemoteId",
+        factory = MovieDetailViewModel.Factory(movieLocalId, movieRemoteId, repository)
     )
     val movie = viewModel.movie
     val isAdmin = at.neuhaus.movieshelf.data.SessionManager.user?.isAdmin == true
 
     // Nach erfolgreicher Bearbeitung den Film neu laden
     LaunchedEffect(reloadKey) {
-        if (reloadKey > 0) viewModel.loadMovie(movieId)
+        if (reloadKey > 0) viewModel.reload()
     }
 
     val ctx = LocalContext.current
@@ -209,7 +215,7 @@ private fun MovieDetailContent(
                     }
                     if (movie != null && isAdmin) {
                         IconButton(
-                            onClick = { onEditClick(movieId) },
+                            onClick = { onEditClick(viewModel.localId) },
                             colors = IconButtonDefaults.iconButtonColors(
                                 containerColor = Color.Black.copy(alpha = 0.4f * (1f - toolbarAlpha)),
                                 contentColor = iconContentColor

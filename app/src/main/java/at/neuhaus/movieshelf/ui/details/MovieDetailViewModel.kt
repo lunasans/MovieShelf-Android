@@ -19,11 +19,22 @@ import at.neuhaus.movieshelf.data.repository.MovieRepository
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
+/**
+ * @param initialLocalId ID der lokalen Zeile — der Regelfall.
+ * @param initialRemoteId Server-ID als Ausweichweg für Filme, die noch keine
+ *   lokale Zeile haben (Listen-Inhalte, Darsteller-Filmografie, Boxset-Kinder).
+ *   Wird nur ausgewertet, wenn [initialLocalId] 0 ist.
+ */
 class MovieDetailViewModel(
-    private var initialMovieId: Int,
+    private var initialLocalId: Long,
+    private val initialRemoteId: Int = 0,
     private val repository: MovieRepository? = null
 ) : ViewModel() {
     var movie by mutableStateOf<Movie?>(null)
+
+    /** Lokale ID des angezeigten Films — auch nach dem Nachschlagen gültig. */
+    var localId by mutableStateOf(initialLocalId)
+        private set
     var isLoading by mutableStateOf(false)
     var error by mutableStateOf<String?>(null)
     var isFetchingTrailer by mutableStateOf(false)
@@ -33,24 +44,29 @@ class MovieDetailViewModel(
     var listActionMessage by mutableStateOf<String?>(null)
 
     init {
-        loadMovie(initialMovieId)
+        reload()
     }
 
-    fun loadMovie(movieId: Int) {
+    fun reload() {
         viewModelScope.launch {
             isLoading = true
             error = null
             try {
                 if (SessionManager.isDemo) {
                     delay(300)
-                    movie = getDemoMovies().find { it.id == movieId }
-                    if (movie == null) error = "Film nicht gefunden"
-                } else if (repository != null) {
-                    movie = repository.getMovie(movieId)
+                    // Demo-Filme haben keine lokalen IDs — ohne die Fallunter-
+                    // scheidung würde `localId == 0` auf jeden von ihnen passen
+                    // und immer der erste Film erscheinen.
+                    movie = getDemoMovies().find {
+                        if (localId != 0L) it.localId == localId else it.id == initialRemoteId
+                    }
                     if (movie == null) error = "Film nicht gefunden"
                 } else {
-                    val response = RetrofitClient.api.getMovie(movieId)
-                    movie = response.data
+                    movie = load()
+                    if (movie == null) error = "Film nicht gefunden"
+                    // Kam der Film über die Server-ID herein, ist ab jetzt seine
+                    // lokale ID bekannt — sonst liefe "Bearbeiten" gegen 0.
+                    movie?.localId?.takeIf { it != 0L }?.let { localId = it }
                 }
             } catch (e: Exception) {
                 error = "Film konnte nicht geladen werden."
@@ -58,6 +74,24 @@ class MovieDetailViewModel(
                 isLoading = false
             }
         }
+    }
+
+    private suspend fun load(): Movie? {
+        val repo = repository
+            ?: return RetrofitClient.api.getMovie(if (localId != 0L) 0 else initialRemoteId).data
+
+        if (localId != 0L) return repo.getMovieByLocalId(localId)
+
+        // Ohne lokale ID: erst nachschlagen, ob der Film lokal doch bekannt ist,
+        // sonst direkt vom Server holen.
+        if (initialRemoteId != 0) {
+            repo.getLocalId(initialRemoteId)?.let { resolved ->
+                localId = resolved
+                return repo.getMovieByLocalId(resolved)
+            }
+            return repo.getMovie(initialRemoteId)
+        }
+        return null
     }
 
     private fun getDemoMovies(): List<Movie> {
@@ -261,7 +295,7 @@ class MovieDetailViewModel(
                 listActionMessage = "Staffeln: ${parts.joinToString(", ")}."
                 showSeasonDialog = false
                 selectedSeasons = emptySet()
-                loadMovie(current.id)
+                reload()
             } catch (e: Exception) {
                 error = "Staffel-Änderung fehlgeschlagen: ${e.message}"
             } finally {
@@ -297,12 +331,13 @@ class MovieDetailViewModel(
     }
 
     class Factory(
-        private val movieId: Int,
+        private val localId: Long,
+        private val remoteId: Int = 0,
         private val repository: MovieRepository? = null
     ) : ViewModelProvider.Factory {
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
             @Suppress("UNCHECKED_CAST")
-            return MovieDetailViewModel(movieId, repository) as T
+            return MovieDetailViewModel(localId, remoteId, repository) as T
         }
     }
 }

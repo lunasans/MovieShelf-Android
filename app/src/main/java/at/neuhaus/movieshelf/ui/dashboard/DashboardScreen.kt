@@ -59,7 +59,7 @@ import coil.compose.AsyncImage
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun DashboardScreen(
-    onMovieClick: (Movie, List<Int>) -> Unit,
+    onMovieClick: (Movie, List<Long>) -> Unit,
     onAboutClick: () -> Unit,
     reloadKey: Int = 0
 ) {
@@ -289,7 +289,7 @@ fun DashboardScreen(
                             HeroSlider(
                                 movies = heroMovies,
                                 onClick = { movie ->
-                                    onMovieClick(movie, heroMovies.map { it.id })
+                                    onMovieClick(movie, heroMovies.map { it.localId })
                                 }
                             )
                             Spacer(Modifier.height(8.dp))
@@ -301,7 +301,7 @@ fun DashboardScreen(
                                 icon = Icons.Default.NewReleases,
                                 movies = viewModel.newMoviesShelf,
                                 onClick = { movie ->
-                                    onMovieClick(movie, viewModel.newMoviesShelf.map { it.id })
+                                    onMovieClick(movie, viewModel.newMoviesShelf.map { it.localId })
                                 },
                                 onShowAll = { viewModel.onShelfSelected(ShelfCategory.NEW) }
                             )
@@ -312,7 +312,7 @@ fun DashboardScreen(
                                 icon = Icons.Default.Movie,
                                 movies = viewModel.filmeShelf,
                                 onClick = { movie ->
-                                    onMovieClick(movie, viewModel.filmeShelf.map { it.id })
+                                    onMovieClick(movie, viewModel.filmeShelf.map { it.localId })
                                 },
                                 onShowAll = { viewModel.onShelfSelected(ShelfCategory.FILME) }
                             )
@@ -323,7 +323,7 @@ fun DashboardScreen(
                                 icon = Icons.Default.Tv,
                                 movies = viewModel.seriesShelf,
                                 onClick = { movie ->
-                                    onMovieClick(movie, viewModel.seriesShelf.map { it.id })
+                                    onMovieClick(movie, viewModel.seriesShelf.map { it.localId })
                                 },
                                 onShowAll = { viewModel.onShelfSelected(ShelfCategory.SERIEN) }
                             )
@@ -379,7 +379,7 @@ fun DashboardScreen(
                     items(viewModel.movies, key = { it.id }) { movie ->
                         MovieItem(
                             movie = movie,
-                            onClick = { onMovieClick(movie, viewModel.movies.map { it.id }) },
+                            onClick = { onMovieClick(movie, viewModel.movies.map { it.localId }) },
                             onWatchedToggle = { viewModel.toggleWatched(movie.id) }
                         )
                     }

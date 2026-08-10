@@ -59,7 +59,17 @@ data class Movie(
     val seasons: List<ApiSeason>? = null,
     // Nur in Listen-Items gesetzt ("movie" oder "external"), um beim Speichern
     // einer Liste den richtigen Item-Typ zurückzusenden (GET/PUT /api/lists/{id}).
-    @SerializedName("item_type") val itemType: String? = null
+    @SerializedName("item_type") val itemType: String? = null,
+    /**
+     * ID der lokalen Zeile. Kommt nicht vom Server und geht nicht an ihn —
+     * [Transient] hält Gson davon ab, das Feld zu lesen oder zu schreiben.
+     *
+     * Gesetzt wird sie beim Übersetzen aus der Datenbank. Frisch aus dem Netz
+     * geholte Filme (TMDb-Suche, Listen-Items) haben hier 0, solange sie noch
+     * nicht lokal liegen. **Die Oberfläche navigiert ausschließlich hierüber**;
+     * [id] ist die Server-ID und gehört allein in Netzaufrufe.
+     */
+    @Transient val localId: Long = 0
 )
 
 data class ApiSeason(

@@ -83,13 +83,14 @@ data class MovieEntity(
         get() = syncedAt == null || (updatedAt != null && updatedAt > syncedAt)
 
     /**
-     * ÜBERGANG (Phase 1): Die Oberfläche navigiert weiterhin über Server-IDs.
-     * Phase 2 stellt [Movie.id] auf [localId] um; bis dahin liefert das Mapping
-     * die Server-ID, damit Netzaufrufe und Navigation zusammenpassen.
+     * In das Modell der Oberfläche übersetzen. [Movie.id] bleibt die Server-ID
+     * für Netzaufrufe, [Movie.localId] trägt die lokale Identität — darüber
+     * navigiert die Oberfläche.
      */
     fun toMovie(): Movie {
         return Movie(
             id = remoteId ?: 0,
+            localId = localId,
             title = title,
             year = year,
             rating = rating,

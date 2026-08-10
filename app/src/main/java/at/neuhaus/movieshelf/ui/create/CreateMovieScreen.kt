@@ -15,11 +15,13 @@ import androidx.compose.material.icons.filled.Save
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import at.neuhaus.movieshelf.MovieShelfApplication
 import at.neuhaus.movieshelf.ui.components.ShelfFormSection
 import at.neuhaus.movieshelf.ui.components.ShelfSectionSpacing
 import at.neuhaus.movieshelf.ui.components.ShelfTextField
@@ -33,9 +35,13 @@ private val MEDIA_TAGS = listOf("DVD", "BluRay", "4K", "Streaming", "Digital", "
 @Composable
 fun CreateMovieScreen(
     onBack: () -> Unit,
-    onCreated: (Int) -> Unit
+    onCreated: (Long) -> Unit
 ) {
-    val viewModel: CreateMovieViewModel = viewModel()
+    val context = LocalContext.current
+    val app = context.applicationContext as MovieShelfApplication
+    val viewModel: CreateMovieViewModel = viewModel(
+        factory = CreateMovieViewModel.Factory(app.movieRepository)
+    )
 
     val snackbarHostState = remember { SnackbarHostState() }
 

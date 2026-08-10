@@ -152,6 +152,22 @@ private val slidePopExit = slideOutHorizontally(
 private val fadeEnter = fadeIn(animationSpec = tween(250))
 private val fadeExit = fadeOut(animationSpec = tween(200))
 
+/**
+ * Route zur Detailseite.
+ *
+ * Navigiert wird über die lokale ID. Filme, die direkt aus dem Netz stammen
+ * (Listen-Inhalte, Darsteller-Filmografie, Boxset-Kinder), haben noch keine —
+ * für sie wird die Server-ID mitgegeben, damit die Detailseite die lokale Zeile
+ * nachschlagen oder den Film nachladen kann.
+ */
+private fun movieDetailsRoute(movie: Movie, allLocalIds: List<Long> = emptyList()): String {
+    val query = buildList {
+        if (allLocalIds.isNotEmpty()) add("allIds=${allLocalIds.joinToString(",")}")
+        if (movie.localId == 0L && movie.id != 0) add("remoteId=${movie.id}")
+    }.joinToString("&")
+    return "movie_details/${movie.localId}" + if (query.isEmpty()) "" else "?$query"
+}
+
 @Composable
 fun MovieShelfApp(oauthCallbackUri: MutableState<Uri?> = mutableStateOf(null)) {
     val context = LocalContext.current
@@ -298,9 +314,8 @@ fun MovieShelfApp(oauthCallbackUri: MutableState<Uri?> = mutableStateOf(null)) {
 
                     DashboardScreen(
                         reloadKey = refreshKey,
-                        onMovieClick = { movie: Movie, allIds: List<Int> ->
-                            val idsString = allIds.joinToString(",")
-                            navController.navigate("movie_details/${movie.id}?allIds=$idsString")
+                        onMovieClick = { movie: Movie, allIds: List<Long> ->
+                            navController.navigate(movieDetailsRoute(movie, allIds))
                         },
                         onAboutClick = { navController.navigate("about") }
                     )
@@ -318,8 +333,8 @@ fun MovieShelfApp(oauthCallbackUri: MutableState<Uri?> = mutableStateOf(null)) {
                 composable("create_movie") {
                     CreateMovieScreen(
                         onBack = { navController.popBackStack() },
-                        onCreated = { newId ->
-                            navController.navigate("movie_details/$newId") {
+                        onCreated = { newLocalId ->
+                            navController.navigate("movie_details/$newLocalId") {
                                 popUpTo("create_movie") { inclusive = true }
                             }
                         }
@@ -344,36 +359,42 @@ fun MovieShelfApp(oauthCallbackUri: MutableState<Uri?> = mutableStateOf(null)) {
                     ListDetailScreen(
                         listId = listId,
                         onBack = { navController.popBackStack() },
-                        onMovieClick = { movie: Movie -> navController.navigate("movie_details/${movie.id}") }
+                        onMovieClick = { movie: Movie -> navController.navigate(movieDetailsRoute(movie)) }
                     )
                 }
                 composable(
-                    "movie_details/{movieId}?allIds={allIds}",
+                    "movie_details/{localId}?allIds={allIds}&remoteId={remoteId}",
                     arguments = listOf(
-                        androidx.navigation.navArgument("movieId") { type = androidx.navigation.NavType.IntType },
+                        androidx.navigation.navArgument("localId") { type = androidx.navigation.NavType.LongType },
                         androidx.navigation.navArgument("allIds") {
                             type = androidx.navigation.NavType.StringType
                             nullable = true
                             defaultValue = null
+                        },
+                        androidx.navigation.navArgument("remoteId") {
+                            type = androidx.navigation.NavType.IntType
+                            defaultValue = 0
                         }
                     )
                 ) { backStackEntry ->
-                    val movieId = backStackEntry.arguments?.getInt("movieId") ?: 0
+                    val localId = backStackEntry.arguments?.getLong("localId") ?: 0L
+                    val remoteId = backStackEntry.arguments?.getInt("remoteId") ?: 0
                     val allIdsString = backStackEntry.arguments?.getString("allIds")
-                    val allMovieIds = allIdsString?.split(",")?.mapNotNull { it.toIntOrNull() } ?: emptyList()
+                    val allMovieIds = allIdsString?.split(",")?.mapNotNull { it.toLongOrNull() } ?: emptyList()
                     // Signal vom Edit-Screen: hochgezählt, sobald ein Film bearbeitet wurde
                     val reloadKey by backStackEntry.savedStateHandle
                         .getStateFlow("movie_edited", 0)
                         .collectAsState()
 
                     MovieDetailScreen(
-                        movieId = movieId,
+                        movieLocalId = localId,
+                        movieRemoteId = remoteId,
                         allMovieIds = allMovieIds,
                         reloadKey = reloadKey,
                         onBack = { navController.popBackStack() },
-                        onEditClick = { id -> navController.navigate("edit_movie/$id") },
+                        onEditClick = { editLocalId -> navController.navigate("edit_movie/$editLocalId") },
                         onMovieClick = { movie: Movie ->
-                            navController.navigate("movie_details/${movie.id}")
+                            navController.navigate(movieDetailsRoute(movie))
                         },
                         onActorClick = { actorId ->
                             navController.navigate("actor_details/$actorId")
@@ -402,7 +423,7 @@ fun MovieShelfApp(oauthCallbackUri: MutableState<Uri?> = mutableStateOf(null)) {
                             actorId = actorId,
                             onBack = { navController.popBackStack() },
                             onMovieClick = { movie: Movie ->
-                                navController.navigate("movie_details/${movie.id}")
+                                navController.navigate(movieDetailsRoute(movie))
                             }
                         )
                     }
@@ -415,14 +436,14 @@ fun MovieShelfApp(oauthCallbackUri: MutableState<Uri?> = mutableStateOf(null)) {
                     )
                 }
                 composable(
-                    "edit_movie/{movieId}",
+                    "edit_movie/{localId}",
                     arguments = listOf(
-                        androidx.navigation.navArgument("movieId") { type = androidx.navigation.NavType.IntType }
+                        androidx.navigation.navArgument("localId") { type = androidx.navigation.NavType.LongType }
                     )
                 ) { backStackEntry ->
-                    val movieId = backStackEntry.arguments?.getInt("movieId") ?: 0
+                    val localId = backStackEntry.arguments?.getLong("localId") ?: 0L
                     EditMovieScreen(
-                        movieId = movieId,
+                        movieLocalId = localId,
                         onBack = { navController.popBackStack() },
                         onSaved = {
                             // Detail-Screen über die Bearbeitung informieren, damit er neu lädt

@@ -47,7 +47,7 @@ private val MEDIA_TAGS = listOf("DVD", "BluRay", "4K", "Streaming", "Digital", "
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun EditMovieScreen(
-    movieId: Int,
+    movieLocalId: Long,
     onBack: () -> Unit,
     onSaved: () -> Unit,
     onDeleted: () -> Unit = {}
@@ -55,7 +55,7 @@ fun EditMovieScreen(
     val context = LocalContext.current
     val app = context.applicationContext as MovieShelfApplication
     val viewModel: EditMovieViewModel = viewModel(
-        factory = EditMovieViewModel.Factory(movieId, app.movieRepository)
+        factory = EditMovieViewModel.Factory(movieLocalId, app.movieRepository)
     )
 
     val snackbarHostState = remember { SnackbarHostState() }

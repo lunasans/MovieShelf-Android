@@ -63,6 +63,59 @@ class MovieRepository(
         }
     }
 
+    // ── Lokale Identität ─────────────────────────────────────────────────────
+    // Ab hier arbeitet die Oberfläche mit lokalen IDs. Die Server-ID wird erst
+    // unmittelbar vor dem Netzaufruf nachgeschlagen; fehlt sie, existiert die
+    // Zeile nur lokal und der Aufruf entfällt (statt gegen ID 0 zu laufen).
+
+    /** Film über seine lokale ID lesen — Netz nur zum Auffrischen. */
+    suspend fun getMovieByLocalId(localId: Long): Movie? {
+        val local = movieDao.getByLocalId(localId)
+        val remoteId = local?.remoteId ?: return local?.toMovie()
+        return try {
+            val fresh = api.getMovie(remoteId).data
+            if (fresh == null) local.toMovie() else {
+                movieDao.upsertFromServer(listOf(MovieEntity.fromServerMovie(fresh, SyncClock.now())))
+                isOffline = false
+                movieDao.getByLocalId(localId)?.toMovie() ?: fresh.copy(localId = localId)
+            }
+        } catch (e: Exception) {
+            isOffline = true
+            local.toMovie()
+        }
+    }
+
+    suspend fun getRemoteId(localId: Long): Int? = movieDao.getByLocalId(localId)?.remoteId
+
+    /** Lokale ID zu einer Server-ID, etwa nach einer Suche über das Netz. */
+    suspend fun getLocalId(remoteId: Int): Long? = movieDao.findLocalIdByRemoteId(remoteId)
+
+    suspend fun toggleWatchedByLocalId(localId: Long, currentState: Boolean) {
+        val remoteId = movieDao.getByLocalId(localId)?.remoteId ?: return
+        toggleWatched(remoteId, currentState)
+    }
+
+    suspend fun updateMovieByLocalId(localId: Long, request: MovieUpdateRequest): Movie? {
+        val remoteId = movieDao.getByLocalId(localId)?.remoteId ?: return null
+        return updateMovie(remoteId, request)
+    }
+
+    suspend fun deleteMovieByLocalId(localId: Long) {
+        val remoteId = movieDao.getByLocalId(localId)?.remoteId
+        if (remoteId != null) api.deleteMovie(remoteId)
+        movieDao.hardDelete(localId)
+    }
+
+    /**
+     * Film anlegen. Legt ihn serverseitig an und übernimmt die Antwort lokal;
+     * zurück kommt die lokale ID, mit der die Oberfläche weiterarbeitet.
+     */
+    suspend fun createMovie(request: MovieUpdateRequest): Long? {
+        val created = api.createMovie(request).data ?: return null
+        movieDao.upsertFromServer(listOf(MovieEntity.fromServerMovie(created, SyncClock.now())))
+        return movieDao.findLocalIdByRemoteId(created.id)
+    }
+
     /** Watched-Status toggeln — optimistisch lokal + Remote-Aufruf. */
     suspend fun toggleWatched(movieId: Int, currentState: Boolean) {
         val newState = !currentState
@@ -95,6 +148,16 @@ class MovieRepository(
         api.deleteMovie(id)
         movieDao.findLocalIdByRemoteId(id)?.let { movieDao.hardDelete(it) }
     }
+
+    /**
+     * Bild-Uploads über die lokale ID. Fehlt die Server-ID, existiert der Film
+     * nur lokal — der Upload wird dann übersprungen und ab Phase 3 vorgemerkt.
+     */
+    suspend fun uploadCoverByLocalId(localId: Long, part: okhttp3.MultipartBody.Part): String? =
+        movieDao.getByLocalId(localId)?.remoteId?.let { uploadCover(it, part) }
+
+    suspend fun uploadBackdropByLocalId(localId: Long, part: okhttp3.MultipartBody.Part): String? =
+        movieDao.getByLocalId(localId)?.remoteId?.let { uploadBackdrop(it, part) }
 
     /** Cover hochladen (Admin). Gibt die neue Cover-URL zurück. */
     suspend fun uploadCover(id: Int, part: okhttp3.MultipartBody.Part): String? =
