@@ -359,8 +359,7 @@ fun MovieShelfApp(oauthCallbackUri: MutableState<Uri?> = mutableStateOf(null)) {
                         onSyncClick = { navController.navigate("sync") },
                         onMovieClick = { movie: Movie, allIds: List<Long> ->
                             navController.navigate(movieDetailsRoute(movie, allIds))
-                        },
-                        onAboutClick = { navController.navigate("about") }
+                        }
                     )
                 }
                 composable("profile") {
@@ -374,7 +373,8 @@ fun MovieShelfApp(oauthCallbackUri: MutableState<Uri?> = mutableStateOf(null)) {
                             scope.launch {
                                 app.setAppMode(AppMode.SHELF)
                             }
-                        }
+                        },
+                        onAboutClick = { navController.navigate("about") }
                     )
                 }
                 composable("sync") {

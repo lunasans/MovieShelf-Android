@@ -11,6 +11,7 @@ import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.automirrored.filled.PlaylistPlay
 import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.Email
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Save
@@ -46,7 +47,8 @@ fun ProfileScreen(
     onSyncClick: () -> Unit = {},
     /** Eigenstaendiger Betrieb: kein Konto, kein Abgleich, keine 2FA. */
     isStandalone: Boolean = false,
-    onConnectShelfClick: () -> Unit = {}
+    onConnectShelfClick: () -> Unit = {},
+    onAboutClick: () -> Unit = {}
 ) {
     val viewModel: ProfileViewModel = viewModel()
     val snackbarHostState = remember { SnackbarHostState() }
@@ -393,6 +395,37 @@ fun ProfileScreen(
                             checked = dynamicColor && supportsDynamic,
                             enabled = supportsDynamic,
                             onCheckedChange = { scope.launch { dataStoreManager.saveDynamicColor(it) } }
+                        )
+                    }
+                }
+
+                Spacer(Modifier.height(16.dp))
+
+                Card(
+                    onClick = onAboutClick,
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                    )
+                ) {
+                    Row(
+                        modifier = Modifier.padding(16.dp).fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(Icons.Default.Info, contentDescription = null)
+                        Spacer(Modifier.width(16.dp))
+                        Column(Modifier.weight(1f)) {
+                            Text("Über MovieShelf", fontWeight = FontWeight.Bold)
+                            Text(
+                                "Fassung, Lizenzen und Hinweise",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        Icon(
+                            Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.outline
                         )
                     }
                 }

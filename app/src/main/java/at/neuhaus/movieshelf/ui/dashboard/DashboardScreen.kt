@@ -29,6 +29,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
@@ -61,7 +62,6 @@ import coil.compose.AsyncImage
 @Composable
 fun DashboardScreen(
     onMovieClick: (Movie, List<Long>) -> Unit,
-    onAboutClick: () -> Unit,
     /** Fuehrt zum Abgleich — die Sammlung fuellt sich nur auf Knopfdruck. */
     onSyncClick: () -> Unit = {},
     isShelfMode: Boolean = false,
@@ -104,63 +104,62 @@ fun DashboardScreen(
     // direkt auf dem oberen Scrim des Banners, der dort ohnehin dunkel ist.
     val heroBehindTopBar = isBrowsing && heroMovies.isNotEmpty()
 
-    Scaffold(
-        topBar = {
-            Surface(
-                color = if (heroBehindTopBar) {
-                    Color.Transparent
-                } else {
-                    MaterialTheme.colorScheme.surface
-                },
-                tonalElevation = if (heroBehindTopBar) 0.dp else 2.dp
-            ) {
-                Column {
-                    CenterAlignedTopAppBar(
-                        navigationIcon = {
-                            IconButton(onClick = onAboutClick) {
-                                Icon(Icons.Default.Info, contentDescription = "Über MovieShelf")
-                            }
-                        },
-                        title = {
-                            Image(
-                                painter = painterResource(id = R.drawable.logo),
-                                contentDescription = "MovieShelf",
-                                modifier = Modifier.height(32.dp)
-                            )
-                        },
-                        actions = {
-                        },
-                        colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
-                            containerColor = Color.Transparent
-                        )
-                    )
+    // Die Kopfzeile schiebt sich beim Scrollen mit nach oben aus dem Bild und
+    // kommt beim Zurückscrollen wieder. Ohne das bliebe das Logo stehen und
+    // laege auf Postern und Titeln, sobald der Hero durchgelaufen ist.
+    val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior(
+        rememberTopAppBarState()
+    )
 
-                    // Offline-Banner
-                    if (viewModel.isOffline) {
-                        Surface(
-                            color = MaterialTheme.colorScheme.errorContainer,
-                            modifier = Modifier.fillMaxWidth()
+    Scaffold(
+        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
+        topBar = {
+            Column {
+                // Logo linksbündig wie im Web; "Über MovieShelf" sitzt
+                // jetzt in den Einstellungen und braucht hier keinen Platz.
+                TopAppBar(
+                    title = {
+                        Image(
+                            painter = painterResource(id = R.drawable.logo),
+                            contentDescription = "MovieShelf",
+                            modifier = Modifier.height(32.dp)
+                        )
+                    },
+                    // Über dem Hero durchsichtig, damit das Logo auf dem Bild
+                    // liegt; sobald Inhalt darunter durchläuft, bekommt sie
+                    // ihren Grund.
+                    colors = TopAppBarDefaults.topAppBarColors(
+                        containerColor = Color.Transparent,
+                        scrolledContainerColor = MaterialTheme.colorScheme
+                            .surfaceColorAtElevation(3.dp)
+                    ),
+                    scrollBehavior = scrollBehavior
+                )
+
+                // Offline-Banner
+                if (viewModel.isOffline) {
+                    Surface(
+                        color = MaterialTheme.colorScheme.errorContainer,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
-                            Row(
-                                modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(8.dp)
-                            ) {
-                                Icon(
-                                    Icons.Default.WifiOff,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(16.dp),
-                                    tint = MaterialTheme.colorScheme.onErrorContainer
-                                )
-                                Text(
-                                    "Offline — zwischengespeicherte Daten",
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = MaterialTheme.colorScheme.onErrorContainer
-                                )
-                            }
+                            Icon(
+                                Icons.Default.WifiOff,
+                                contentDescription = null,
+                                modifier = Modifier.size(16.dp),
+                                tint = MaterialTheme.colorScheme.onErrorContainer
+                            )
+                            Text(
+                                "Offline — zwischengespeicherte Daten",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onErrorContainer
+                            )
                         }
                     }
-
                 }
             }
         }
