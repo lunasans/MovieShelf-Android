@@ -140,31 +140,6 @@ fun DashboardScreen(
                         }
                     }
 
-                    OutlinedTextField(
-                        value = viewModel.searchQuery,
-                        onValueChange = { viewModel.onSearchQueryChange(it) },
-                        placeholder = { Text("Filme suchen...") },
-                        leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
-                        trailingIcon = {
-                            if (viewModel.searchQuery.isNotEmpty()) {
-                                IconButton(onClick = { viewModel.onSearchQueryChange("") }) {
-                                    Icon(Icons.Default.Close, contentDescription = "Löschen")
-                                }
-                            }
-                        },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 16.dp)
-                            .padding(bottom = 8.dp),
-                        singleLine = true,
-                        shape = MaterialTheme.shapes.medium,
-                        colors = OutlinedTextFieldDefaults.colors(
-                            unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
-                            focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
-                            unfocusedBorderColor = Color.Transparent
-                        )
-                    )
-
                 }
             }
         }
@@ -240,6 +215,11 @@ fun DashboardScreen(
                             Spacer(Modifier.height(8.dp))
                         }
 
+                        DashboardSearchField(
+                            viewModel = viewModel,
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                        )
+
                         if (viewModel.newMoviesShelf.isNotEmpty()) {
                             MovieShelfRow(
                                 title = "Neue Filme",
@@ -283,8 +263,18 @@ fun DashboardScreen(
                     items(6) { MovieCardSkeleton() }
                 }
             } else if (viewModel.movies.isEmpty() && !viewModel.isLoading) {
-                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Column(Modifier.fillMaxSize()) {
+                    // Ohne Feld liesse sich ein Tippfehler nicht mehr berichtigen:
+                    // die Trefferliste ist leer, das Feld waere verschwunden.
+                    DashboardSearchField(
+                        viewModel = viewModel,
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                    )
+                    Column(
+                        modifier = Modifier.fillMaxWidth().weight(1f),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center
+                    ) {
                         Icon(Icons.Default.SearchOff, null, Modifier.size(64.dp), tint = MaterialTheme.colorScheme.outline)
                         Spacer(Modifier.height(16.dp))
                         Text("Keine Filme gefunden", style = MaterialTheme.typography.titleMedium)
@@ -305,6 +295,15 @@ fun DashboardScreen(
                     contentPadding = PaddingValues(top = 8.dp, start = 8.dp, end = 8.dp, bottom = 100.dp),
                     modifier = Modifier.fillMaxSize()
                 ) {
+                    // Auch hier, sonst verschwaende das Feld beim ersten Zeichen -
+                    // die Trefferliste ersetzt ja die Reihen, zwischen denen es steht.
+                    item(span = { GridItemSpan(maxLineSpan) }) {
+                        DashboardSearchField(
+                            viewModel = viewModel,
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                        )
+                    }
+
                     // "Alle anzeigen"-Modus: Kategorie-Chip als Rückweg zu den Shelf-Reihen
                     viewModel.selectedShelf?.let { shelf ->
                         item(span = { GridItemSpan(maxLineSpan) }) {
@@ -332,6 +331,39 @@ fun DashboardScreen(
             }
         }
     }
+}
+
+/**
+ * Suchfeld des Dashboards.
+ *
+ * Sitzt zwischen Hero und der ersten Reihe statt in der Kopfzeile: dort nahm es
+ * dauerhaft Platz weg, obwohl gesucht selten wird — und der Hero soll das erste
+ * sein, was man sieht. Beim Tippen ersetzt die Trefferliste ohnehin die Reihen.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun DashboardSearchField(viewModel: DashboardViewModel, modifier: Modifier = Modifier) {
+    OutlinedTextField(
+        value = viewModel.searchQuery,
+        onValueChange = { viewModel.onSearchQueryChange(it) },
+        placeholder = { Text("Filme suchen...") },
+        leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
+        trailingIcon = {
+            if (viewModel.searchQuery.isNotEmpty()) {
+                IconButton(onClick = { viewModel.onSearchQueryChange("") }) {
+                    Icon(Icons.Default.Close, contentDescription = "Löschen")
+                }
+            }
+        },
+        modifier = modifier.fillMaxWidth(),
+        singleLine = true,
+        shape = MaterialTheme.shapes.medium,
+        colors = OutlinedTextFieldDefaults.colors(
+            unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
+            focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
+            unfocusedBorderColor = Color.Transparent
+        )
+    )
 }
 
 /** Wechselintervall des Hero-Sliders — wie im Web (`setInterval(..., 8000)`). */
