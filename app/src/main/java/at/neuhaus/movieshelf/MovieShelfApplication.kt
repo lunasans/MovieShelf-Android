@@ -104,7 +104,7 @@ class MovieShelfApplication : Application(), ImageLoaderFactory {
             movieDao = database.movieDao(),
             settingDao = database.settingDao(),
             apiProvider = { RetrofitApi(RetrofitClient.api) },
-            flushPendingUploads = { movieRepository.flushPendingUploads() },
+            flushPendingUploads = { report -> movieRepository.flushPendingUploads(report) },
             upsertSeries = { localId, seasons ->
                 database.seriesDao().upsertSeries(localId, seasons)
             },
@@ -118,7 +118,7 @@ class MovieShelfApplication : Application(), ImageLoaderFactory {
                     .map { "${it.seasonNumber}:${database.seriesDao().getEpisodes(it.localId).size}" }
                     .sorted()
             },
-            downloadMissingArtwork = { movieRepository.downloadMissingArtwork() },
+            downloadMissingArtwork = { report -> movieRepository.downloadMissingArtwork(report) },
             cleanupOrphanedArtwork = { movieRepository.cleanupOrphanedArtwork() },
             queueArtworkUpload = { movieRepository.queueArtworkUpload(it) }
         )

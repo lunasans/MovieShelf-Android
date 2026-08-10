@@ -39,7 +39,7 @@ class SyncEngine(
      * hereingereicht, damit der Abgleich nur von dem abhaengt, was er wirklich
      * braucht — und im Test ohne Datei- und Netzschicht auskommt.
      */
-    private val flushPendingUploads: suspend () -> Unit = {},
+    private val flushPendingUploads: suspend ((Int, Int, String?) -> Unit) -> Unit = {},
     /**
      * Staffeln und Episoden einer Serie einspielen. Wie [flushPendingUploads]
      * als Funktion hereingereicht, damit der Film-Abgleich nicht an der
@@ -58,7 +58,7 @@ class SyncEngine(
     /** Lokale Staffeln als "Nummer:Episodenzahl", sortiert - fuer die Vorschau. */
     private val localSeasonSignature: suspend (Long) -> List<String> = { emptyList() },
     /** Fehlende Bilder holen — laeuft in der Medien-Phase. */
-    private val downloadMissingArtwork: suspend () -> Int = { 0 },
+    private val downloadMissingArtwork: suspend ((Int, Int, String?) -> Unit) -> Int = { 0 },
     /** Bilddateien ohne zugehoerige Zeile entfernen. */
     private val cleanupOrphanedArtwork: suspend () -> Int = { 0 },
     /**
@@ -125,7 +125,9 @@ class SyncEngine(
     suspend fun runPushOnly(): SyncResult {
         val pushed = push()
         onProgress(SyncProgress(SyncPhase.MEDIA))
-        flushPendingUploads()
+        flushPendingUploads { current, total, subject ->
+            onProgress(SyncProgress(SyncPhase.MEDIA, current, total, subject))
+        }
         return finish(SyncResult(push = pushed, pull = PullResult()))
     }
 
@@ -134,8 +136,12 @@ class SyncEngine(
         onProgress(SyncProgress(SyncPhase.MEDIA))
         // Ein gerade hochgeladenes Cover soll nicht im selben Durchgang noch
         // einmal geholt werden.
-        flushPendingUploads()
-        val stored = downloadMissingArtwork()
+        flushPendingUploads { current, total, subject ->
+            onProgress(SyncProgress(SyncPhase.MEDIA, current, total, subject))
+        }
+        val stored = downloadMissingArtwork { current, total, subject ->
+            onProgress(SyncProgress(SyncPhase.MEDIA, current, total, subject))
+        }
         cleanupOrphanedArtwork()
         return stored
     }

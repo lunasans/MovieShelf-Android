@@ -429,18 +429,44 @@ class MovieRepository(
      *
      * @return wie viele Bilder neu abgelegt wurden.
      */
-    suspend fun downloadMissingArtwork(): Int {
+    suspend fun downloadMissingArtwork(
+        /**
+         * Fortschritt: erledigt, gesamt, gerade bearbeiteter Titel.
+         *
+         * Ohne Gesamtzahl kann die Oberflaeche nur einen wandernden Balken
+         * zeigen - und diese Phase dauert bei tausend Bildern am laengsten.
+         */
+        onProgress: (Int, Int, String?) -> Unit = { _, _, _ -> }
+    ): Int {
         val shelfUrl = shelfUrlProvider()
         var stored = 0
 
-        for (entity in movieDao.getMoviesMissingArtwork()) {
-            if (fetchArtwork(entity.localId, entity.coverUrl, ArtworkKind.COVER, shelfUrl)) stored++
-            if (fetchArtwork(entity.localId, entity.backdropUrl, ArtworkKind.BACKDROP, shelfUrl)) stored++
+        val movies = movieDao.getMoviesMissingArtwork()
+        val actors = actorDao.getActorsMissingArtwork()
+
+        // Vorab zaehlen, was tatsaechlich anfaellt: ein Film ohne Backdrop
+        // ergibt einen Schritt, nicht zwei.
+        val total = movies.sumOf { entity ->
+            (if (entity.coverUrl.isNullOrBlank()) 0 else 1) +
+                (if (entity.backdropUrl.isNullOrBlank()) 0 else 1)
+        } + actors.size
+        var done = 0
+
+        for (entity in movies) {
+            if (!entity.coverUrl.isNullOrBlank()) {
+                if (fetchArtwork(entity.localId, entity.coverUrl, ArtworkKind.COVER, shelfUrl)) stored++
+                onProgress(++done, total, entity.title)
+            }
+            if (!entity.backdropUrl.isNullOrBlank()) {
+                if (fetchArtwork(entity.localId, entity.backdropUrl, ArtworkKind.BACKDROP, shelfUrl)) stored++
+                onProgress(++done, total, entity.title)
+            }
         }
 
         // Darstellerbilder ebenso — die Desktop-App laedt sie mit.
-        for (actor in actorDao.getActorsMissingArtwork()) {
+        for (actor in actors) {
             if (fetchArtwork(actor.localId, actor.imagePath, ArtworkKind.ACTOR, shelfUrl)) stored++
+            onProgress(++done, total, actor.name)
         }
         return stored
     }
@@ -522,9 +548,14 @@ class MovieRepository(
     }
 
     /** Vorgemerkte Bilder nachreichen. Wird ab Phase 4 vom Abgleich aufgerufen. */
-    suspend fun flushPendingUploads() {
+    suspend fun flushPendingUploads(
+        onProgress: (Int, Int, String?) -> Unit = { _, _, _ -> }
+    ) {
         if (!isShelfMode()) return
-        for (pending in pendingUploadDao.getAll()) {
+        val queued = pendingUploadDao.getAll()
+        var done = 0
+        for (pending in queued) {
+            onProgress(++done, queued.size, null)
             val remoteId = movieDao.getByLocalId(pending.movieLocalId)?.remoteId ?: continue
             val file = java.io.File(pending.filePath)
             if (!file.exists()) {

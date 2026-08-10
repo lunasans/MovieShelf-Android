@@ -197,16 +197,16 @@ private fun PreviewSection(preview: SyncPreview) {
             return@ShelfFormSection
         }
 
-        CountRow(Icons.Default.CloudUpload, "Wird hochgeladen", preview.outgoing)
-        if (preview.toCreate > 0) DetailRow("davon neu angelegt", preview.toCreate)
-        if (preview.toUpdate > 0) DetailRow("davon geändert", preview.toUpdate)
-        if (preview.toDeleteRemote > 0) DetailRow("davon gelöscht", preview.toDeleteRemote)
+        CountRow(Icons.Default.CloudUpload, "App → Shelf", preview.outgoing)
+        if (preview.toCreate > 0) DetailRow("neu", preview.toCreate)
+        if (preview.toUpdate > 0) DetailRow("geändert", preview.toUpdate)
+        if (preview.toDeleteRemote > 0) DetailRow("gelöscht", preview.toDeleteRemote)
 
         Spacer(Modifier.height(4.dp))
-        CountRow(Icons.Default.CloudDownload, "Kommt herunter", preview.incoming)
-        if (preview.incomingNew > 0) DetailRow("davon neu", preview.incomingNew)
-        if (preview.incomingUpdated > 0) DetailRow("davon aktualisiert", preview.incomingUpdated)
-        if (preview.incomingDeleted > 0) DetailRow("davon lokal entfernt", preview.incomingDeleted)
+        CountRow(Icons.Default.CloudDownload, "Shelf → App", preview.incoming)
+        if (preview.incomingNew > 0) DetailRow("neu", preview.incomingNew)
+        if (preview.incomingUpdated > 0) DetailRow("geändert", preview.incomingUpdated)
+        if (preview.incomingDeleted > 0) DetailRow("gelöscht", preview.incomingDeleted)
 
         if (preview.keptLocal > 0) {
             Spacer(Modifier.height(4.dp))
