@@ -38,6 +38,7 @@ import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.fromHtml
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -90,9 +91,29 @@ fun DashboardScreen(
         if (shouldLoadMore) viewModel.loadMore()
     }
 
+    // Hero speist sich aus den Neuzugängen; ohne Backdrop wirkt der Banner
+    // beschnitten, daher nur solche Filme.
+    val heroMovies = remember(viewModel.newMoviesShelf) {
+        viewModel.newMoviesShelf
+            .filter { !it.backdropUrl.isNullOrBlank() }
+            .take(5)
+    }
+    val isBrowsing = viewModel.searchQuery.isBlank() && viewModel.selectedShelf == null
+    // Der Hero reicht hinter die Kopfzeile, wie im Web. Solange er zu sehen ist,
+    // bekommt die Kopfzeile deshalb keinen eigenen Grund — das Logo liegt dann
+    // direkt auf dem oberen Scrim des Banners, der dort ohnehin dunkel ist.
+    val heroBehindTopBar = isBrowsing && heroMovies.isNotEmpty()
+
     Scaffold(
         topBar = {
-            Surface(tonalElevation = 2.dp) {
+            Surface(
+                color = if (heroBehindTopBar) {
+                    Color.Transparent
+                } else {
+                    MaterialTheme.colorScheme.surface
+                },
+                tonalElevation = if (heroBehindTopBar) 0.dp else 2.dp
+            ) {
                 Column {
                     CenterAlignedTopAppBar(
                         navigationIcon = {
@@ -147,10 +168,11 @@ fun DashboardScreen(
         PullToRefreshBox(
             isRefreshing = viewModel.isRefreshing,
             onRefresh = { viewModel.loadMovies(refresh = true) },
-            modifier = Modifier.padding(innerPadding)
+            modifier = Modifier.padding(
+                top = if (heroBehindTopBar) 0.dp else innerPadding.calculateTopPadding(),
+                bottom = innerPadding.calculateBottomPadding()
+            )
         ) {
-            val isBrowsing = viewModel.searchQuery.isBlank() && viewModel.selectedShelf == null
-
             if (isBrowsing) {
                 // "Shelf"-Gruppierung: vertikal gestapelte, horizontal scrollbare Reihen
                 // ("Neue Filme" / "Filme" / "Serien"), wie im Web-Dashboard.
@@ -198,19 +220,16 @@ fun DashboardScreen(
                             .verticalScroll(rememberScrollState())
                             .padding(bottom = 100.dp)
                     ) {
-                        // Hero speist sich aus den Neuzugängen; ohne Backdrop
-                        // wirkt der Banner beschnitten, daher nur solche Filme.
-                        val heroMovies = remember(viewModel.newMoviesShelf) {
-                            viewModel.newMoviesShelf
-                                .filter { !it.backdropUrl.isNullOrBlank() }
-                                .take(5)
-                        }
                         if (heroMovies.isNotEmpty()) {
                             HeroSlider(
                                 movies = heroMovies,
                                 onClick = { movie ->
                                     onMovieClick(movie, heroMovies.map { it.localId })
-                                }
+                                },
+                                // Der Banner liegt unter der Kopfzeile und wächst
+                                // um deren Höhe, damit sichtbar so viel Bild
+                                // übrig bleibt wie zuvor.
+                                extraTopHeight = innerPadding.calculateTopPadding()
                             )
                             Spacer(Modifier.height(8.dp))
                         }
@@ -366,6 +385,9 @@ private fun DashboardSearchField(viewModel: DashboardViewModel, modifier: Modifi
     )
 }
 
+/** Sichtbare Höhe des Hero-Banners unterhalb der Kopfzeile. */
+private val HERO_HEIGHT = 420.dp
+
 /** Wechselintervall des Hero-Sliders — wie im Web (`setInterval(..., 8000)`). */
 private const val HERO_AUTO_ADVANCE_MS = 8_000L
 
@@ -383,7 +405,9 @@ private const val HERO_AUTO_ADVANCE_MS = 8_000L
 fun HeroSlider(
     movies: List<Movie>,
     onClick: (Movie) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    /** Höhe der darüberliegenden Kopfzeile, hinter die der Banner reicht. */
+    extraTopHeight: Dp = 0.dp
 ) {
     if (movies.isEmpty()) return
     val context = LocalContext.current
@@ -407,7 +431,7 @@ fun HeroSlider(
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .height(420.dp)
+            .height(HERO_HEIGHT + extraTopHeight)
             .clip(HeroBannerShape)
     ) {
         HorizontalPager(state = pagerState, modifier = Modifier.fillMaxSize()) { page ->
