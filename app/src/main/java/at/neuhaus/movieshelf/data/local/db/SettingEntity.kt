@@ -23,11 +23,6 @@ object SettingKeys {
     /** Betriebsmodus, siehe [AppMode]. */
     const val MODE = "mode"
 
-    /** Wann der Hintergrundlauf zuletzt durch war. */
-    const val LAST_BACKGROUND_SYNC = "last_background_sync"
-
-    /** Was er dabei getan hat — im Hintergrund kann ihn niemand beobachten. */
-    const val LAST_BACKGROUND_RESULT = "last_background_result"
 }
 
 /**

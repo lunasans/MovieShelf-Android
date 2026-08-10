@@ -26,11 +26,6 @@ class SyncViewModel(
     var lastSyncAt by mutableStateOf<String?>(null)
         private set
 
-    /** Was der letzte Hintergrundlauf getan hat, `null` wenn noch keiner lief. */
-    var backgroundSummary by mutableStateOf<String?>(null)
-        private set
-    var backgroundAt by mutableStateOf<String?>(null)
-        private set
     var preview by mutableStateOf<SyncPreview?>(null)
         private set
     var progress by mutableStateOf<SyncProgress?>(null)
@@ -46,8 +41,6 @@ class SyncViewModel(
     init {
         viewModelScope.launch {
             lastSyncAt = syncEngine.lastSyncAt()
-            backgroundAt = settingDao.get(SettingKeys.LAST_BACKGROUND_SYNC)
-            backgroundSummary = settingDao.get(SettingKeys.LAST_BACKGROUND_RESULT)
         }
         viewModelScope.launch {
             syncEngine.progress.collectLatest { progress = it }
@@ -90,6 +83,7 @@ class SyncViewModel(
             }
         }
     }
+
 
     fun dismissResult() {
         result = null
