@@ -143,7 +143,12 @@ class MovieRepository(
                 updatedAt = now,
                 syncedAt = now
             )
-            val actorLocalId = actorDao.insert(entity).let { if (existing != null) existing else it }
+            // Aktualisieren statt ersetzen, sonst faellt die Person aus allen
+            // anderen Filmen heraus (CASCADE auf film_actor).
+            val actorLocalId = if (existing == null) actorDao.insert(entity) else {
+                actorDao.update(entity)
+                existing
+            }
             FilmActorCrossRef(
                 movieLocalId = movieLocalId,
                 actorLocalId = actorLocalId,
@@ -160,7 +165,7 @@ class MovieRepository(
         val now = SyncClock.now()
         val refs = cast.mapIndexedNotNull { index, member ->
             val existing = actorDao.findLocalIdByName(member.name)
-            val actorLocalId = if (existing != null) existing else actorDao.insert(
+            val actorLocalId = existing ?: actorDao.insert(
                 ActorEntity(
                     name = member.name,
                     imagePath = member.imageUrl,

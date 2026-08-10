@@ -143,9 +143,21 @@ open class FakeListDao : ListDao {
     override suspend fun findLocalIdByRemoteId(remoteId: Int): Long? =
         lists.firstOrNull { it.remoteId == remoteId }?.localId
 
+    override suspend fun update(list: ListEntity) {
+        lists.removeAll { it.localId == list.localId }
+        lists += list
+    }
+
     override suspend fun insert(list: ListEntity): Long {
-        val id = if (list.localId != 0L) list.localId else (lists.maxOfOrNull { it.localId } ?: 0L) + 1
-        lists.removeAll { it.localId == id }
+        // Wie in SQLite: ein Einfuegen mit bekannter ID ersetzt die Zeile und
+        // raeumt per CASCADE ihre Eintraege ab. Bestehendes gehoert in update().
+        if (list.localId != 0L) {
+            throw AssertionError(
+                "Bestehende Listen muessen ueber update() laufen, sonst " +
+                    "loescht CASCADE ihre Eintraege"
+            )
+        }
+        val id = (lists.maxOfOrNull { it.localId } ?: 0L) + 1
         lists += list.copy(localId = id)
         return id
     }

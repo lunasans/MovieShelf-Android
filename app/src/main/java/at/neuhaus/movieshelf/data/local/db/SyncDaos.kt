@@ -25,6 +25,16 @@ interface ActorDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(actor: ActorEntity): Long
 
+    /**
+     * Bestehende Zeile aendern.
+     *
+     * Zwingend statt [insert] mit bekannter ID: INSERT OR REPLACE loescht die
+     * Zeile und legt sie neu an, wodurch `film_actor` per CASCADE mitgeht - die
+     * Person waere danach nur noch im zuletzt eingespielten Film zu sehen.
+     */
+    @Update
+    suspend fun update(actor: ActorEntity)
+
     @Transaction
     suspend fun upsertFromServer(actors: List<ActorEntity>) {
         for (actor in actors) {
@@ -32,7 +42,7 @@ interface ActorDao {
                 // Ohne Server-ID über den Namen zusammenführen: sonst entstünde
                 // bei jedem Import ein zweiter Eintrag derselben Person.
                 ?: findLocalIdByName(actor.name)
-            insert(if (existingId != null) actor.copy(localId = existingId) else actor)
+            if (existingId == null) insert(actor) else update(actor.copy(localId = existingId))
         }
     }
 
@@ -85,12 +95,19 @@ interface ListDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(list: ListEntity): Long
 
+    /**
+     * Bestehende Liste aendern — nicht ueber [insert] mit bekannter ID: das
+     * loescht die Zeile und nimmt `list_items` samt Merkern per CASCADE mit.
+     */
+    @Update
+    suspend fun update(list: ListEntity)
+
     @Transaction
     suspend fun upsertFromServer(lists: List<ListEntity>) {
         for (list in lists) {
             val remoteId = list.remoteId ?: continue
             val existingId = findLocalIdByRemoteId(remoteId)
-            insert(if (existingId != null) list.copy(localId = existingId) else list)
+            if (existingId == null) insert(list) else update(list.copy(localId = existingId))
         }
     }
 
@@ -154,6 +171,10 @@ interface SeriesDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertSeason(season: SeasonEntity): Long
 
+    /** Bestehende Staffel aendern — ein Ersetzen naehme die Episoden mit. */
+    @Update
+    suspend fun updateSeason(season: SeasonEntity)
+
     @Query("SELECT * FROM episodes WHERE seasonLocalId = :seasonLocalId ORDER BY episodeNumber")
     suspend fun getEpisodes(seasonLocalId: Long): List<EpisodeEntity>
 
@@ -185,12 +206,14 @@ interface SeriesDao {
     suspend fun upsertSeries(movieLocalId: Long, seasons: List<SeasonWithEpisodes>) {
         for (entry in seasons) {
             val existingSeasonId = findSeasonLocalId(movieLocalId, entry.season.seasonNumber)
-            val seasonId = insertSeason(
-                entry.season.copy(
-                    localId = existingSeasonId ?: 0,
-                    movieLocalId = movieLocalId
+            val seasonId = if (existingSeasonId == null) {
+                insertSeason(entry.season.copy(movieLocalId = movieLocalId))
+            } else {
+                updateSeason(
+                    entry.season.copy(localId = existingSeasonId, movieLocalId = movieLocalId)
                 )
-            ).let { if (existingSeasonId != null) existingSeasonId else it }
+                existingSeasonId
+            }
 
             for (episode in entry.episodes) {
                 val existingEpisodeId = findEpisodeLocalId(seasonId, episode.episodeNumber)

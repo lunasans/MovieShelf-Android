@@ -106,12 +106,29 @@ private class AlwaysSucceedingDownloader : ImageDownloader(shelfClientProvider =
         byteArrayOf(1, 2, 3) to "image/jpeg"
 }
 
+/**
+ * Ein Einfuegen mit bereits bekannter ID ist in SQLite ein Loeschen samt
+ * anschliessendem Einfuegen. Auf `film_actor` liegt CASCADE, die Person fiele
+ * dabei aus allen uebrigen Filmen heraus. Fuer bestehende Zeilen ist deshalb
+ * ausschliesslich `update` zulaessig.
+ */
+internal fun guardInsert(actor: ActorEntity): Long {
+    if (actor.localId != 0L) {
+        throw AssertionError(
+            "Bestehende Darsteller muessen ueber update() laufen, sonst " +
+                "loescht CASCADE ihre uebrigen Filmverknuepfungen"
+        )
+    }
+    return actor.localId
+}
+
 private class EmptyActorDao : ActorDao {
     override suspend fun getAll(): List<ActorEntity> = emptyList()
     override suspend fun getByLocalId(localId: Long): ActorEntity? = null
     override suspend fun findLocalIdByRemoteId(remoteId: Int): Long? = null
     override suspend fun findLocalIdByName(name: String): Long? = null
-    override suspend fun insert(actor: ActorEntity): Long = 0
+    override suspend fun insert(actor: ActorEntity): Long = guardInsert(actor)
+    override suspend fun update(actor: ActorEntity) = Unit
     override suspend fun getDirty(): List<ActorEntity> = emptyList()
     override suspend fun getAllLocalIds(): List<Long> = emptyList()
     override suspend fun getActorsMissingArtwork(): List<ActorEntity> = emptyList()

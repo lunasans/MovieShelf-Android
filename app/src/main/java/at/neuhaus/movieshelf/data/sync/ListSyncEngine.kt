@@ -156,8 +156,10 @@ class ListSyncEngine(
             updatedAt = summary.updatedAt ?: now,
             syncedAt = now
         )
+        // Aendern, nicht ersetzen: INSERT OR REPLACE loescht die Zeile und
+        // nimmt `list_items` per CASCADE mit - die Liste waere danach leer.
         return if (existing != null) {
-            listDao.insert(entity)
+            listDao.update(entity)
             existing
         } else {
             listDao.insert(entity)

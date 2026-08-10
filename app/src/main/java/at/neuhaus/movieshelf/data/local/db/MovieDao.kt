@@ -87,8 +87,16 @@ interface MovieDao {
         for (movie in movies) {
             val remoteId = movie.remoteId ?: continue
             val existing = getByRemoteId(remoteId)
-            insert(
-                if (existing == null) movie else movie.copy(
+            if (existing == null) {
+                insert(movie)
+                continue
+            }
+            // Aktualisieren, nicht ersetzen: INSERT OR REPLACE ist in SQLite ein
+            // Loeschen mit anschliessendem Einfuegen, und die Fremdschluessel
+            // stehen auf CASCADE. Ein Ersetzen wuerde Besetzung, Staffeln und
+            // vorgemerkte Bild-Uploads dieses Films stillschweigend mitloeschen.
+            update(
+                movie.copy(
                     localId = existing.localId,
                     // Bereits heruntergeladene Bilder behalten: sonst ersetzte
                     // der Pull den Dateipfad wieder durch die Adresse und das
