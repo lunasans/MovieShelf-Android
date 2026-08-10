@@ -23,3 +23,6 @@ native-debug-symbols.zip
 
 # Fehlerprotokolle des Kotlin-Compilers, rein lokal
 .kotlin/
+
+# IDE-Einstellungen sind lokal und gehoeren nicht ins Repo
+.idea/
