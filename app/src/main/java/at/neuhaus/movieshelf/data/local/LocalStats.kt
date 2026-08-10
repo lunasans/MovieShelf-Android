@@ -21,7 +21,13 @@ import at.neuhaus.movieshelf.data.model.YearStats
 object LocalStats {
 
     fun from(movies: List<MovieEntity>): Stats {
-        val relevant = movies.filter { !it.isDeleted && it.inCollection != false }
+        // Gezählt wird wie in der Desktop-App (`is_deleted = 0 AND is_boxset = 0
+        // AND in_collection = 1`): die Teile eines Boxsets zählen einzeln, das
+        // Boxset selbst nicht. Sonst stünde die Hülle als eigener Titel in der
+        // Summe und die Gesamtzahl läge über der tatsächlichen Sammlung.
+        val relevant = movies.filter {
+            !it.isDeleted && it.inCollection != false && !it.isBoxset
+        }
         val total = relevant.size
 
         val runtimes = relevant.mapNotNull { it.runtime }.filter { it > 0 }
