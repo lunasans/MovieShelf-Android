@@ -13,15 +13,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import java.text.Collator
 import java.util.Locale
-
-enum class SortOption(val label: String) {
-    BY_NEWEST("Zuletzt hinzugefügt"),
-    BY_ALPHA("Alphabetisch"),
-    BY_YEAR("Nach Jahr"),
-    BY_RATING("Nach Bewertung")
-}
 
 /** Kategorie einer Dashboard-Shelf-Reihe, für die "Alle anzeigen"-Rasteransicht. */
 enum class ShelfCategory(val label: String) {
@@ -42,7 +34,6 @@ class DashboardViewModel(private val repository: MovieRepository) : ViewModel() 
     var isOffline by mutableStateOf(false)
 
     var searchQuery by mutableStateOf("")
-    var sortOption by mutableStateOf(SortOption.BY_NEWEST)
 
     // Vertikale "Shelf"-Reihen der Startseite (unabhaengig von der Suche)
     var newMoviesShelf by mutableStateOf<List<Movie>>(emptyList())
@@ -166,18 +157,12 @@ class DashboardViewModel(private val repository: MovieRepository) : ViewModel() 
     /** "Alle anzeigen" einer Shelf-Reihe: Kategorie als Raster öffnen. */
     fun onShelfSelected(category: ShelfCategory) {
         selectedShelf = category
-        sortOption = if (category == ShelfCategory.NEW) SortOption.BY_NEWEST else SortOption.BY_ALPHA
         recompute()
     }
 
     /** Rasteransicht schließen, zurück zu den Shelf-Reihen. */
     fun clearShelf() {
         selectedShelf = null
-        recompute()
-    }
-
-    fun onSortSelected(option: SortOption) {
-        sortOption = option
         recompute()
     }
 
@@ -221,25 +206,16 @@ class DashboardViewModel(private val repository: MovieRepository) : ViewModel() 
         seriesShelf = allLoadedMovies.filter { it.collectionType == "Serie" }
         filmeShelf = allLoadedMovies.filter { it.collectionType != "Serie" }
         viewModelScope.launch {
-            val result = withContext(Dispatchers.Default) { computeFilteredSorted() }
+            val result = withContext(Dispatchers.Default) { sortedForDisplay() }
             movies = result
         }
     }
 
     /**
      * Reine Berechnung: waehlt die Reihe aus [allLoadedMovies] und sortiert nach
-     * [sortOption]; gibt die fertige Liste zurueck (kein State-Schreiben). Thread-sicher, da der nicht
-     * thread-sichere [Collator] und der Titel-Comparator lokal erzeugt werden.
+     * Zugangsdatum; gibt die fertige Liste zurueck (kein State-Schreiben).
      */
-    private fun computeFilteredSorted(): List<Movie> {
-        // Locale-bewusster Vergleich: 'ä' wird wie 'a' einsortiert (statt hinter 'z'),
-        // Groß-/Kleinschreibung ignoriert. Lokal erzeugt -> nichts wird zwischen parallelen Läufen geteilt.
-        val collator: Collator = Collator.getInstance(Locale.GERMAN).apply {
-            strength = Collator.SECONDARY
-        }
-        val byTitle: Comparator<Movie> =
-            Comparator { a, b -> collator.compare(titleSortKey(a.title), titleSortKey(b.title)) }
-
+    private fun sortedForDisplay(): List<Movie> {
         var filtered = allLoadedMovies
 
         // Shelf-Kategorie ("Alle anzeigen" einer Reihe)
@@ -253,37 +229,14 @@ class DashboardViewModel(private val repository: MovieRepository) : ViewModel() 
             null -> {}
         }
 
-        return when (sortOption) {
-            // Zuletzt hinzugefügt: nach Server-Datum (created_at, ISO-8601 sortiert lexikografisch),
-            // fehlendes Datum ans Ende, bei Gleichstand höchste ID zuerst.
-            SortOption.BY_NEWEST -> filtered.sortedWith(
-                compareByDescending<Movie> { it.createdAt ?: "" }.thenByDescending { it.id }
-            )
-            // Alphabetisch: deutscher Collator (Umlaute korrekt), führende Artikel ignoriert
-            SortOption.BY_ALPHA  -> filtered.sortedWith(byTitle.thenByDescending { it.year ?: 0 })
-            // Nach Jahr (neueste zuerst), bei Gleichstand alphabetisch
-            SortOption.BY_YEAR   -> filtered.sortedWith(
-                compareByDescending<Movie> { it.year ?: Int.MIN_VALUE }.then(byTitle)
-            )
-            // Nach Bewertung (höchste zuerst), bei Gleichstand alphabetisch
-            SortOption.BY_RATING -> filtered.sortedWith(
-                compareByDescending<Movie> { parseRating(it.rating) }.then(byTitle)
-            )
-        }
+        // Zuletzt hinzugefuegt: nach Server-Datum (created_at, ISO-8601 sortiert
+        // lexikografisch), fehlendes Datum ans Ende, bei Gleichstand hoechste ID zuerst.
+        return filtered.sortedWith(
+            compareByDescending<Movie> { it.createdAt ?: "" }.thenByDescending { it.id }
+        )
     }
 
-    /** Entfernt führende Artikel und Leerzeichen für die Sortierung (wie in Mediatheken). */
-    private fun titleSortKey(title: String?): String {
-        val t = title?.trim().orEmpty()
-        val lower = t.lowercase(Locale.GERMAN)
-        val articles = listOf("der ", "die ", "das ", "the ", "ein ", "eine ", "an ", "a ")
-        val article = articles.firstOrNull { lower.startsWith(it) }
-        return (if (article != null) t.substring(article.length) else t).trim()
-    }
 
-    /** Bewertung tolerant parsen: akzeptiert "8.5" und "8,5"; ungültig -> nach unten. */
-    private fun parseRating(rating: String?): Double =
-        rating?.replace(',', '.')?.toDoubleOrNull() ?: -1.0
 
     private suspend fun performSearch(query: String) {
         isLoading = true

@@ -77,7 +77,6 @@ fun DashboardScreen(
         if (reloadKey > 0) viewModel.loadMovies(refresh = true)
     }
 
-    var showSortMenu by remember { mutableStateOf(false) }
     val gridState = rememberLazyGridState()
 
     // Pagination: lade mehr wenn nahe am Ende
@@ -109,37 +108,6 @@ fun DashboardScreen(
                             )
                         },
                         actions = {
-                            // Sort-Dropdown
-                            Box {
-                                IconButton(onClick = { showSortMenu = true }) {
-                                    Icon(Icons.Default.SortByAlpha, contentDescription = "Sortierung")
-                                }
-                                DropdownMenu(
-                                    expanded = showSortMenu,
-                                    onDismissRequest = { showSortMenu = false }
-                                ) {
-                                    SortOption.entries.forEach { option ->
-                                        DropdownMenuItem(
-                                            text = {
-                                                Text(
-                                                    text = option.label,
-                                                    fontWeight = if (viewModel.sortOption == option) FontWeight.Bold else FontWeight.Normal
-                                                )
-                                            },
-                                            leadingIcon = {
-                                                if (viewModel.sortOption == option)
-                                                    Icon(Icons.Default.Check, null, modifier = Modifier.size(18.dp))
-                                                else
-                                                    Spacer(Modifier.size(18.dp))
-                                            },
-                                            onClick = {
-                                                viewModel.onSortSelected(option)
-                                                showSortMenu = false
-                                            }
-                                        )
-                                    }
-                                }
-                            }
                         },
                         colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
                             containerColor = Color.Transparent
