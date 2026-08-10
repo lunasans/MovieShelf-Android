@@ -23,6 +23,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import at.neuhaus.movieshelf.MovieShelfApplication
 import at.neuhaus.movieshelf.data.sync.SyncPhase
+import at.neuhaus.movieshelf.data.local.db.SyncClock
 import at.neuhaus.movieshelf.data.sync.SyncAction
 import at.neuhaus.movieshelf.data.sync.SyncDirection
 import at.neuhaus.movieshelf.data.sync.SyncPreview
@@ -66,7 +67,8 @@ fun SyncScreen(onBack: () -> Unit) {
         ) {
             ShelfFormSection(title = "Stand", icon = Icons.Default.Sync) {
                 Text(
-                    text = viewModel.lastSyncAt?.let { "Zuletzt synchronisiert: $it" }
+                    text = SyncClock.formatForDisplay(viewModel.lastSyncAt)
+                        ?.let { "Zuletzt synchronisiert: $it" }
                         ?: "Noch nie synchronisiert — der erste Lauf holt den vollständigen Bestand.",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
