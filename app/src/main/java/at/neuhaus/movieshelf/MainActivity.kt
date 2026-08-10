@@ -41,6 +41,8 @@ import at.neuhaus.movieshelf.ui.lists.ListsScreen
 import at.neuhaus.movieshelf.ui.login.LoginScreen
 import at.neuhaus.movieshelf.ui.twofactor.TwoFactorScreen
 import at.neuhaus.movieshelf.ui.profile.ProfileScreen
+import at.neuhaus.movieshelf.data.local.db.AppMode
+import at.neuhaus.movieshelf.ui.setup.ModeChoiceScreen
 import at.neuhaus.movieshelf.ui.setup.SetupScreen
 import at.neuhaus.movieshelf.ui.stats.StatsScreen
 import at.neuhaus.movieshelf.ui.sync.SyncScreen
@@ -174,6 +176,11 @@ fun MovieShelfApp(oauthCallbackUri: MutableState<Uri?> = mutableStateOf(null)) {
     val context = LocalContext.current
     val dataStoreManager = remember { DataStoreManager(context) }
     val serverUrl by dataStoreManager.serverUrl.collectAsState(initial = null)
+    val app = context.applicationContext as MovieShelfApplication
+    // null = noch nicht gewaehlt, dann kommt die Moduswahl.
+    val appMode by app.appMode.collectAsState(initial = null)
+    var modeLoaded by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) { modeLoaded = true }
     val navController = rememberNavController()
     val scope = rememberCoroutineScope()
 
@@ -230,7 +237,15 @@ fun MovieShelfApp(oauthCallbackUri: MutableState<Uri?> = mutableStateOf(null)) {
         }
     }
 
-    LaunchedEffect(serverUrl) {
+    LaunchedEffect(serverUrl, appMode) {
+        // Eigenstaendig: kein Server, kein Token, direkt in die Sammlung.
+        if (appMode == AppMode.STANDALONE) {
+            startDestination = "dashboard"
+            isInitialized = true
+            initializationError = false
+            isLoadingAuth = false
+            return@LaunchedEffect
+        }
         if (serverUrl.isNullOrBlank()) {
             isInitialized = false
             isLoadingAuth = false
@@ -259,7 +274,11 @@ fun MovieShelfApp(oauthCallbackUri: MutableState<Uri?> = mutableStateOf(null)) {
         isLoadingAuth = false
     }
 
-    if (serverUrl.isNullOrBlank() || initializationError) {
+    if (modeLoaded && appMode == null) {
+        ModeChoiceScreen(onModeChosen = { chosen ->
+            scope.launch { app.setAppMode(chosen) }
+        })
+    } else if (appMode == AppMode.SHELF && (serverUrl.isNullOrBlank() || initializationError)) {
         SetupScreen(
             dataStoreManager = dataStoreManager,
             onSetupComplete = { initializationError = false }
@@ -326,7 +345,13 @@ fun MovieShelfApp(oauthCallbackUri: MutableState<Uri?> = mutableStateOf(null)) {
                         onBack = { navController.popBackStack() },
                         onListsClick = { navController.navigate("lists") },
                         onTwoFactorClick = { navController.navigate("twofactor") },
-                        onSyncClick = { navController.navigate("sync") }
+                        onSyncClick = { navController.navigate("sync") },
+                        isStandalone = appMode == AppMode.STANDALONE,
+                        onConnectShelfClick = {
+                            scope.launch {
+                                app.setAppMode(AppMode.SHELF)
+                            }
+                        }
                     )
                 }
                 composable("sync") {
@@ -480,6 +505,7 @@ fun MovieShelfApp(oauthCallbackUri: MutableState<Uri?> = mutableStateOf(null)) {
                 exit = slideOutVertically(targetOffsetY = { it }) + fadeOut()
             ) {
                 FloatingNavBar(
+                    showLogout = appMode == AppMode.SHELF,
                     currentRoute = currentRoute,
                     onHomeClick = {
                         if (currentRoute != "dashboard") {

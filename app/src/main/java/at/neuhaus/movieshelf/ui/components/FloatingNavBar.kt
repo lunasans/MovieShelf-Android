@@ -42,7 +42,9 @@ fun FloatingNavBar(
     onStatsClick: () -> Unit,
     onProfileClick: () -> Unit,
     onLogoutClick: () -> Unit,
-    onAddClick: () -> Unit
+    onAddClick: () -> Unit,
+    /** Ohne Konto gibt es nichts abzumelden. */
+    showLogout: Boolean = true
 ) {
     Box(
         modifier = modifier
@@ -90,7 +92,7 @@ fun FloatingNavBar(
                     selected = currentRoute == "profile",
                     onClick = onProfileClick
                 )
-                NavPillItem(
+                if (showLogout) NavPillItem(
                     icon = Icons.AutoMirrored.Filled.Logout,
                     label = "Abmelden",
                     selected = false,

@@ -20,6 +20,25 @@ object SettingKeys {
     /** Server-Zeitstempel des letzten erfolgreichen Pulls (`exported_at`). */
     const val LAST_SYNC_AT = "last_sync_at"
 
-    /** `standalone` oder `shelf` — ab Phase 6 relevant. */
+    /** Betriebsmodus, siehe [AppMode]. */
     const val MODE = "mode"
+}
+
+/**
+ * Wie die App betrieben wird.
+ *
+ * Der Modus liegt in der Datenbank, nicht in den Geraete-Einstellungen: er
+ * beschreibt, woher der Bestand stammt. Wird die Datenbank verworfen, ist auch
+ * die Frage nach dem Modus wieder offen.
+ */
+enum class AppMode(val key: String) {
+    /** Eigener Bestand, keine Shelf, kein Konto. */
+    STANDALONE("standalone"),
+
+    /** An eine Shelf gebunden, mit Anmeldung und Abgleich. */
+    SHELF("shelf");
+
+    companion object {
+        fun from(value: String?): AppMode? = entries.firstOrNull { it.key == value }
+    }
 }

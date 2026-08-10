@@ -62,6 +62,7 @@ open class FakeMovieDao : MovieDao {
     // ── Vom Abgleich nicht benutzt ───────────────────────────────────────────
 
     override suspend fun getAllMovies(): List<MovieEntity> = unused()
+    override suspend fun getAllForStats(): List<MovieEntity> = unused()
     override suspend fun searchMovies(query: String): List<MovieEntity> = unused()
     override suspend fun update(movie: MovieEntity) = unused()
     override suspend fun replaceServerState(movies: List<MovieEntity>) = unused()
@@ -96,6 +97,9 @@ open class FakeSettingDao : SettingDao {
     override suspend fun remove(key: String) {
         values.remove(key)
     }
+
+    override fun observe(key: String): kotlinx.coroutines.flow.Flow<String?> =
+        kotlinx.coroutines.flow.flowOf(values[key])
 }
 
 open class FakeSyncApi(

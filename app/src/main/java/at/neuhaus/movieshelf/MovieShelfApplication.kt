@@ -3,7 +3,9 @@ package at.neuhaus.movieshelf
 import android.app.Application
 import at.neuhaus.movieshelf.data.api.RetrofitClient
 import at.neuhaus.movieshelf.data.local.MediaStore
+import at.neuhaus.movieshelf.data.local.db.AppMode
 import at.neuhaus.movieshelf.data.local.db.MovieShelfDatabase
+import at.neuhaus.movieshelf.data.local.db.SettingKeys
 import at.neuhaus.movieshelf.data.repository.ActorRepository
 import at.neuhaus.movieshelf.data.repository.ListRepository
 import at.neuhaus.movieshelf.data.repository.MovieRepository
@@ -19,6 +21,8 @@ import coil.ImageLoaderFactory
 import coil.disk.DiskCache
 import coil.memory.MemoryCache
 import coil.util.DebugLogger
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
 
 class MovieShelfApplication : Application(), ImageLoaderFactory {
 
@@ -26,11 +30,27 @@ class MovieShelfApplication : Application(), ImageLoaderFactory {
 
     val mediaStore by lazy { MediaStore(filesDir) }
 
+    /**
+     * Betriebsmodus, `null` solange nicht gewaehlt. Liegt in der Datenbank,
+     * damit er mit ihr verworfen wird — siehe [AppMode].
+     */
+    val appMode: Flow<AppMode?> by lazy {
+        database.settingDao().observe(SettingKeys.MODE).map { AppMode.from(it) }
+    }
+
+    suspend fun setAppMode(mode: AppMode) {
+        database.settingDao().put(SettingKeys.MODE, mode.key)
+    }
+
+    private suspend fun isShelfMode(): Boolean =
+        AppMode.from(database.settingDao().get(SettingKeys.MODE)) != AppMode.STANDALONE
+
     val movieRepository by lazy {
         MovieRepository(
             movieDao = database.movieDao(),
             pendingUploadDao = database.pendingUploadDao(),
-            mediaStore = mediaStore
+            mediaStore = mediaStore,
+            isShelfMode = { isShelfMode() }
         ) { RetrofitClient.api }
     }
 

@@ -41,7 +41,10 @@ fun ProfileScreen(
     onBack: () -> Unit,
     onListsClick: () -> Unit = {},
     onTwoFactorClick: () -> Unit = {},
-    onSyncClick: () -> Unit = {}
+    onSyncClick: () -> Unit = {},
+    /** Eigenstaendiger Betrieb: kein Konto, kein Abgleich, keine 2FA. */
+    isStandalone: Boolean = false,
+    onConnectShelfClick: () -> Unit = {}
 ) {
     val viewModel: ProfileViewModel = viewModel()
     val snackbarHostState = remember { SnackbarHostState() }
@@ -77,7 +80,9 @@ fun ProfileScreen(
                     }
                 },
                 actions = {
-                    if (viewModel.isSaving) {
+                    if (isStandalone) {
+                        // Ohne Konto gibt es nichts zu speichern.
+                    } else if (viewModel.isSaving) {
                         CircularProgressIndicator(
                             modifier = Modifier.size(24.dp).padding(end = 16.dp),
                             strokeWidth = 2.dp
@@ -122,7 +127,38 @@ fun ProfileScreen(
 
                 Spacer(Modifier.height(32.dp))
 
-                OutlinedTextField(
+                if (isStandalone) {
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)
+                        )
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(20.dp),
+                            verticalArrangement = Arrangement.spacedBy(10.dp)
+                        ) {
+                            Text("Nur auf diesem Gerät", fontWeight = FontWeight.Bold)
+                            Text(
+                                "Deine Sammlung liegt auf dem Telefon. Verbindest du eine Shelf, " +
+                                    "wird dein Bestand hochgeladen — er geht dabei nicht verloren.",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Button(
+                                onClick = onConnectShelfClick,
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = at.neuhaus.movieshelf.ui.theme.PillShape
+                            ) {
+                                Text("Shelf verbinden", fontWeight = FontWeight.Bold)
+                            }
+                        }
+                    }
+
+                    Spacer(Modifier.height(16.dp))
+                }
+
+                if (!isStandalone) OutlinedTextField(
                     value = viewModel.name,
                     onValueChange = { viewModel.name = it },
                     label = { Text("Name") },
@@ -131,9 +167,9 @@ fun ProfileScreen(
                     singleLine = true
                 )
 
-                Spacer(Modifier.height(16.dp))
+                if (!isStandalone) Spacer(Modifier.height(16.dp))
 
-                OutlinedTextField(
+                if (!isStandalone) OutlinedTextField(
                     value = viewModel.email,
                     onValueChange = { viewModel.email = it },
                     label = { Text("E-Mail") },
@@ -173,7 +209,7 @@ fun ProfileScreen(
                 Spacer(Modifier.height(16.dp))
 
                 // Abgleich mit der Shelf
-                Card(
+                if (!isStandalone) Card(
                     onClick = onSyncClick,
                     modifier = Modifier.fillMaxWidth(),
                     colors = CardDefaults.cardColors(
@@ -200,7 +236,7 @@ fun ProfileScreen(
 
                 Spacer(Modifier.height(16.dp))
 
-                Card(
+                if (!isStandalone) Card(
                     onClick = onTwoFactorClick,
                     modifier = Modifier.fillMaxWidth(),
                     colors = CardDefaults.cardColors(

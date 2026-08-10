@@ -35,6 +35,13 @@ interface MovieDao {
     """)
     suspend fun searchMovies(query: String): List<MovieEntity>
 
+    /**
+     * Alle Zeilen fuer die Statistik — anders als [getAllMovies] ohne den
+     * Boxset-Filter, weil ein Film in einem Boxset trotzdem zur Sammlung zaehlt.
+     */
+    @Query("SELECT * FROM movies WHERE isDeleted = 0")
+    suspend fun getAllForStats(): List<MovieEntity>
+
     /** Alle Zeilen mit lokalen, noch nicht übertragenen Änderungen. */
     @Query("SELECT * FROM movies WHERE syncedAt IS NULL OR updatedAt > syncedAt")
     suspend fun getDirtyMovies(): List<MovieEntity>

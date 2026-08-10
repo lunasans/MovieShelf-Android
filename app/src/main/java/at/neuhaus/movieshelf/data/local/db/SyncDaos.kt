@@ -216,6 +216,13 @@ interface SettingDao {
     @Query("SELECT value FROM settings WHERE key = :key LIMIT 1")
     suspend fun get(key: String): String?
 
+    /**
+     * Beobachtbare Variante fuer Werte, an denen die Oberflaeche haengt —
+     * allen voran der Betriebsmodus, der ueber den Startbildschirm entscheidet.
+     */
+    @Query("SELECT value FROM settings WHERE key = :key LIMIT 1")
+    fun observe(key: String): kotlinx.coroutines.flow.Flow<String?>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun put(setting: SettingEntity)
 

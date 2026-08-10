@@ -3,6 +3,7 @@ package at.neuhaus.movieshelf.data.repository
 import at.neuhaus.movieshelf.data.api.MovieShelfApi
 import at.neuhaus.movieshelf.data.local.db.MovieDao
 import at.neuhaus.movieshelf.data.local.db.MovieEntity
+import at.neuhaus.movieshelf.data.local.LocalStats
 import at.neuhaus.movieshelf.data.local.MediaStore
 import at.neuhaus.movieshelf.data.local.db.PendingUploadDao
 import at.neuhaus.movieshelf.data.local.db.PendingUploadEntity
@@ -10,6 +11,7 @@ import at.neuhaus.movieshelf.data.local.db.SyncClock
 import at.neuhaus.movieshelf.data.local.db.UploadKind
 import at.neuhaus.movieshelf.data.model.Movie
 import at.neuhaus.movieshelf.data.model.MovieUpdateRequest
+import at.neuhaus.movieshelf.data.model.Stats
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.RequestBody.Companion.toRequestBody
 
@@ -19,6 +21,12 @@ class MovieRepository(
     private val movieDao: MovieDao,
     private val pendingUploadDao: PendingUploadDao,
     private val mediaStore: MediaStore,
+    /**
+     * Ob die App an eine Shelf gebunden ist. Im eigenstaendigen Betrieb
+     * unterbleibt jeder Netzaufruf — nicht nur, weil er scheitern wuerde,
+     * sondern weil ein Fehlschlag sonst faelschlich als "offline" gilt.
+     */
+    private val isShelfMode: suspend () -> Boolean = { true },
     // Provider statt fester Instanz: so wird nach einem Server-Wechsel
     // (RetrofitClient.initialize) immer die aktuelle API benutzt.
     private val apiProvider: () -> MovieShelfApi
@@ -34,6 +42,7 @@ class MovieRepository(
      * Bei pageSize=0 wird alles geladen (für Offline-Vollsync).
      */
     suspend fun getMovies(page: Int = 1, perPage: Int = 30, tag: String? = null): List<Movie> {
+        if (!isShelfMode()) return localPage(page, perPage)
         return try {
             val response = api.getMovies(page = page, perPage = perPage, tag = tag)
             val movies = response.data ?: emptyList()
@@ -52,15 +61,20 @@ class MovieRepository(
             isOffline = true
             // Offline: konsistent aus dem Cache paginieren, statt bei Seite > 1
             // eine leere Liste zu liefern (was die UI als "Ende erreicht" deutet).
-            val cached = movieDao.getAllMovies().map { it.toMovie() }
-            if (page <= 1) cached else cached.drop((page - 1) * perPage).take(perPage)
+            localPage(page, perPage)
         }
+    }
+
+    private suspend fun localPage(page: Int, perPage: Int): List<Movie> {
+        val local = movieDao.getAllMovies().map { it.toMovie() }
+        return if (page <= 1) local else local.drop((page - 1) * perPage).take(perPage)
     }
 
     /**
      * Suche — online wenn möglich, sonst lokale Suche.
      */
     suspend fun searchMovies(query: String): List<Movie> {
+        if (!isShelfMode()) return movieDao.searchMovies(query).map { it.toMovie() }
         return try {
             val response = api.searchMovies(query)
             isOffline = false
@@ -80,6 +94,7 @@ class MovieRepository(
     suspend fun getMovieByLocalId(localId: Long): Movie? {
         val local = movieDao.getByLocalId(localId)
         val remoteId = local?.remoteId ?: return local?.toMovie()
+        if (!isShelfMode()) return local.toMovie()
         return try {
             val fresh = api.getMovie(remoteId).data
             if (fresh == null) local.toMovie() else {
@@ -109,6 +124,7 @@ class MovieRepository(
         movieDao.updateWatched(localId, !currentState, now)
 
         val remoteId = entity.remoteId ?: return
+        if (!isShelfMode()) return
         try {
             api.toggleWatched(remoteId)
             movieDao.markSynced(localId, now)
@@ -134,7 +150,7 @@ class MovieRepository(
         movieDao.update(existing.withRequest(request, now))
 
         val remoteId = existing.remoteId
-        if (remoteId != null) {
+        if (remoteId != null && isShelfMode()) {
             try {
                 api.updateMovie(remoteId, request)
                 movieDao.markSynced(localId, now)
@@ -156,7 +172,9 @@ class MovieRepository(
     suspend fun deleteMovieByLocalId(localId: Long) {
         val existing = movieDao.getByLocalId(localId) ?: return
         val remoteId = existing.remoteId
-        if (remoteId == null) {
+        // Ohne Server-ID oder ohne Shelf gibt es nichts zu melden — die Zeile
+        // kann sofort weg statt als Grabstein liegen zu bleiben.
+        if (remoteId == null || !isShelfMode()) {
             movieDao.hardDelete(localId)
             return
         }
@@ -178,6 +196,7 @@ class MovieRepository(
     suspend fun createMovie(request: MovieUpdateRequest): Long? {
         val now = SyncClock.now()
         val localId = movieDao.insert(MovieEntity.fromRequest(request, now))
+        if (!isShelfMode()) return localId
 
         try {
             val created = api.createMovie(request).data
@@ -231,7 +250,11 @@ class MovieRepository(
         api.removeSeasons(at.neuhaus.movieshelf.data.model.SeasonImportRequest(remoteId, seasons))
     }
 
-    suspend fun getStats() = api.getStats()
+    /**
+     * Statistik. Wird lokal gerechnet — die Zahlen liegen vollstaendig in der
+     * Datenbank, und ohne Shelf gibt es den Endpunkt gar nicht.
+     */
+    suspend fun getStats(): Stats = LocalStats.from(movieDao.getAllForStats())
 
     suspend fun searchTmdb(query: String) = api.searchTmdb(query)
 
@@ -280,7 +303,7 @@ class MovieRepository(
             )
         )
 
-        val remoteId = movie.remoteId ?: return file.absolutePath
+        val remoteId = movie.remoteId?.takeIf { isShelfMode() } ?: return file.absolutePath
         return try {
             val part = imagePart(bytes, mimeType, kind)
             val url = if (isCover) uploadCover(remoteId, part) else uploadBackdrop(remoteId, part)
@@ -301,6 +324,7 @@ class MovieRepository(
 
     /** Vorgemerkte Bilder nachreichen. Wird ab Phase 4 vom Abgleich aufgerufen. */
     suspend fun flushPendingUploads() {
+        if (!isShelfMode()) return
         for (pending in pendingUploadDao.getAll()) {
             val remoteId = movieDao.getByLocalId(pending.movieLocalId)?.remoteId ?: continue
             val file = java.io.File(pending.filePath)
