@@ -1,9 +1,12 @@
 package at.neuhaus.movieshelf.data.local
 
+import android.util.Log
+import at.neuhaus.movieshelf.BuildConfig
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import okhttp3.logging.HttpLoggingInterceptor
 import java.util.concurrent.TimeUnit
 
 /**
@@ -23,6 +26,16 @@ class ImageDownloader(
     private val publicClient: OkHttpClient = OkHttpClient.Builder()
         .connectTimeout(15, TimeUnit.SECONDS)
         .readTimeout(30, TimeUnit.SECONDS)
+        // Ohne diese Zeile sind Bild-Downloads im Protokoll unsichtbar: der
+        // Shelf-Client bringt sein eigenes Logging mit, dieser nicht - und
+        // seit Bilder vom Medien-Speicher ohne Token geholt werden, laufen
+        // sie alle hierueber. BASIC statt BODY, sonst landen Bilddaten im Log.
+        .addInterceptor(
+            HttpLoggingInterceptor { message -> Log.d("Media-Log", message) }.apply {
+                level = if (BuildConfig.DEBUG) HttpLoggingInterceptor.Level.BASIC
+                else HttpLoggingInterceptor.Level.NONE
+            }
+        )
         .build()
 ) {
     /**
