@@ -34,6 +34,14 @@ class DashboardViewModel(private val repository: MovieRepository) : ViewModel() 
 
     var searchQuery by mutableStateOf("")
 
+    /**
+     * Filme im Hero-Bereich. Eigener Stand statt einer Ableitung aus den
+     * Reihen: die Auswahl ist zufaellig und darf sich nicht bei jeder
+     * Neuberechnung aendern.
+     */
+    var heroMovies by mutableStateOf<List<Movie>>(emptyList())
+        private set
+
     // Vertikale "Shelf"-Reihen der Startseite (unabhaengig von der Suche)
     var newMoviesShelf by mutableStateOf<List<Movie>>(emptyList())
         private set
@@ -55,6 +63,18 @@ class DashboardViewModel(private val repository: MovieRepository) : ViewModel() 
     init {
         loadMovies()
         loadNewMoviesShelf()
+        loadHero()
+    }
+
+    /** Zufaellige Auswahl fuer den Hero-Bereich, einmal je Sitzung gezogen. */
+    private fun loadHero() {
+        viewModelScope.launch {
+            try {
+                heroMovies = repository.getFeatured(5)
+            } catch (_: Exception) {
+                // Ohne Hero laesst sich die Startseite weiterhin benutzen.
+            }
+        }
     }
 
     fun loadMovies(refresh: Boolean = false) {

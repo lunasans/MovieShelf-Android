@@ -36,6 +36,24 @@ interface MovieDao {
     """)
     suspend fun getNewest(limit: Int): List<MovieEntity>
 
+    /**
+     * Filme fuer den Hero-Bereich — zufaellig, wie in der Web-Oberflaeche
+     * (`inRandomOrder()->limit(5)`).
+     *
+     * Nur mit Hintergrundbild: ohne eines wirkt der Banner beschnitten. Die
+     * Auswahl wird einmal je Aufruf gezogen, nicht bei jeder Neuberechnung —
+     * sonst spraenge der Banner bei jeder Kleinigkeit um.
+     */
+    @Query("""
+        SELECT * FROM movies
+        WHERE isDeleted = 0 AND (isBoxset = 0 OR isBoxset IS NULL)
+          AND (inCollection = 1 OR inCollection IS NULL)
+          AND backdropUrl IS NOT NULL AND backdropUrl != ''
+        ORDER BY RANDOM()
+        LIMIT :limit
+    """)
+    suspend fun getFeatured(limit: Int): List<MovieEntity>
+
     @Query("SELECT * FROM movies WHERE remoteId = :remoteId LIMIT 1")
     suspend fun getByRemoteId(remoteId: Int): MovieEntity?
 

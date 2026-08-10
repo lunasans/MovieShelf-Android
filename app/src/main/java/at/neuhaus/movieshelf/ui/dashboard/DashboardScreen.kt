@@ -88,13 +88,9 @@ fun DashboardScreen(
         if (shouldLoadMore) viewModel.loadMore()
     }
 
-    // Hero speist sich aus den Neuzugängen; ohne Backdrop wirkt der Banner
-    // beschnitten, daher nur solche Filme.
-    val heroMovies = remember(viewModel.newMoviesShelf) {
-        viewModel.newMoviesShelf
-            .filter { !it.backdropUrl.isNullOrBlank() }
-            .take(5)
-    }
+    // Zufaellige Auswahl aus der ganzen Sammlung, wie im Web — nicht die
+    // Neuzugaenge, die stehen ohnehin gleich darunter in ihrer eigenen Reihe.
+    val heroMovies = viewModel.heroMovies
     val isBrowsing = viewModel.searchQuery.isBlank() && viewModel.selectedShelf == null
     // Der Hero reicht hinter die Kopfzeile, wie im Web. Solange er zu sehen ist,
     // bekommt die Kopfzeile deshalb keinen eigenen Grund — das Logo liegt dann

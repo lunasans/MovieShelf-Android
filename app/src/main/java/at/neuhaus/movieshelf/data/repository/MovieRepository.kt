@@ -76,6 +76,17 @@ class MovieRepository(
         return if (page <= 1) local.take(perPage) else local.drop((page - 1) * perPage).take(perPage)
     }
 
+    /**
+     * Filme fuer den Hero-Bereich: zufaellige Auswahl mit Hintergrundbild.
+     *
+     * Gibt es keinen einzigen, faellt die Auswahl auf den neuesten Film
+     * zurueck — wie im Web, wo der Banner lieber ein Cover zeigt als zu
+     * verschwinden.
+     */
+    suspend fun getFeatured(limit: Int = 5): List<Movie> =
+        movieDao.getFeatured(limit).map { it.toMovie() }
+            .ifEmpty { movieDao.getNewest(1).map { it.toMovie() } }
+
     /** Suche in der lokalen Sammlung. */
     suspend fun searchMovies(query: String): List<Movie> =
         movieDao.searchMovies(query).map { it.toMovie() }
