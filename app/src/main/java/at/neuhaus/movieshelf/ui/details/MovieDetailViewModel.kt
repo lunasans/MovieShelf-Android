@@ -88,9 +88,10 @@ class MovieDetailViewModel(
 
         viewModelScope.launch {
             try {
-                repository.toggleWatched(currentMovie.id, currentState)
+                repository.toggleWatchedByLocalId(localId, currentState)
             } catch (e: Exception) {
-                movie = currentMovie // Rollback bei Fehler
+                // Kein Rollback: die Änderung steht lokal und geht beim
+                // nächsten Abgleich raus.
                 error = "Fehler beim Aktualisieren: ${e.message}"
             }
         }

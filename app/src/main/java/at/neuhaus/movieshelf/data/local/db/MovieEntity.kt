@@ -5,6 +5,7 @@ import androidx.room.Index
 import androidx.room.PrimaryKey
 import at.neuhaus.movieshelf.data.model.Actor
 import at.neuhaus.movieshelf.data.model.Movie
+import at.neuhaus.movieshelf.data.model.MovieUpdateRequest
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import java.lang.reflect.Type
@@ -122,7 +123,72 @@ data class MovieEntity(
         )
     }
 
+    /**
+     * Formulareingaben auf die Zeile anwenden.
+     *
+     * [syncedAt] bleibt absichtlich unangetastet: die Zeile gilt damit als
+     * lokal verändert und wartet auf ihren Push. Erst dessen Erfolg stempelt
+     * sie wieder als übertragen.
+     */
+    fun withRequest(request: MovieUpdateRequest, now: String): MovieEntity = copy(
+        title = request.title,
+        year = request.year,
+        collectionType = request.collectionType,
+        genre = request.genre,
+        director = request.director,
+        runtime = request.runtime,
+        // Die Bewertung kommt als Zahl herein, liegt aber als Text vor, weil die
+        // Shelf sie so ausliefert (etwa "8.8").
+        rating = request.rating?.toString(),
+        overview = request.overview,
+        tag = request.tag,
+        trailerUrl = request.trailerUrl,
+        edition = request.edition,
+        regionCode = request.regionCode,
+        discLocation = request.discLocation,
+        purchaseDate = request.purchaseDate,
+        purchasePrice = request.purchasePrice,
+        condition = request.condition,
+        inCollection = request.inCollection ?: inCollection,
+        updatedAt = now
+    )
+
     companion object {
+
+        /** Neue, nur lokal existierende Zeile aus den Formulareingaben. */
+        fun fromRequest(request: MovieUpdateRequest, now: String): MovieEntity = MovieEntity(
+            remoteId = null,
+            title = request.title,
+            year = request.year,
+            rating = request.rating?.toString(),
+            genre = request.genre,
+            overview = request.overview,
+            runtime = request.runtime,
+            director = request.director,
+            coverUrl = null,
+            backdropUrl = null,
+            trailerUrl = request.trailerUrl,
+            edition = request.edition,
+            regionCode = request.regionCode,
+            discLocation = request.discLocation,
+            purchaseDate = request.purchaseDate,
+            purchasePrice = request.purchasePrice,
+            condition = request.condition,
+            viewCount = 0,
+            isWatched = false,
+            tmdbId = null,
+            ratingAge = null,
+            tag = request.tag,
+            isBoxset = false,
+            inCollection = request.inCollection ?: true,
+            collectionType = request.collectionType,
+            createdAt = now,
+            updatedAt = now,
+            // Noch nie beim Server gewesen — genau das macht die Zeile abweichend.
+            syncedAt = null,
+            actorsJson = null,
+            boxsetChildrenJson = null
+        )
         // Geteilte, threadsichere Instanzen statt pro Mapping-Aufruf neu zu erzeugen.
         // getParameterized statt anonymer TypeToken-Subklassen: so kann R8 die
         // generische Signatur nicht wegoptimieren (sonst Crash im Release-Build).

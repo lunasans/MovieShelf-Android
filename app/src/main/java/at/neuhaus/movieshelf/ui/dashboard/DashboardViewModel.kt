@@ -226,25 +226,23 @@ class DashboardViewModel(private val repository: MovieRepository) : ViewModel() 
         }
     }
 
-    fun toggleWatched(movieId: Int) {
-        val movie = allLoadedMovies.find { it.id == movieId } ?: return
+    fun toggleWatched(localId: Long) {
+        val movie = allLoadedMovies.find { it.localId == localId } ?: return
         val currentState = movie.isWatched ?: false
 
         // Optimistisches Update
         allLoadedMovies = allLoadedMovies.map {
-            if (it.id == movieId) it.copy(isWatched = !currentState) else it
+            if (it.localId == localId) it.copy(isWatched = !currentState) else it
         }
         recompute()
 
         viewModelScope.launch {
             try {
-                repository.toggleWatched(movieId, currentState)
+                repository.toggleWatchedByLocalId(localId, currentState)
             } catch (_: Exception) {
-                // Zurückrollen bei Fehler
-                allLoadedMovies = allLoadedMovies.map {
-                    if (it.id == movieId) it.copy(isWatched = currentState) else it
-                }
-                recompute()
+                // Kein Zurückrollen mehr: die Änderung steht lokal und wartet
+                // als abweichende Zeile auf den nächsten Abgleich. Sie hier
+                // zurückzudrehen würde sie verwerfen, obwohl sie gültig ist.
             }
         }
     }

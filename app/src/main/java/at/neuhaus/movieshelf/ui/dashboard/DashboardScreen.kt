@@ -380,7 +380,7 @@ fun DashboardScreen(
                         MovieItem(
                             movie = movie,
                             onClick = { onMovieClick(movie, viewModel.movies.map { it.localId }) },
-                            onWatchedToggle = { viewModel.toggleWatched(movie.id) }
+                            onWatchedToggle = { viewModel.toggleWatched(movie.localId) }
                         )
                     }
                     if (viewModel.isLoadingMore) {

@@ -90,49 +90,101 @@ class MovieRepository(
     /** Lokale ID zu einer Server-ID, etwa nach einer Suche über das Netz. */
     suspend fun getLocalId(remoteId: Int): Long? = movieDao.findLocalIdByRemoteId(remoteId)
 
+    /**
+     * Gesehen-Status umschalten. Bewusst ohne Rueckabwicklung bei Netzfehlern:
+     * die lokale Aenderung ist gueltig und wartet als abweichende Zeile auf
+     * ihren Push.
+     */
     suspend fun toggleWatchedByLocalId(localId: Long, currentState: Boolean) {
-        val remoteId = movieDao.getByLocalId(localId)?.remoteId ?: return
-        toggleWatched(remoteId, currentState)
+        val entity = movieDao.getByLocalId(localId) ?: return
+        val now = SyncClock.now()
+        movieDao.updateWatched(localId, !currentState, now)
+
+        val remoteId = entity.remoteId ?: return
+        try {
+            api.toggleWatched(remoteId)
+            movieDao.markSynced(localId, now)
+            isOffline = false
+        } catch (e: Exception) {
+            isOffline = true
+        }
     }
 
+    // ── Schreiben: erst lokal, dann übertragen ───────────────────────────────
+    // Jede Änderung landet zuerst in der Datenbank und gilt damit als
+    // abweichend. Der Netzaufruf ist nur noch der Versuch, sie loszuwerden —
+    // schlägt er fehl, bleibt die Änderung erhalten und wartet auf den nächsten
+    // Abgleich, statt wie bisher verloren zu gehen.
+
+    /**
+     * Film bearbeiten. Gibt den lokalen Stand zurück, auch wenn der Server
+     * gerade nicht erreichbar war.
+     */
     suspend fun updateMovieByLocalId(localId: Long, request: MovieUpdateRequest): Movie? {
-        val remoteId = movieDao.getByLocalId(localId)?.remoteId ?: return null
-        return updateMovie(remoteId, request)
-    }
+        val existing = movieDao.getByLocalId(localId) ?: return null
+        val now = SyncClock.now()
+        movieDao.update(existing.withRequest(request, now))
 
-    suspend fun deleteMovieByLocalId(localId: Long) {
-        val remoteId = movieDao.getByLocalId(localId)?.remoteId
-        if (remoteId != null) api.deleteMovie(remoteId)
-        movieDao.hardDelete(localId)
+        val remoteId = existing.remoteId
+        if (remoteId != null) {
+            try {
+                api.updateMovie(remoteId, request)
+                movieDao.markSynced(localId, now)
+                isOffline = false
+            } catch (e: Exception) {
+                // Bleibt abweichend und geht beim nächsten Abgleich raus.
+                isOffline = true
+            }
+        }
+        return movieDao.getByLocalId(localId)?.toMovie()
     }
 
     /**
-     * Film anlegen. Legt ihn serverseitig an und übernimmt die Antwort lokal;
-     * zurück kommt die lokale ID, mit der die Oberfläche weiterarbeitet.
+     * Film löschen. Eine Zeile, die der Server kennt, wird zunächst nur als
+     * gelöscht vorgemerkt — endgültig entfernt wird sie erst, wenn der Server
+     * die Löschung bestätigt hat. Sonst wüsste nach einem Fehlschlag niemand
+     * mehr, dass dort etwas zu löschen war.
      */
-    suspend fun createMovie(request: MovieUpdateRequest): Long? {
-        val created = api.createMovie(request).data ?: return null
-        movieDao.upsertFromServer(listOf(MovieEntity.fromServerMovie(created, SyncClock.now())))
-        return movieDao.findLocalIdByRemoteId(created.id)
+    suspend fun deleteMovieByLocalId(localId: Long) {
+        val existing = movieDao.getByLocalId(localId) ?: return
+        val remoteId = existing.remoteId
+        if (remoteId == null) {
+            movieDao.hardDelete(localId)
+            return
+        }
+        movieDao.markDeleted(localId, SyncClock.now())
+        try {
+            api.deleteMovie(remoteId)
+            movieDao.hardDelete(localId)
+            isOffline = false
+        } catch (e: Exception) {
+            isOffline = true
+        }
     }
 
-    /** Watched-Status toggeln — optimistisch lokal + Remote-Aufruf. */
-    suspend fun toggleWatched(movieId: Int, currentState: Boolean) {
-        val newState = !currentState
-        val localId = movieDao.findLocalIdByRemoteId(movieId) ?: return
+    /**
+     * Film anlegen. Die lokale Zeile entsteht sofort und wird zurückgegeben,
+     * damit die Oberfläche auch ohne Netz weiterarbeiten kann; der Server holt
+     * sie sich beim nächsten Abgleich.
+     */
+    suspend fun createMovie(request: MovieUpdateRequest): Long? {
         val now = SyncClock.now()
-        movieDao.updateWatched(localId, newState, now)
+        val localId = movieDao.insert(MovieEntity.fromRequest(request, now))
+
         try {
-            api.toggleWatched(movieId)
-            // Der Aufruf ist durch, die Zeile ist also nicht mehr abweichend.
-            // Ab Phase 4 übernimmt das der Push; bis dahin würde die Zeile sonst
-            // dauerhaft als unübertragen gelten.
-            movieDao.markSynced(localId, now)
+            val created = api.createMovie(request).data
+            if (created != null) {
+                // Server-ID nachtragen und als übertragen stempeln, statt die
+                // Antwort als neue Zeile einzuspielen — sonst stünde der Film
+                // doppelt da.
+                movieDao.markSynced(localId, now, created.id)
+                movieDao.upsertFromServer(listOf(MovieEntity.fromServerMovie(created, now)))
+            }
+            isOffline = false
         } catch (e: Exception) {
-            movieDao.updateWatched(localId, currentState, now)
-            movieDao.markSynced(localId, now)
-            throw e
+            isOffline = true
         }
+        return localId
     }
 
     /** Film bearbeiten (Admin). Schreibt das Ergebnis in die lokale Sammlung. */
