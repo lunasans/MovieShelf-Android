@@ -41,6 +41,13 @@ class SyncEngine(
      */
     private val flushPendingUploads: suspend ((Int, Int, String?) -> Unit) -> Unit = {},
     /**
+     * Offene "gesehen"-Markierungen zur Shelf bringen.
+     *
+     * Eigener Schritt, weil "gesehen" am Benutzer haengt und nicht am Film:
+     * es hat einen eigenen Endpunkt und steht nicht in [MovieEntity.toUpdateRequest].
+     */
+    private val pushWatched: suspend ((Int, Int, String?) -> Unit) -> Int = { 0 },
+    /**
      * Staffeln und Episoden einer Serie einspielen. Wie [flushPendingUploads]
      * als Funktion hereingereicht, damit der Film-Abgleich nicht an der
      * Serien-Tabelle haengt.
@@ -298,7 +305,16 @@ class SyncEngine(
             }
         }
 
-        return PushResult(created, updated, deleted, errors)
+        val watched = try {
+            pushWatched { current, total, subject ->
+                onProgress(SyncProgress(SyncPhase.PUSH, current, total, subject))
+            }
+        } catch (e: Exception) {
+            errors += SyncError("Gesehen-Markierungen", e.message ?: "Unbekannter Fehler")
+            0
+        }
+
+        return PushResult(created, updated, deleted, errors, watched)
     }
 
     /**
@@ -604,9 +620,11 @@ data class PushResult(
     val created: Int = 0,
     val updated: Int = 0,
     val deleted: Int = 0,
-    val errors: List<SyncError> = emptyList()
+    val errors: List<SyncError> = emptyList(),
+    /** Uebertragene "gesehen"-Markierungen. */
+    val watched: Int = 0
 ) {
-    val total: Int get() = created + updated + deleted
+    val total: Int get() = created + updated + deleted + watched
 }
 
 data class PullResult(

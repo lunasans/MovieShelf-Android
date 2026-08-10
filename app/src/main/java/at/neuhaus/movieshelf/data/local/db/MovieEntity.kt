@@ -63,6 +63,15 @@ data class MovieEntity(
     val condition: String?,
     val viewCount: Int?,
     val isWatched: Boolean?,
+    /**
+     * Der "gesehen"-Stand, den der Server zuletzt bestaetigt hat.
+     *
+     * "Gesehen" haengt nicht am Film, sondern am Benutzer, und wird deshalb
+     * ueber einen eigenen Endpunkt umgeschaltet — `MovieUpdateRequest` traegt
+     * es gar nicht. Ohne diesen Vergleichswert waere beim Abgleich nicht zu
+     * erkennen, ob die Markierung noch hochzuschicken ist.
+     */
+    val syncedWatched: Boolean? = null,
     val tmdbId: String?,
     val ratingAge: Int?,
     val tag: String?,
@@ -255,6 +264,8 @@ data class MovieEntity(
                 condition = movie.condition,
                 viewCount = movie.viewCount,
                 isWatched = movie.isWatched,
+                // Kommt der Stand vom Server, ist er dort per Definition bekannt.
+                syncedWatched = movie.isWatched,
                 tmdbId = movie.tmdbId,
                 ratingAge = movie.ratingAge,
                 tag = movie.tag,

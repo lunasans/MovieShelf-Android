@@ -232,20 +232,54 @@ class MovieRepository(
      * die lokale Aenderung ist gueltig und wartet als abweichende Zeile auf
      * ihren Push.
      */
+    /**
+     * "Gesehen" umschalten — ausschliesslich lokal.
+     *
+     * Frueher ging sofort ein Netzaufruf hinaus. Das widersprach nicht nur dem
+     * Grundsatz, dass nichts ungefragt zum Server geht: schlug er fehl, war die
+     * Markierung verloren, sobald die Zeile aus anderem Grund als abgeglichen
+     * galt. Denn `MovieUpdateRequest` traegt kein "gesehen" — der Push haette
+     * sie nie nachgeholt. Uebertragen wird sie jetzt beim Abgleich.
+     */
     suspend fun toggleWatchedByLocalId(localId: Long, currentState: Boolean) {
-        val entity = movieDao.getByLocalId(localId) ?: return
-        val now = SyncClock.now()
-        movieDao.updateWatched(localId, !currentState, now)
+        movieDao.getByLocalId(localId) ?: return
+        movieDao.updateWatched(localId, !currentState, SyncClock.now())
+    }
 
-        val remoteId = entity.remoteId ?: return
-        if (!isShelfMode()) return
-        try {
-            api.toggleWatched(remoteId)
-            movieDao.markSynced(localId, now)
-            isOffline = false
-        } catch (e: Exception) {
-            isOffline = true
+    /**
+     * Offene "gesehen"-Markierungen zur Shelf bringen.
+     *
+     * Der Endpunkt schaltet um, statt einen Wert zu setzen, und liefert den
+     * neuen Stand zurueck. Der wird uebernommen: hat jemand an einem anderen
+     * Geraet zwischendurch dasselbe getan, steht danach der Stand des Servers
+     * in der Zeile, statt dass beide Seiten gegeneinander schalten.
+     */
+    suspend fun pushWatchedChanges(
+        onProgress: (Int, Int, String?) -> Unit = { _, _, _ -> }
+    ): Int {
+        if (!isShelfMode()) return 0
+        val pending = movieDao.getPendingWatched()
+        var pushed = 0
+        var done = 0
+        for (entity in pending) {
+            onProgress(++done, pending.size, entity.title)
+            val remoteId = entity.remoteId ?: continue
+            try {
+                val answer = api.toggleWatched(remoteId)
+                val serverState = (answer["is_watched"] as? Boolean)
+                    ?: (entity.isWatched != true)
+                movieDao.markWatchedSynced(entity.localId, serverState)
+                if (serverState != (entity.isWatched == true)) {
+                    movieDao.updateWatched(entity.localId, serverState, SyncClock.now())
+                    movieDao.markWatchedSynced(entity.localId, serverState)
+                }
+                pushed++
+                isOffline = false
+            } catch (e: Exception) {
+                isOffline = true
+            }
         }
+        return pushed
     }
 
     // ── Schreiben: erst lokal, dann übertragen ───────────────────────────────

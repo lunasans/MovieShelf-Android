@@ -113,6 +113,7 @@ class MovieShelfApplication : Application(), ImageLoaderFactory {
                 database.seriesDao().getSeasons(localId).map { it.seasonNumber }
             },
             upsertCast = { localId, actors -> movieRepository.saveServerCast(localId, actors) },
+            pushWatched = { onProgress -> movieRepository.pushWatchedChanges(onProgress) },
             pruneSeasons = { localId, keep -> database.seriesDao().pruneSeasons(localId, keep) },
             localSeasonSignature = { localId ->
                 database.seriesDao().getSeasons(localId)

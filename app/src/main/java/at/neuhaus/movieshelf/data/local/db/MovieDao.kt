@@ -124,6 +124,23 @@ interface MovieDao {
     @Query("UPDATE movies SET isWatched = :isWatched, updatedAt = :now WHERE localId = :localId")
     suspend fun updateWatched(localId: Long, isWatched: Boolean, now: String)
 
+    /**
+     * Filme, deren "gesehen"-Markierung noch nicht beim Server ist.
+     *
+     * `IS NOT` statt `!=`, damit auch der Wechsel von "unbekannt" auf gesetzt
+     * erkannt wird — mit `!=` faellt in SQL jeder Vergleich mit NULL durch.
+     */
+    @Query("""
+        SELECT * FROM movies
+        WHERE isDeleted = 0 AND remoteId IS NOT NULL
+          AND COALESCE(isWatched, 0) IS NOT COALESCE(syncedWatched, 0)
+    """)
+    suspend fun getPendingWatched(): List<MovieEntity>
+
+    /** Den vom Server bestaetigten Stand festhalten — ohne updatedAt zu ruehren. */
+    @Query("UPDATE movies SET syncedWatched = :isWatched WHERE localId = :localId")
+    suspend fun markWatchedSynced(localId: Long, isWatched: Boolean)
+
     @Query("UPDATE movies SET coverUrl = :url, updatedAt = :now WHERE localId = :localId")
     suspend fun updateCoverUrl(localId: Long, url: String?, now: String)
 

@@ -70,6 +70,8 @@ open class FakeMovieDao : MovieDao {
     override suspend fun searchMovies(query: String): List<MovieEntity> = unused()
     override suspend fun update(movie: MovieEntity) = unused()
     override suspend fun updateWatched(localId: Long, isWatched: Boolean, now: String) = unused()
+    override suspend fun getPendingWatched(): List<MovieEntity> = unused()
+    override suspend fun markWatchedSynced(localId: Long, isWatched: Boolean) = unused()
     override suspend fun updateCoverUrl(localId: Long, url: String?, now: String) = unused()
     override suspend fun updateBackdropUrl(localId: Long, url: String?, now: String) = unused()
     override suspend fun setCoverPath(localId: Long, path: String): Unit = unused()

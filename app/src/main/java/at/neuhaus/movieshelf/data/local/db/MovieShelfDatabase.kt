@@ -4,6 +4,8 @@ import android.content.Context
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
+import androidx.room.migration.Migration
+import androidx.sqlite.db.SupportSQLiteDatabase
 
 /**
  * Lokale Sammlung der App.
@@ -16,6 +18,10 @@ import androidx.room.RoomDatabase
  * reiner Cache und enthielt nichts, was nicht auch auf dem Server liegt — eine
  * Migration könnte nur halbgare Zwischenzustände erzeugen. Stattdessen wird die
  * Datei verworfen und der erste Start danach holt einen Vollstand.
+ *
+ * Version 11 wird dagegen migriert: dort kommt nur eine Spalte hinzu, und der
+ * Bestand ist inzwischen führend — ihn zu verwerfen hiesse, lokal angelegte
+ * Filme und alle heruntergeladenen Bilder wegzuwerfen.
  */
 @Database(
     entities = [
@@ -31,7 +37,7 @@ import androidx.room.RoomDatabase
         SettingEntity::class,
         PendingUploadEntity::class
     ],
-    version = 10,
+    version = 11,
     exportSchema = false
 )
 abstract class MovieShelfDatabase : RoomDatabase() {
@@ -48,6 +54,22 @@ abstract class MovieShelfDatabase : RoomDatabase() {
         @Volatile
         private var INSTANCE: MovieShelfDatabase? = null
 
+        /**
+         * Neue Spalte fuer den zuletzt vom Server bestaetigten "gesehen"-Stand.
+         *
+         * Vorhandene Zeilen bekommen ihren aktuellen Wert eingetragen: was vor
+         * dieser Fassung in der Datenbank stand, kam vom Server oder wurde
+         * direkt dorthin gemeldet. Ohne diesen Schritt galte die ganze
+         * Sammlung als offene Markierung und der naechste Abgleich schaltete
+         * sie reihenweise um.
+         */
+        private val MIGRATION_10_11 = object : Migration(10, 11) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE movies ADD COLUMN syncedWatched INTEGER")
+                db.execSQL("UPDATE movies SET syncedWatched = isWatched")
+            }
+        }
+
         fun getInstance(context: Context): MovieShelfDatabase {
             return INSTANCE ?: synchronized(this) {
                 Room.databaseBuilder(
@@ -55,6 +77,7 @@ abstract class MovieShelfDatabase : RoomDatabase() {
                     MovieShelfDatabase::class.java,
                     "movieshelf.db"
                 )
+                    .addMigrations(MIGRATION_10_11)
                     .fallbackToDestructiveMigration(true)
                     // Ohne diesen Schalter bleiben die Fremdschlüssel von
                     // Besetzung, Staffeln und Listeninhalten wirkungslos und
