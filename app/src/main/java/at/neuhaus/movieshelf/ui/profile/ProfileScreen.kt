@@ -1,6 +1,6 @@
 package at.neuhaus.movieshelf.ui.profile
 
-import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -9,12 +9,13 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.automirrored.filled.PlaylistPlay
+import androidx.compose.material.icons.filled.CloudOff
 import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Key
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.Save
 import androidx.compose.material.icons.filled.Security
 import androidx.compose.material.icons.filled.Sync
 import androidx.compose.material3.*
@@ -29,6 +30,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -36,8 +38,18 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import android.os.Build
 import at.neuhaus.movieshelf.data.local.DataStoreManager
 import at.neuhaus.movieshelf.data.local.ThemeMode
+import at.neuhaus.movieshelf.ui.theme.PillShape
 import kotlinx.coroutines.launch
 
+/**
+ * Profil und Einstellungen.
+ *
+ * Gegliedert in Abschnitte statt als eine Reihe gleich aussehender Karten:
+ * oben die Kontodaten mit ihrer Schaltfläche direkt darunter, dann Sammlung,
+ * Sicherheit, Darstellung und zuletzt die App selbst. Was nur in einer
+ * Betriebsart gilt, steht in einem eigenen Zweig und nicht als wiederholtes
+ * `if` vor jeder einzelnen Zeile.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProfileScreen(
@@ -78,24 +90,11 @@ fun ProfileScreen(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
-                title = { Text("Profil") },
+                // Ohne Konto gibt es kein Profil, nur Einstellungen.
+                title = { Text(if (isStandalone) "Einstellungen" else "Profil") },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Zurück")
-                    }
-                },
-                actions = {
-                    if (isStandalone) {
-                        // Ohne Konto gibt es nichts zu speichern.
-                    } else if (viewModel.isSaving) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(24.dp).padding(end = 16.dp),
-                            strokeWidth = 2.dp
-                        )
-                    } else {
-                        IconButton(onClick = { viewModel.updateProfile() }) {
-                            Icon(Icons.Default.Save, contentDescription = "Speichern")
-                        }
                     }
                 }
             )
@@ -105,346 +104,336 @@ fun ProfileScreen(
             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 CircularProgressIndicator()
             }
-        } else {
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(padding)
-                    .verticalScroll(rememberScrollState())
-                    .padding(horizontal = 24.dp)
-                    .padding(top = 24.dp, bottom = 120.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Surface(
-                    modifier = Modifier.size(100.dp),
-                    shape = CircleShape,
-                    color = MaterialTheme.colorScheme.primaryContainer
-                ) {
-                    Box(contentAlignment = Alignment.Center) {
-                        Icon(
-                            Icons.Default.Person,
-                            contentDescription = null,
-                            modifier = Modifier.size(64.dp),
-                            tint = MaterialTheme.colorScheme.onPrimaryContainer
-                        )
-                    }
+            return@Scaffold
+        }
+
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 20.dp)
+                .padding(top = 8.dp, bottom = 120.dp)
+        ) {
+            if (isStandalone) {
+                StandaloneSection(
+                    onConnectShelfClick = onConnectShelfClick,
+                    tmdbApiKey = tmdbApiKey,
+                    onSaveKey = { dataStoreManager.saveTmdbApiKey(it) }
+                )
+            } else {
+                AccountSection(viewModel = viewModel)
+            }
+
+            SectionTitle("Sammlung")
+            SettingsCard {
+                SettingsRow(
+                    icon = Icons.AutoMirrored.Filled.PlaylistPlay,
+                    title = "Meine Listen",
+                    subtitle = "Eigene Listen und Wunschliste",
+                    onClick = onListsClick
+                )
+                if (!isStandalone) {
+                    HorizontalDivider(Modifier.padding(start = 56.dp))
+                    SettingsRow(
+                        icon = Icons.Default.Sync,
+                        title = "Synchronisation",
+                        subtitle = "Lokale Sammlung mit deiner MovieShelf abgleichen",
+                        onClick = onSyncClick
+                    )
                 }
+            }
 
-                Spacer(Modifier.height(32.dp))
+            if (!isStandalone) {
+                SectionTitle("Sicherheit")
+                SettingsCard {
+                    SettingsRow(
+                        icon = Icons.Default.Security,
+                        title = "Zwei-Faktor-Authentifizierung",
+                        subtitle = if (viewModel.twoFactorEnabled) {
+                            "Aktiv – tippen zum Verwalten"
+                        } else {
+                            "Nicht aktiv – tippen zum Einrichten"
+                        },
+                        onClick = onTwoFactorClick
+                    )
+                }
+            }
 
-                if (isStandalone) {
-                    Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)
-                        )
-                    ) {
-                        Column(
-                            modifier = Modifier.padding(20.dp),
-                            verticalArrangement = Arrangement.spacedBy(10.dp)
-                        ) {
-                            Text("Nur auf diesem Gerät", fontWeight = FontWeight.Bold)
-                            Text(
-                                "Deine Sammlung liegt auf dem Telefon. Verbindest du eine Shelf, " +
-                                    "wird dein Bestand hochgeladen — er geht dabei nicht verloren.",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                            Button(
-                                onClick = onConnectShelfClick,
-                                modifier = Modifier.fillMaxWidth(),
-                                shape = at.neuhaus.movieshelf.ui.theme.PillShape
+            SectionTitle("Darstellung")
+            SettingsCard {
+                Column(Modifier.padding(16.dp)) {
+                    RowHeader(
+                        icon = Icons.Default.DarkMode,
+                        title = "Erscheinungsbild",
+                        // Standard ist dunkel wie die Web-Oberfläche;
+                        // "System" bleibt für alle, die es Android-üblich wollen.
+                        subtitle = "MovieShelf ist auf den dunklen Look ausgelegt"
+                    )
+                    Spacer(Modifier.height(12.dp))
+                    SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
+                        ThemeMode.entries.forEachIndexed { index, mode ->
+                            SegmentedButton(
+                                selected = themeMode == mode,
+                                onClick = { scope.launch { dataStoreManager.saveThemeMode(mode) } },
+                                shape = SegmentedButtonDefaults.itemShape(
+                                    index = index,
+                                    count = ThemeMode.entries.size
+                                )
                             ) {
-                                Text("Shelf verbinden", fontWeight = FontWeight.Bold)
+                                Text(mode.label)
                             }
                         }
                     }
-
-                    Spacer(Modifier.height(16.dp))
-
-                    // TMDb-Schluessel: nur ohne Shelf noetig, weil dort deren
-                    // Proxy die Suche uebernimmt.
-                    var keyInput by remember(tmdbApiKey) { mutableStateOf(tmdbApiKey.orEmpty()) }
-                    Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)
-                        )
-                    ) {
-                        Column(
-                            modifier = Modifier.padding(20.dp),
-                            verticalArrangement = Arrangement.spacedBy(10.dp)
-                        ) {
-                            Text("TMDb-Schlüssel", fontWeight = FontWeight.Bold)
-                            Text(
-                                "Für die Filmsuche brauchst du einen eigenen, kostenlosen Schlüssel " +
-                                    "von themoviedb.org. Er wird verschlüsselt auf diesem Gerät gespeichert " +
-                                    "und nur an TMDb geschickt.",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                            OutlinedTextField(
-                                value = keyInput,
-                                onValueChange = { keyInput = it },
-                                label = { Text("API-Schlüssel") },
-                                placeholder = { Text("z.B. 8f2c…") },
-                                modifier = Modifier.fillMaxWidth(),
-                                singleLine = true
-                            )
-                            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                                Button(
-                                    onClick = { dataStoreManager.saveTmdbApiKey(keyInput) },
-                                    modifier = Modifier.weight(1f),
-                                    shape = at.neuhaus.movieshelf.ui.theme.PillShape,
-                                    enabled = keyInput.isNotBlank() && keyInput != tmdbApiKey
-                                ) {
-                                    Text("Speichern", fontWeight = FontWeight.Bold)
-                                }
-                                if (!tmdbApiKey.isNullOrBlank()) {
-                                    OutlinedButton(
-                                        onClick = {
-                                            dataStoreManager.saveTmdbApiKey(null)
-                                            keyInput = ""
-                                        },
-                                        modifier = Modifier.weight(1f),
-                                        shape = at.neuhaus.movieshelf.ui.theme.PillShape
-                                    ) {
-                                        Text("Entfernen")
-                                    }
-                                }
-                            }
-                        }
-                    }
-
-                    Spacer(Modifier.height(16.dp))
                 }
+                HorizontalDivider(Modifier.padding(start = 56.dp))
+                Row(
+                    modifier = Modifier.padding(16.dp).fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Box(Modifier.weight(1f)) {
+                        RowHeader(
+                            icon = Icons.Default.Palette,
+                            title = "Material You",
+                            subtitle = if (supportsDynamic) {
+                                "Systemfarben verwenden"
+                            } else {
+                                "Erst ab Android 12 verfügbar"
+                            }
+                        )
+                    }
+                    Switch(
+                        checked = dynamicColor && supportsDynamic,
+                        enabled = supportsDynamic,
+                        onCheckedChange = { scope.launch { dataStoreManager.saveDynamicColor(it) } }
+                    )
+                }
+            }
 
-                if (!isStandalone) OutlinedTextField(
-                    value = viewModel.name,
-                    onValueChange = { viewModel.name = it },
-                    label = { Text("Name") },
-                    modifier = Modifier.fillMaxWidth(),
-                    leadingIcon = { Icon(Icons.Default.Person, contentDescription = null) },
-                    singleLine = true
+            SectionTitle("App")
+            SettingsCard {
+                SettingsRow(
+                    icon = Icons.Default.Info,
+                    title = "Über MovieShelf",
+                    subtitle = "Fassung, Lizenzen und Hinweise",
+                    onClick = onAboutClick
                 )
+            }
+        }
+    }
+}
 
-                if (!isStandalone) Spacer(Modifier.height(16.dp))
-
-                if (!isStandalone) OutlinedTextField(
-                    value = viewModel.email,
-                    onValueChange = { viewModel.email = it },
-                    label = { Text("E-Mail") },
-                    modifier = Modifier.fillMaxWidth(),
-                    leadingIcon = { Icon(Icons.Default.Email, contentDescription = null) },
-                    singleLine = true
+/** Kontodaten mit der Schaltfläche direkt bei den Feldern, zu denen sie gehört. */
+@Composable
+private fun AccountSection(viewModel: ProfileViewModel) {
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Surface(
+            modifier = Modifier.size(72.dp),
+            shape = CircleShape,
+            color = MaterialTheme.colorScheme.primaryContainer
+        ) {
+            Box(contentAlignment = Alignment.Center) {
+                Icon(
+                    Icons.Default.Person,
+                    contentDescription = null,
+                    modifier = Modifier.size(44.dp),
+                    tint = MaterialTheme.colorScheme.onPrimaryContainer
                 )
+            }
+        }
 
-                Spacer(Modifier.height(32.dp))
+        Spacer(Modifier.height(20.dp))
 
-                // Meine Listen / Wunschliste
-                Card(
-                    onClick = onListsClick,
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.5f)
-                    )
-                ) {
-                    Row(
-                        modifier = Modifier.padding(16.dp).fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(Icons.AutoMirrored.Filled.PlaylistPlay, contentDescription = null, tint = MaterialTheme.colorScheme.onSecondaryContainer)
-                        Spacer(Modifier.width(16.dp))
-                        Column(Modifier.weight(1f)) {
-                            Text("Meine Listen", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSecondaryContainer)
-                            Text(
-                                "Eigene Listen & Wunschliste ansehen",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.7f)
-                            )
-                        }
-                        Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null, tint = MaterialTheme.colorScheme.onSecondaryContainer)
-                    }
-                }
+        OutlinedTextField(
+            value = viewModel.name,
+            onValueChange = { viewModel.name = it },
+            label = { Text("Name") },
+            modifier = Modifier.fillMaxWidth(),
+            leadingIcon = { Icon(Icons.Default.Person, contentDescription = null) },
+            singleLine = true
+        )
 
-                Spacer(Modifier.height(16.dp))
+        Spacer(Modifier.height(12.dp))
 
-                // Abgleich mit der Shelf
-                if (!isStandalone) Card(
-                    onClick = onSyncClick,
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-                    )
-                ) {
-                    Row(
-                        modifier = Modifier.padding(16.dp).fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(Icons.Default.Sync, contentDescription = null)
-                        Spacer(Modifier.width(16.dp))
-                        Column(Modifier.weight(1f)) {
-                            Text("Synchronisation", fontWeight = FontWeight.Bold)
-                            Text(
-                                "Lokale Sammlung mit deiner MovieShelf abgleichen",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                        Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null, tint = MaterialTheme.colorScheme.outline)
-                    }
-                }
+        OutlinedTextField(
+            value = viewModel.email,
+            onValueChange = { viewModel.email = it },
+            label = { Text("E-Mail") },
+            modifier = Modifier.fillMaxWidth(),
+            leadingIcon = { Icon(Icons.Default.Email, contentDescription = null) },
+            singleLine = true
+        )
 
-                Spacer(Modifier.height(16.dp))
+        Spacer(Modifier.height(12.dp))
 
-                if (!isStandalone) Card(
-                    onClick = onTwoFactorClick,
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-                    )
-                ) {
-                    Row(
-                        modifier = Modifier
-                            .padding(16.dp)
-                            .fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(Icons.Default.Security, contentDescription = null)
-                        Spacer(Modifier.width(16.dp))
-                        Column(Modifier.weight(1f)) {
-                            Text("Zwei-Faktor-Authentifizierung", fontWeight = FontWeight.Bold)
-                            Text(
-                                if (viewModel.twoFactorEnabled) "Aktiv – tippen zum Verwalten" else "Nicht aktiv – tippen zum Einrichten",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                        Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null, tint = MaterialTheme.colorScheme.outline)
-                    }
-                }
+        // Die Schaltflaeche steht bei den Feldern und nicht ganz unten hinter
+        // allen Einstellungen: dort war nicht zu erkennen, worauf sie sich
+        // bezieht, und im Betrieb ohne Konto stand sie ohne jeden Zweck da.
+        Button(
+            onClick = { viewModel.updateProfile() },
+            modifier = Modifier.fillMaxWidth(),
+            shape = PillShape,
+            enabled = !viewModel.isSaving
+        ) {
+            if (viewModel.isSaving) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(18.dp),
+                    color = Color.White,
+                    strokeWidth = 2.dp
+                )
+            } else {
+                Text("Änderungen speichern", fontWeight = FontWeight.Bold)
+            }
+        }
+    }
+}
 
-                Spacer(Modifier.height(16.dp))
+/** Was nur ohne Konto gilt: Shelf verbinden und der eigene TMDb-Schlüssel. */
+@Composable
+private fun StandaloneSection(
+    onConnectShelfClick: () -> Unit,
+    tmdbApiKey: String?,
+    onSaveKey: (String?) -> Unit
+) {
+    SectionTitle("Betriebsart")
+    SettingsCard {
+        Column(Modifier.padding(16.dp)) {
+            RowHeader(
+                icon = Icons.Default.CloudOff,
+                title = "Nur auf diesem Gerät",
+                subtitle = "Deine Sammlung liegt auf dem Telefon. Verbindest du eine " +
+                    "Shelf, wird dein Bestand hochgeladen — er geht dabei nicht verloren."
+            )
+            Spacer(Modifier.height(12.dp))
+            Button(
+                onClick = onConnectShelfClick,
+                modifier = Modifier.fillMaxWidth(),
+                shape = PillShape
+            ) {
+                Text("Shelf verbinden", fontWeight = FontWeight.Bold)
+            }
+        }
+    }
 
-                // Hell/Dunkel. Standard ist dunkel wie die Web-Oberfläche;
-                // "System" bleibt für alle, die es Android-üblich wollen.
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-                    )
-                ) {
-                    Column(Modifier.padding(16.dp)) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(Icons.Default.DarkMode, contentDescription = null)
-                            Spacer(Modifier.width(16.dp))
-                            Column {
-                                Text("Erscheinungsbild", fontWeight = FontWeight.Bold)
-                                Text(
-                                    "MovieShelf ist auf den dunklen Look ausgelegt",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
-                        }
-                        Spacer(Modifier.height(12.dp))
-                        SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
-                            ThemeMode.entries.forEachIndexed { index, mode ->
-                                SegmentedButton(
-                                    selected = themeMode == mode,
-                                    onClick = { scope.launch { dataStoreManager.saveThemeMode(mode) } },
-                                    shape = SegmentedButtonDefaults.itemShape(
-                                        index = index,
-                                        count = ThemeMode.entries.size
-                                    )
-                                ) {
-                                    Text(mode.label)
-                                }
-                            }
-                        }
-                    }
-                }
-
-                Spacer(Modifier.height(16.dp))
-
-                // Material You (Dynamic Color)
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-                    )
-                ) {
-                    Row(
-                        modifier = Modifier.padding(16.dp).fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Row(modifier = Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically) {
-                            Icon(Icons.Default.Palette, contentDescription = null)
-                            Spacer(Modifier.width(16.dp))
-                            Column {
-                                Text("Material You", fontWeight = FontWeight.Bold)
-                                Text(
-                                    if (supportsDynamic) "Systemfarben verwenden" else "Erst ab Android 12 verfügbar",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
-                        }
-                        Switch(
-                            checked = dynamicColor && supportsDynamic,
-                            enabled = supportsDynamic,
-                            onCheckedChange = { scope.launch { dataStoreManager.saveDynamicColor(it) } }
-                        )
-                    }
-                }
-
-                Spacer(Modifier.height(16.dp))
-
-                Card(
-                    onClick = onAboutClick,
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-                    )
-                ) {
-                    Row(
-                        modifier = Modifier.padding(16.dp).fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(Icons.Default.Info, contentDescription = null)
-                        Spacer(Modifier.width(16.dp))
-                        Column(Modifier.weight(1f)) {
-                            Text("Über MovieShelf", fontWeight = FontWeight.Bold)
-                            Text(
-                                "Fassung, Lizenzen und Hinweise",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                        Icon(
-                            Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.outline
-                        )
-                    }
-                }
-
-                Spacer(Modifier.height(48.dp))
-
+    // TMDb-Schluessel: nur ohne Shelf noetig, weil dort deren Proxy die
+    // Suche uebernimmt.
+    SectionTitle("Filmsuche")
+    SettingsCard {
+        Column(Modifier.padding(16.dp)) {
+            RowHeader(
+                icon = Icons.Default.Key,
+                title = "TMDb-Schlüssel",
+                subtitle = "Für die Filmsuche brauchst du einen eigenen, kostenlosen " +
+                    "Schlüssel von themoviedb.org. Er wird verschlüsselt auf diesem " +
+                    "Gerät gespeichert und nur an TMDb geschickt."
+            )
+            Spacer(Modifier.height(12.dp))
+            var keyInput by remember(tmdbApiKey) { mutableStateOf(tmdbApiKey.orEmpty()) }
+            OutlinedTextField(
+                value = keyInput,
+                onValueChange = { keyInput = it },
+                label = { Text("API-Schlüssel") },
+                placeholder = { Text("z.B. 8f2c…") },
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true
+            )
+            Spacer(Modifier.height(12.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 Button(
-                    onClick = { viewModel.updateProfile() },
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = MaterialTheme.shapes.medium,
-                    enabled = !viewModel.isSaving
+                    onClick = { onSaveKey(keyInput) },
+                    modifier = Modifier.weight(1f),
+                    shape = PillShape,
+                    enabled = keyInput.isNotBlank() && keyInput != tmdbApiKey
                 ) {
-                    if (viewModel.isSaving) {
-                        CircularProgressIndicator(modifier = Modifier.size(18.dp), color = Color.White, strokeWidth = 2.dp)
-                    } else {
-                        Text("Änderungen speichern")
+                    Text("Speichern", fontWeight = FontWeight.Bold)
+                }
+                if (!tmdbApiKey.isNullOrBlank()) {
+                    OutlinedButton(
+                        onClick = {
+                            onSaveKey(null)
+                            keyInput = ""
+                        },
+                        modifier = Modifier.weight(1f),
+                        shape = PillShape
+                    ) {
+                        Text("Entfernen")
                     }
                 }
             }
+        }
+    }
+}
+
+/** Überschrift einer Gruppe. */
+@Composable
+private fun SectionTitle(text: String) {
+    Text(
+        text = text,
+        style = MaterialTheme.typography.labelLarge,
+        fontWeight = FontWeight.Bold,
+        color = MaterialTheme.colorScheme.primary,
+        modifier = Modifier.padding(start = 4.dp, top = 24.dp, bottom = 8.dp)
+    )
+}
+
+/**
+ * Eine Gruppe. Zusammengehöriges steht in **einer** Karte mit Trennlinien statt
+ * in mehreren gleich aussehenden — sonst ist an nichts zu erkennen, was
+ * zusammengehört.
+ */
+@Composable
+private fun SettingsCard(content: @Composable ColumnScope.() -> Unit) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+        ),
+        content = content
+    )
+}
+
+/** Antippbare Zeile mit Symbol, Text und Pfeil. */
+@Composable
+private fun SettingsRow(
+    icon: ImageVector,
+    title: String,
+    subtitle: String,
+    onClick: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .clickable(onClick = onClick)
+            .padding(16.dp)
+            .fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Box(Modifier.weight(1f)) {
+            RowHeader(icon = icon, title = title, subtitle = subtitle)
+        }
+        Icon(
+            Icons.AutoMirrored.Filled.KeyboardArrowRight,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.outline
+        )
+    }
+}
+
+/** Symbol, fette Zeile, erklärende Zeile — das Muster aller Einträge. */
+@Composable
+private fun RowHeader(icon: ImageVector, title: String, subtitle: String) {
+    Row(verticalAlignment = Alignment.Top) {
+        Icon(icon, contentDescription = null, modifier = Modifier.size(24.dp))
+        Spacer(Modifier.width(16.dp))
+        Column {
+            Text(title, fontWeight = FontWeight.Bold)
+            Text(
+                subtitle,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
         }
     }
 }
