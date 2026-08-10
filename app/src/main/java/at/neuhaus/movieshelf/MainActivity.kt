@@ -53,6 +53,7 @@ import com.google.android.play.core.install.model.AppUpdateType
 import com.google.android.play.core.install.model.InstallStatus
 import com.google.android.play.core.install.model.UpdateAvailability
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
@@ -175,12 +176,23 @@ private fun movieDetailsRoute(movie: Movie, allLocalIds: List<Long> = emptyList(
 fun MovieShelfApp(oauthCallbackUri: MutableState<Uri?> = mutableStateOf(null)) {
     val context = LocalContext.current
     val dataStoreManager = remember { DataStoreManager(context) }
-    val serverUrl by dataStoreManager.serverUrl.collectAsState(initial = null)
     val app = context.applicationContext as MovieShelfApplication
-    // null = noch nicht gewaehlt, dann kommt die Moduswahl.
-    val appMode by app.appMode.collectAsState(initial = null)
+
+    // Beide Quellen liefern erst verzoegert. Bis dahin ist ihr Wert unbekannt —
+    // und "unbekannt" darf nicht wie "nicht eingerichtet" behandelt werden,
+    // sonst blitzt die Einrichtungsseite auf, waehrend die Werte noch laden.
+    var serverUrlLoaded by remember { mutableStateOf(false) }
+    val serverUrl by remember {
+        dataStoreManager.serverUrl.onEach { serverUrlLoaded = true }
+    }.collectAsState(initial = null)
+
     var modeLoaded by remember { mutableStateOf(false) }
-    LaunchedEffect(Unit) { modeLoaded = true }
+    // null = noch nicht gewaehlt, dann kommt die Moduswahl.
+    val appMode by remember {
+        app.appMode.onEach { modeLoaded = true }
+    }.collectAsState(initial = null)
+
+    val bootstrapping = !modeLoaded || !serverUrlLoaded
     val navController = rememberNavController()
     val scope = rememberCoroutineScope()
 
@@ -237,7 +249,10 @@ fun MovieShelfApp(oauthCallbackUri: MutableState<Uri?> = mutableStateOf(null)) {
         }
     }
 
-    LaunchedEffect(serverUrl, appMode) {
+    LaunchedEffect(serverUrl, appMode, bootstrapping) {
+        // Solange die Werte nicht feststehen, nichts entscheiden.
+        if (bootstrapping) return@LaunchedEffect
+
         // Eigenstaendig: kein Server, kein Token, direkt in die Sammlung.
         if (appMode == AppMode.STANDALONE) {
             startDestination = "dashboard"
@@ -274,7 +289,11 @@ fun MovieShelfApp(oauthCallbackUri: MutableState<Uri?> = mutableStateOf(null)) {
         isLoadingAuth = false
     }
 
-    if (modeLoaded && appMode == null) {
+    if (bootstrapping) {
+        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            CircularProgressIndicator()
+        }
+    } else if (appMode == null) {
         ModeChoiceScreen(onModeChosen = { chosen ->
             scope.launch { app.setAppMode(chosen) }
         })
