@@ -274,7 +274,7 @@ class SyncEngineTest {
         val item = preview.items.single { it.direction == SyncDirection.PULL }
         assertEquals(SyncAction.UPDATED, item.action)
         // Nur Felder, die der Nutzer sieht - und alle drei geaenderten.
-        assertEquals(listOf("Titel", "Jahr", "Regie"), item.changes)
+        assertEquals(listOf("Titel", "Jahr", "Regisseur"), item.changes)
     }
 
     @Test

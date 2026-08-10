@@ -47,7 +47,7 @@ fun SyncScreen(onBack: () -> Unit) {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Abgleich") },
+                title = { Text("Synchronisation") },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Zurück")
@@ -66,8 +66,8 @@ fun SyncScreen(onBack: () -> Unit) {
         ) {
             ShelfFormSection(title = "Stand", icon = Icons.Default.Sync) {
                 Text(
-                    text = viewModel.lastSyncAt?.let { "Zuletzt abgeglichen: $it" }
-                        ?: "Noch nie abgeglichen — der erste Abgleich holt den vollständigen Bestand.",
+                    text = viewModel.lastSyncAt?.let { "Zuletzt synchronisiert: $it" }
+                        ?: "Noch nie synchronisiert — der erste Lauf holt den vollständigen Bestand.",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -77,9 +77,9 @@ fun SyncScreen(onBack: () -> Unit) {
                 ShelfFormSection(title = "Läuft", icon = Icons.Default.Sync) {
                     Text(
                         text = when (progress.phase) {
-                            SyncPhase.PUSH -> "Lokale Änderungen werden hochgeladen"
-                            SyncPhase.PULL -> "Serverstand wird geholt"
-                            SyncPhase.MEDIA -> "Vorgemerkte Bilder werden nachgereicht"
+                            SyncPhase.PUSH -> "Änderungen hochladen"
+                            SyncPhase.PULL -> "Metadaten laden"
+                            SyncPhase.MEDIA -> "Bilder herunterladen"
                             SyncPhase.DONE -> "Fertig"
                         },
                         style = MaterialTheme.typography.titleSmall,
@@ -131,7 +131,7 @@ fun SyncScreen(onBack: () -> Unit) {
                     // bestätigen, die er nicht gesehen hat.
                     enabled = !viewModel.isBusy && viewModel.preview != null
                 ) {
-                    Text("Abgleichen", fontWeight = FontWeight.Bold)
+                    Text("Synchronisieren", fontWeight = FontWeight.Bold)
                 }
             }
 
@@ -151,7 +151,7 @@ fun SyncScreen(onBack: () -> Unit) {
                     ) {
                         Icon(Icons.Default.CloudDownload, contentDescription = null, modifier = Modifier.size(18.dp))
                         Spacer(Modifier.width(8.dp))
-                        Text("Nur laden")
+                        Text("Shelf → App")
                     }
                     OutlinedButton(
                         onClick = { viewModel.runPushOnly() },
@@ -161,14 +161,14 @@ fun SyncScreen(onBack: () -> Unit) {
                     ) {
                         Icon(Icons.Default.CloudUpload, contentDescription = null, modifier = Modifier.size(18.dp))
                         Spacer(Modifier.width(8.dp))
-                        Text("Nur hochladen")
+                        Text("App → Shelf")
                     }
                 }
             }
 
             if (viewModel.preview == null && !viewModel.isBusy) {
                 Text(
-                    "Der Abgleich startet erst nach einer Vorschau.",
+                    "Die Synchronisation startet erst nach einer Vorschau.",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -178,7 +178,7 @@ fun SyncScreen(onBack: () -> Unit) {
                 onClick = { viewModel.loadPreview(full = true) },
                 enabled = !viewModel.isBusy
             ) {
-                Text("Vollständigen Abgleich vorbereiten")
+                Text("Vollständig synchronisieren")
             }
 
             Spacer(Modifier.height(32.dp))
@@ -216,7 +216,7 @@ private fun PreviewSection(preview: SyncPreview) {
         if (preview.hasDeletions) {
             Spacer(Modifier.height(8.dp))
             Text(
-                text = "Der Abgleich entfernt Filme. Das lässt sich nicht rückgängig machen.",
+                text = "Die Synchronisation entfernt Filme. Das lässt sich nicht rückgängig machen.",
                 style = MaterialTheme.typography.bodySmall,
                 fontWeight = FontWeight.SemiBold,
                 color = MaterialTheme.colorScheme.error
@@ -265,10 +265,10 @@ private fun PreviewItemRow(item: SyncPreviewItem) {
                 overflow = TextOverflow.Ellipsis
             )
             val detail = when (item.action) {
-                SyncAction.NEW -> "neu"
-                SyncAction.DELETED -> "wird entfernt"
+                SyncAction.NEW -> "Neu"
+                SyncAction.DELETED -> "Gelöscht"
                 SyncAction.KEPT_LOCAL -> "lokale Änderung behalten"
-                SyncAction.UPDATED -> if (item.changes.isEmpty()) "geändert"
+                SyncAction.UPDATED -> if (item.changes.isEmpty()) "Update"
                 else item.changes.joinToString(", ")
             }
             Text(

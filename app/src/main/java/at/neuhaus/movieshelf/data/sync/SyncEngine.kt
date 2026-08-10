@@ -441,13 +441,13 @@ class SyncEngine(
         compare("Titel", server.title, local.title)
         compare("Jahr", server.year, local.year)
         compare("Genre", server.genre, local.genre)
-        compare("Regie", server.director, local.director)
+        compare("Regisseur", server.director, local.director)
         compare("Laufzeit", server.runtime, local.runtime)
         compare("Bewertung", server.rating, local.rating)
-        compare("Altersfreigabe", server.ratingAge, local.ratingAge)
-        compare("Handlung", server.overview, local.overview)
+        compare("FSK", server.ratingAge, local.ratingAge)
+        compare("Beschreibung", server.overview, local.overview)
         compare("Typ", server.collectionType, local.collectionType)
-        compare("Medium", server.tag, local.tag)
+        compare("Format", server.tag, local.tag)
         compare("Trailer", server.trailerUrl, local.trailerUrl)
 
         if (server.collectionType == "Serie" && seasonsDiffer(local.localId, server.seasons)) {

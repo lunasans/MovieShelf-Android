@@ -282,9 +282,9 @@ fun ProfileScreen(
                         Icon(Icons.Default.Sync, contentDescription = null)
                         Spacer(Modifier.width(16.dp))
                         Column(Modifier.weight(1f)) {
-                            Text("Abgleich", fontWeight = FontWeight.Bold)
+                            Text("Synchronisation", fontWeight = FontWeight.Bold)
                             Text(
-                                "Sammlung mit der Shelf abgleichen",
+                                "Lokale Sammlung mit deiner MovieShelf abgleichen",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )

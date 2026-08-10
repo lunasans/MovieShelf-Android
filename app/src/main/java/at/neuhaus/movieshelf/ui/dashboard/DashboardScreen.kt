@@ -278,7 +278,7 @@ fun DashboardScreen(
                             Spacer(Modifier.height(8.dp))
                             Text(
                                 text = if (isShelfMode) {
-                                    "Deine Sammlung wird beim Abgleich von der Shelf geholt."
+                                    "Deine Sammlung wird beim Synchronisieren von der Shelf geholt."
                                 } else {
                                     "Lege deinen ersten Film über das Plus an."
                                 },
@@ -291,7 +291,7 @@ fun DashboardScreen(
                                 Button(onClick = onSyncClick, shape = at.neuhaus.movieshelf.ui.theme.PillShape) {
                                     Icon(Icons.Default.Sync, contentDescription = null, modifier = Modifier.size(18.dp))
                                     Spacer(Modifier.width(8.dp))
-                                    Text("Jetzt abgleichen", fontWeight = FontWeight.Bold)
+                                    Text("Jetzt synchronisieren", fontWeight = FontWeight.Bold)
                                 }
                             }
                         }
