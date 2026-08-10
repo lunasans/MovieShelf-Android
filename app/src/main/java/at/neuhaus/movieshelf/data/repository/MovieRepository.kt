@@ -3,6 +3,7 @@ package at.neuhaus.movieshelf.data.repository
 import at.neuhaus.movieshelf.data.api.MovieShelfApi
 import at.neuhaus.movieshelf.data.local.db.MovieDao
 import at.neuhaus.movieshelf.data.local.db.MovieEntity
+import at.neuhaus.movieshelf.data.local.db.SyncClock
 import at.neuhaus.movieshelf.data.model.Movie
 import at.neuhaus.movieshelf.data.model.MovieUpdateRequest
 
@@ -28,12 +29,14 @@ class MovieRepository(
         return try {
             val response = api.getMovies(page = page, perPage = perPage, tag = tag)
             val movies = response.data ?: emptyList()
-            val entities = movies.map { MovieEntity.fromMovie(it) }
-            // Erste Seite ersetzt den Cache atomar, weitere Seiten werden ergänzt
+            val entities = movies.map { MovieEntity.fromServerMovie(it) }
+            // Erste Seite spiegelt den Serverstand, weitere Seiten ergänzen ihn.
+            // Beides hebt bekannte Filme auf ihre bestehende lokale Zeile, damit
+            // die lokalen IDs über Abrufe hinweg stabil bleiben.
             if (page == 1) {
-                movieDao.replaceAll(entities)
+                movieDao.replaceServerState(entities)
             } else {
-                movieDao.insertMovies(entities)
+                movieDao.upsertFromServer(entities)
             }
             isOffline = false
             movies
@@ -63,26 +66,34 @@ class MovieRepository(
     /** Watched-Status toggeln — optimistisch lokal + Remote-Aufruf. */
     suspend fun toggleWatched(movieId: Int, currentState: Boolean) {
         val newState = !currentState
-        movieDao.updateWatched(movieId, newState)
+        val localId = movieDao.findLocalIdByRemoteId(movieId) ?: return
+        val now = SyncClock.now()
+        movieDao.updateWatched(localId, newState, now)
         try {
             api.toggleWatched(movieId)
+            // Der Aufruf ist durch, die Zeile ist also nicht mehr abweichend.
+            // Ab Phase 4 übernimmt das der Push; bis dahin würde die Zeile sonst
+            // dauerhaft als unübertragen gelten.
+            movieDao.markSynced(localId, now)
         } catch (e: Exception) {
-            // Bei Fehler Lokal-State zurücksetzen
-            movieDao.updateWatched(movieId, currentState)
+            movieDao.updateWatched(localId, currentState, now)
+            movieDao.markSynced(localId, now)
             throw e
         }
     }
 
-    /** Film bearbeiten (Admin). Aktualisiert bei Erfolg auch den lokalen Cache. */
+    /** Film bearbeiten (Admin). Schreibt das Ergebnis in die lokale Sammlung. */
     suspend fun updateMovie(id: Int, request: MovieUpdateRequest): Movie? {
         val response = api.updateMovie(id, request)
-        return response.data?.also { movieDao.insertMovie(MovieEntity.fromMovie(it)) }
+        return response.data?.also {
+            movieDao.upsertFromServer(listOf(MovieEntity.fromServerMovie(it, SyncClock.now())))
+        }
     }
 
-    /** Film löschen (Admin). Entfernt ihn bei Erfolg auch aus dem lokalen Cache. */
+    /** Film löschen (Admin). Entfernt ihn bei Erfolg auch lokal. */
     suspend fun deleteMovie(id: Int) {
         api.deleteMovie(id)
-        movieDao.deleteById(id)
+        movieDao.findLocalIdByRemoteId(id)?.let { movieDao.hardDelete(it) }
     }
 
     /** Cover hochladen (Admin). Gibt die neue Cover-URL zurück. */
@@ -98,10 +109,10 @@ class MovieRepository(
         return try {
             val response = api.getMovie(id)
             response.data?.also { movie ->
-                movieDao.insertMovie(MovieEntity.fromMovie(movie))
+                movieDao.upsertFromServer(listOf(MovieEntity.fromServerMovie(movie, SyncClock.now())))
             }
         } catch (e: Exception) {
-            movieDao.getMovieById(id)?.toMovie()
+            movieDao.getByRemoteId(id)?.toMovie()
         }
     }
 

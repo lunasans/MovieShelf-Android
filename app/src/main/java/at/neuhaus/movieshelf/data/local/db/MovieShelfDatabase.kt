@@ -5,10 +5,42 @@ import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
 
-@Database(entities = [MovieEntity::class], version = 6, exportSchema = false)
+/**
+ * Lokale Sammlung der App.
+ *
+ * Version 7 wechselt vom reinen Lese-Cache zur führenden Datenhaltung: jede
+ * Zeile hat eine eigene lokale ID neben der Server-ID und trägt ihren
+ * Abgleich-Zustand mit sich (siehe [MovieEntity]).
+ *
+ * Der Sprung von 6 auf 7 wird bewusst nicht migriert. Der alte Bestand war
+ * reiner Cache und enthielt nichts, was nicht auch auf dem Server liegt — eine
+ * Migration könnte nur halbgare Zwischenzustände erzeugen. Stattdessen wird die
+ * Datei verworfen und der erste Start danach holt einen Vollstand.
+ */
+@Database(
+    entities = [
+        MovieEntity::class,
+        ActorEntity::class,
+        FilmActorCrossRef::class,
+        ListEntity::class,
+        ListItemEntity::class,
+        ListItemTombstoneEntity::class,
+        SeasonEntity::class,
+        EpisodeEntity::class,
+        ExternalMovieEntity::class,
+        SettingEntity::class
+    ],
+    version = 7,
+    exportSchema = false
+)
 abstract class MovieShelfDatabase : RoomDatabase() {
 
     abstract fun movieDao(): MovieDao
+    abstract fun actorDao(): ActorDao
+    abstract fun listDao(): ListDao
+    abstract fun seriesDao(): SeriesDao
+    abstract fun externalMovieDao(): ExternalMovieDao
+    abstract fun settingDao(): SettingDao
 
     companion object {
         @Volatile
@@ -22,6 +54,10 @@ abstract class MovieShelfDatabase : RoomDatabase() {
                     "movieshelf.db"
                 )
                     .fallbackToDestructiveMigration(true)
+                    // Ohne diesen Schalter bleiben die Fremdschlüssel von
+                    // Besetzung, Staffeln und Listeninhalten wirkungslos und
+                    // gelöschte Filme hinterlassen verwaiste Zeilen.
+                    .setJournalMode(JournalMode.WRITE_AHEAD_LOGGING)
                     .build()
                     .also { INSTANCE = it }
             }
