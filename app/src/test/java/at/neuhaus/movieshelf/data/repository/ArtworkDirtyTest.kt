@@ -8,6 +8,9 @@ import at.neuhaus.movieshelf.data.local.db.FilmActorCrossRef
 import at.neuhaus.movieshelf.data.local.db.MovieEntity
 import at.neuhaus.movieshelf.data.local.db.PendingUploadDao
 import at.neuhaus.movieshelf.data.local.db.PendingUploadEntity
+import at.neuhaus.movieshelf.data.local.db.EpisodeEntity
+import at.neuhaus.movieshelf.data.local.db.SeasonEntity
+import at.neuhaus.movieshelf.data.local.db.SeriesDao
 import at.neuhaus.movieshelf.data.sync.FakeMovieDao
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
@@ -38,6 +41,7 @@ class ArtworkDirtyTest {
         val repository = MovieRepository(
             movieDao = dao,
             actorDao = EmptyActorDao(),
+            seriesDao = EmptySeriesDao(),
             pendingUploadDao = EmptyPendingUploadDao(),
             mediaStore = MediaStore(folder.root),
             imageDownloader = AlwaysSucceedingDownloader(),
@@ -136,6 +140,18 @@ private class EmptyActorDao : ActorDao {
     override suspend fun setCast(refs: List<FilmActorCrossRef>) = Unit
     override suspend fun clearCast(movieLocalId: Long) = Unit
     override suspend fun getCastOf(movieLocalId: Long): List<ActorEntity> = emptyList()
+}
+
+private class EmptySeriesDao : SeriesDao {
+    override suspend fun getSeasons(movieLocalId: Long) = emptyList<SeasonEntity>()
+    override suspend fun findSeasonLocalId(movieLocalId: Long, number: Int): Long? = null
+    override suspend fun insertSeason(season: SeasonEntity): Long = 0
+    override suspend fun updateSeason(season: SeasonEntity) = Unit
+    override suspend fun getEpisodes(seasonLocalId: Long) = emptyList<EpisodeEntity>()
+    override suspend fun findEpisodeLocalId(seasonLocalId: Long, number: Int): Long? = null
+    override suspend fun insertEpisode(episode: EpisodeEntity): Long = 0
+    override suspend fun deleteSeasonsOf(movieLocalId: Long) = Unit
+    override suspend fun pruneSeasonsKeeping(movieLocalId: Long, keep: List<Int>) = Unit
 }
 
 private class EmptyPendingUploadDao : PendingUploadDao {

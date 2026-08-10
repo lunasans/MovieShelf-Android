@@ -71,6 +71,7 @@ class MovieShelfApplication : Application(), ImageLoaderFactory {
         MovieRepository(
             movieDao = database.movieDao(),
             actorDao = database.actorDao(),
+            seriesDao = database.seriesDao(),
             pendingUploadDao = database.pendingUploadDao(),
             mediaStore = mediaStore,
             imageDownloader = imageDownloader,

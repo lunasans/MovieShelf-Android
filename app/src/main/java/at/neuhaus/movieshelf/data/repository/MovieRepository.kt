@@ -2,9 +2,12 @@ package at.neuhaus.movieshelf.data.repository
 
 import at.neuhaus.movieshelf.data.api.MovieShelfApi
 import at.neuhaus.movieshelf.data.local.db.ActorDao
+import at.neuhaus.movieshelf.data.model.ApiEpisode
+import at.neuhaus.movieshelf.data.model.ApiSeason
 import at.neuhaus.movieshelf.data.local.db.ActorEntity
 import at.neuhaus.movieshelf.data.local.db.FilmActorCrossRef
 import at.neuhaus.movieshelf.data.local.db.MovieDao
+import at.neuhaus.movieshelf.data.local.db.SeriesDao
 import at.neuhaus.movieshelf.data.local.db.MovieEntity
 import at.neuhaus.movieshelf.data.local.ArtworkKind
 import at.neuhaus.movieshelf.data.local.ImageDownloader
@@ -34,6 +37,7 @@ private const val CACHE_MAX_AGE_MS = 30 * 60 * 1000L // 30 Minuten
 class MovieRepository(
     private val movieDao: MovieDao,
     private val actorDao: ActorDao,
+    private val seriesDao: SeriesDao,
     private val pendingUploadDao: PendingUploadDao,
     private val mediaStore: MediaStore,
     private val imageDownloader: ImageDownloader,
@@ -86,32 +90,65 @@ class MovieRepository(
      * ist der, den der letzte Abgleich hinterlassen hat.
      */
     suspend fun getMovieByLocalId(localId: Long): Movie? =
-        movieDao.getByLocalId(localId)?.let { withLocalCast(it) }
+        movieDao.getByLocalId(localId)?.let { withLocalDetails(it) }
 
     /**
-     * Besetzung aus der lokalen Tabelle nachreichen.
+     * Besetzung und Staffeln aus den lokalen Tabellen nachreichen.
      *
      * Filme von der Shelf bringen ihre Darsteller als JSON mit; lokal
      * angelegte haben dort nichts stehen und beziehen sie ueber `film_actor`.
+     * Staffeln und Episoden stehen dagegen immer in eigenen Tabellen — ohne
+     * diesen Schritt kaemen sie zwar beim Abgleich herein, waeren in der
+     * Detailansicht aber nirgends zu sehen.
      */
-    private suspend fun withLocalCast(entity: MovieEntity): Movie {
-        val movie = entity.toMovie()
-        if (!movie.actors.isNullOrEmpty()) return movie
-        val cast = actorDao.getCastOf(entity.localId)
-        if (cast.isEmpty()) return movie
-        return movie.copy(
-            actors = cast.map { actor ->
-                at.neuhaus.movieshelf.data.model.Actor(
-                    id = actor.remoteId,
-                    name = actor.name,
-                    imageUrl = actor.imagePath,
-                    biography = actor.bio,
-                    birthDate = actor.birthday,
-                    placeOfBirth = actor.placeOfBirth
+    private suspend fun withLocalDetails(entity: MovieEntity): Movie {
+        var movie = entity.toMovie()
+
+        if (movie.actors.isNullOrEmpty()) {
+            val cast = actorDao.getCastOf(entity.localId)
+            if (cast.isNotEmpty()) {
+                movie = movie.copy(
+                    actors = cast.map { actor ->
+                        at.neuhaus.movieshelf.data.model.Actor(
+                            id = actor.remoteId,
+                            name = actor.name,
+                            imageUrl = actor.imagePath,
+                            biography = actor.bio,
+                            birthDate = actor.birthday,
+                            placeOfBirth = actor.placeOfBirth
+                        )
+                    }
                 )
             }
-        )
+        }
+
+        if (movie.collectionType == "Serie") {
+            movie = movie.copy(seasons = localSeasons(entity.localId))
+        }
+        return movie
     }
+
+    /** Staffeln samt Episoden einer Serie aus der lokalen Datenbank. */
+    private suspend fun localSeasons(movieLocalId: Long): List<ApiSeason> =
+        seriesDao.getSeasons(movieLocalId).map { season ->
+            ApiSeason(
+                // Ohne Server-ID eine eigene, negative Kennung: die Ansicht
+                // benutzt sie nur zum Auseinanderhalten der Staffeln und darf
+                // dabei nicht mit echten Server-IDs kollidieren.
+                id = season.remoteId ?: -season.localId.toInt(),
+                seasonNumber = season.seasonNumber,
+                title = season.title,
+                overview = season.overview,
+                episodes = seriesDao.getEpisodes(season.localId).map { episode ->
+                    ApiEpisode(
+                        id = episode.remoteId ?: -episode.localId.toInt(),
+                        episodeNumber = episode.episodeNumber,
+                        title = episode.title,
+                        overview = episode.overview
+                    )
+                }
+            )
+        }
 
     /**
      * Besetzung aus der Server-Antwort uebernehmen.
