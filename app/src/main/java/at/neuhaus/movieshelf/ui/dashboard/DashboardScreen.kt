@@ -26,12 +26,10 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.graphics.RectangleShape
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
@@ -52,7 +50,6 @@ import at.neuhaus.movieshelf.ui.components.RatingBadge
 import at.neuhaus.movieshelf.ui.theme.BackgroundDark
 import at.neuhaus.movieshelf.ui.theme.HeroBannerShape
 import at.neuhaus.movieshelf.ui.theme.NavAccentRed
-import at.neuhaus.movieshelf.ui.theme.NavAccentRose500
 import kotlinx.coroutines.delay
 import at.neuhaus.movieshelf.ui.util.MovieCardSkeleton
 import at.neuhaus.movieshelf.ui.util.resolveImageUrl
@@ -241,7 +238,6 @@ fun DashboardScreen(
                         if (viewModel.newMoviesShelf.isNotEmpty()) {
                             MovieShelfRow(
                                 title = "Neue Filme",
-                                icon = Icons.Default.NewReleases,
                                 movies = viewModel.newMoviesShelf,
                                 onClick = { movie ->
                                     onMovieClick(movie, viewModel.newMoviesShelf.map { it.localId })
@@ -252,7 +248,6 @@ fun DashboardScreen(
                         if (viewModel.filmeShelf.isNotEmpty()) {
                             MovieShelfRow(
                                 title = "Filme",
-                                icon = Icons.Default.Movie,
                                 movies = viewModel.filmeShelf,
                                 onClick = { movie ->
                                     onMovieClick(movie, viewModel.filmeShelf.map { it.localId })
@@ -263,7 +258,6 @@ fun DashboardScreen(
                         if (viewModel.seriesShelf.isNotEmpty()) {
                             MovieShelfRow(
                                 title = "Serien",
-                                icon = Icons.Default.Tv,
                                 movies = viewModel.seriesShelf,
                                 onClick = { movie ->
                                     onMovieClick(movie, viewModel.seriesShelf.map { it.localId })
@@ -561,14 +555,13 @@ fun HeroSlider(
 /**
  * "Shelf"-Gruppierung: eine horizontal scrollbare, betitelte Filmreihe
  * ("Neue Filme" / "Filme" / "Serien"), analog zu den Sektionen im Web-Dashboard.
- * Der Header folgt dort dem Muster „Gradient-Kachel + fetter Titel + Anzahl",
- * nicht dem gedimmten Versal-Header der Formulare.
+ * Der Header besteht aus fettem Titel und Anzahl, nicht aus dem gedimmten
+ * Versal-Header der Formulare.
  */
 @Composable
 fun MovieShelfRow(
     title: String,
     movies: List<Movie>,
-    icon: ImageVector,
     onClick: (Movie) -> Unit,
     onShowAll: (() -> Unit)? = null
 ) {
@@ -585,24 +578,6 @@ fun MovieShelfRow(
                 modifier = Modifier.weight(1f),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Box(
-                    modifier = Modifier
-                        .shadow(
-                            elevation = 8.dp,
-                            shape = RoundedCornerShape(12.dp),
-                            ambientColor = NavAccentRed,
-                            spotColor = NavAccentRed
-                        )
-                        .clip(RoundedCornerShape(12.dp))
-                        // Alle Reihen tragen den Marken-Verlauf; unterschieden
-                        // wird über das Icon, nicht über die Farbe.
-                        .background(Brush.linearGradient(listOf(NavAccentRose500, NavAccentRed)))
-                        .size(36.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(icon, contentDescription = null, tint = Color.White, modifier = Modifier.size(20.dp))
-                }
-                Spacer(Modifier.width(12.dp))
                 Text(
                     text = title,
                     style = MaterialTheme.typography.titleLarge.copy(
