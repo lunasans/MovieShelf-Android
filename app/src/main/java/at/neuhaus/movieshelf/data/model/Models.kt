@@ -266,7 +266,13 @@ data class DecadeStats(
 data class TmdbImportRequest(
     @SerializedName("tmdb_id") val tmdbId: Int,
     val type: String = "movie",
-    @SerializedName("in_collection") val inCollection: Boolean = true
+    @SerializedName("in_collection") val inCollection: Boolean = true,
+    /**
+     * Nur fuer Serien. Ohne diese Angabe importiert der Server **alle** bei
+     * TMDb bekannten Staffeln — lokal liegen aber vielleicht nur einige. Dann
+     * haetten beide Seiten unterschiedliche Staende.
+     */
+    val seasons: List<Int>? = null
 )
 
 /**

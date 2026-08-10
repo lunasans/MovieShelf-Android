@@ -105,7 +105,7 @@ open class FakeSettingDao : SettingDao {
 
 open class FakeSyncApi(
     private val export: ExportResponse = ExportResponse(exportedAt = "t", movies = emptyList()),
-    private val created: Movie? = null
+    protected val created: Movie? = null
 ) : SyncApi {
 
     /** Mit welchem `since` zuletzt exportiert wurde — `null` heißt Vollstand. */
@@ -130,5 +130,17 @@ open class FakeSyncApi(
 
     override suspend fun deleteMovie(id: Int) {
         deletedIds += id
+    }
+
+    val tmdbImports = mutableListOf<Triple<Int, String, List<Int>?>>()
+
+    override suspend fun importFromTmdb(
+        tmdbId: Int,
+        type: String,
+        inCollection: Boolean,
+        seasons: List<Int>?
+    ): SingleMovieResponse {
+        tmdbImports += Triple(tmdbId, type, seasons)
+        return SingleMovieResponse(data = created)
     }
 }

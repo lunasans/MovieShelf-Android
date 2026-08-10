@@ -194,6 +194,64 @@ class SyncEngineTest {
         assertTrue(dao.rows.first { it.localId == 1L }.isDirty)
     }
 
+    // ── Anlegen ueber TMDb statt roher Felder ────────────────────────────────
+
+    @Test
+    fun `push laesst einen TMDb-Film vom Server importieren`() = runBlocking {
+        val dao = FakeMovieDao()
+        dao.rows += movie(localId = 1, remoteId = null, title = "Dune")
+            .copy(tmdbId = "438631", updatedAt = "2026-08-10T12:00:00Z", syncedAt = null)
+
+        val api = FakeSyncApi(created = serverMovie(id = 77, title = "Dune"))
+        val result = SyncEngine(dao, FakeSettingDao(), { api }).push()
+
+        assertEquals(1, result.created)
+        // Ueber /tmdb/import holt der Server Bilder, Besetzung und Metadaten
+        // selbst; ueber /admin/movies staende der Film ohne all das da.
+        assertEquals(listOf(Triple(438631, "movie", null)), api.tmdbImports)
+        assertEquals(77, dao.rows.single().remoteId)
+    }
+
+    @Test
+    fun `push schickt bei Serien nur die lokal vorhandenen Staffeln mit`() = runBlocking {
+        val dao = FakeMovieDao()
+        dao.rows += movie(localId = 1, remoteId = null, title = "Severance")
+            .copy(tmdbId = "95396", collectionType = "Serie", updatedAt = "2026-08-10T12:00:00Z", syncedAt = null)
+
+        val api = FakeSyncApi(created = serverMovie(id = 88, title = "Severance"))
+        SyncEngine(
+            dao, FakeSettingDao(), { api },
+            localSeasonNumbers = { listOf(1, 2) }
+        ).push()
+
+        // Ohne diese Angabe importiert der Server alle bei TMDb bekannten
+        // Staffeln - lokal liegen aber nur zwei.
+        assertEquals(listOf(Triple(95396, "tv", listOf(1, 2))), api.tmdbImports)
+    }
+
+    @Test
+    fun `push nimmt einen bereits geloeschten Film als erledigt hin`() = runBlocking {
+        val dao = FakeMovieDao()
+        dao.rows += movie(localId = 1, remoteId = 10, title = "Auf der Shelf schon weg")
+            .copy(isDeleted = true, updatedAt = "2026-08-10T12:00:00Z", syncedAt = "2026-08-10T10:00:00Z")
+
+        val api = object : FakeSyncApi() {
+            override suspend fun deleteMovie(id: Int) {
+                throw retrofit2.HttpException(
+                    retrofit2.Response.error<Any>(404, okhttp3.ResponseBody.create(null, ""))
+                )
+            }
+        }
+
+        val result = SyncEngine(dao, FakeSettingDao(), { api }).push()
+
+        // Das Ziel ist erreicht. Als Fehler zu werten hiesse, die Zeile bliebe
+        // fuer immer abweichend und der Fehler wiederholte sich bei jedem Lauf.
+        assertEquals(1, result.deleted)
+        assertEquals(0, result.errors.size)
+        assertTrue(dao.rows.isEmpty())
+    }
+
     // ── Wechsel vom eigenstaendigen Betrieb zur Shelf ────────────────────────
 
     @Test

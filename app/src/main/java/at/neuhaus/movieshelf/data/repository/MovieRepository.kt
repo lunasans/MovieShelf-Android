@@ -215,6 +215,15 @@ class MovieRepository(
             mediaStore.deleteArtworkOf(localId)
             movieDao.hardDelete(localId)
             isOffline = false
+        } catch (e: retrofit2.HttpException) {
+            // Auf der Shelf schon weg: Ziel erreicht, also lokal ebenfalls raus.
+            // Sonst bliebe die Zeile fuer immer als abweichend liegen.
+            if (e.code() == 404) {
+                mediaStore.deleteArtworkOf(localId)
+                movieDao.hardDelete(localId)
+            } else {
+                isOffline = true
+            }
         } catch (e: Exception) {
             isOffline = true
         }

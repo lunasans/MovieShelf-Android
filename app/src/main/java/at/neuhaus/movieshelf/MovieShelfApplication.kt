@@ -16,6 +16,7 @@ import at.neuhaus.movieshelf.data.api.TmdbApi
 import at.neuhaus.movieshelf.data.local.DataStoreManager
 import at.neuhaus.movieshelf.data.model.ListItemRef
 import at.neuhaus.movieshelf.data.model.MovieUpdateRequest
+import at.neuhaus.movieshelf.data.model.TmdbImportRequest
 import at.neuhaus.movieshelf.data.sync.ListSyncApi
 import at.neuhaus.movieshelf.data.sync.ListSyncEngine
 import at.neuhaus.movieshelf.data.sync.SyncApi
@@ -106,6 +107,9 @@ class MovieShelfApplication : Application(), ImageLoaderFactory {
             upsertSeries = { localId, seasons ->
                 database.seriesDao().upsertSeries(localId, seasons)
             },
+            localSeasonNumbers = { localId ->
+                database.seriesDao().getSeasons(localId).map { it.seasonNumber }
+            },
             downloadMissingArtwork = { movieRepository.downloadMissingArtwork() },
             cleanupOrphanedArtwork = { movieRepository.cleanupOrphanedArtwork() },
             queueArtworkUpload = { movieRepository.queueArtworkUpload(it) }
@@ -135,6 +139,12 @@ class MovieShelfApplication : Application(), ImageLoaderFactory {
         override suspend fun createMovie(request: MovieUpdateRequest) = api.createMovie(request)
         override suspend fun updateMovie(id: Int, request: MovieUpdateRequest) = api.updateMovie(id, request)
         override suspend fun deleteMovie(id: Int) { api.deleteMovie(id) }
+        override suspend fun importFromTmdb(
+            tmdbId: Int,
+            type: String,
+            inCollection: Boolean,
+            seasons: List<Int>?
+        ) = api.importFromTmdb(TmdbImportRequest(tmdbId, type, inCollection, seasons))
     }
 
     override fun newImageLoader(): ImageLoader {

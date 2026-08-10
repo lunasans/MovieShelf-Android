@@ -7,6 +7,7 @@ import at.neuhaus.movieshelf.data.local.db.SettingKeys
 import at.neuhaus.movieshelf.data.local.db.SeasonWithEpisodes
 import at.neuhaus.movieshelf.data.local.db.SyncClock
 import at.neuhaus.movieshelf.data.model.ExportResponse
+import at.neuhaus.movieshelf.data.model.Movie
 import at.neuhaus.movieshelf.data.model.MovieUpdateRequest
 import at.neuhaus.movieshelf.data.model.SingleMovieResponse
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -45,6 +46,8 @@ class SyncEngine(
      * Serien-Tabelle haengt.
      */
     private val upsertSeries: suspend (Long, List<SeasonWithEpisodes>) -> Unit = { _, _ -> },
+    /** Lokal vorhandene Staffelnummern einer Serie — fuer den TMDb-Import. */
+    private val localSeasonNumbers: suspend (Long) -> List<Int> = { emptyList() },
     /** Fehlende Bilder holen — laeuft in der Medien-Phase. */
     private val downloadMissingArtwork: suspend () -> Int = { 0 },
     /** Bilddateien ohne zugehoerige Zeile entfernen. */
@@ -159,7 +162,7 @@ class SyncEngine(
             try {
                 when {
                     entity.isDeleted && entity.remoteId != null -> {
-                        api.deleteMovie(entity.remoteId)
+                        deleteTolerantly(entity.remoteId)
                         movieDao.hardDelete(entity.localId)
                         deleted++
                     }
@@ -172,7 +175,7 @@ class SyncEngine(
                     }
 
                     entity.remoteId == null -> {
-                        val response = api.createMovie(entity.toUpdateRequest()).data
+                        val response = createOnServer(entity)
                         if (response != null) {
                             movieDao.markSynced(entity.localId, now, response.id)
                             queueArtworkUpload(entity.localId)
@@ -191,6 +194,37 @@ class SyncEngine(
             }
         }
         return PushResult(created, updated, deleted, errors)
+    }
+
+    /**
+     * Film serverseitig anlegen.
+     *
+     * Kennt die Zeile eine TMDb-ID, laesst sie der Server von dort importieren:
+     * er holt dann Bilder, Besetzung und Metadaten selbst. Nur ohne TMDb-Bezug
+     * werden die Felder roh uebertragen.
+     */
+    private suspend fun createOnServer(entity: MovieEntity): Movie? {
+        val tmdbId = entity.tmdbId?.toIntOrNull()
+            ?: return api.createMovie(entity.toUpdateRequest()).data
+
+        val isSeries = entity.collectionType == "Serie"
+        return api.importFromTmdb(
+            tmdbId = tmdbId,
+            type = if (isSeries) "tv" else "movie",
+            inCollection = entity.inCollection != false,
+            // Nur die lokal vorhandenen Staffeln, sonst importiert der Server
+            // alles, was TMDb kennt.
+            seasons = if (isSeries) localSeasonNumbers(entity.localId) else null
+        ).data
+    }
+
+    /** Loeschen, bei dem ein bereits geloeschter Film kein Fehler ist. */
+    private suspend fun deleteTolerantly(remoteId: Int) {
+        try {
+            api.deleteMovie(remoteId)
+        } catch (e: retrofit2.HttpException) {
+            if (e.code() != 404) throw e
+        }
     }
 
     // ── Herunterladen ────────────────────────────────────────────────────────
@@ -311,7 +345,25 @@ interface SyncApi {
     suspend fun exportMovies(since: String?): ExportResponse
     suspend fun createMovie(request: MovieUpdateRequest): SingleMovieResponse
     suspend fun updateMovie(id: Int, request: MovieUpdateRequest): SingleMovieResponse
+
+    /**
+     * Loeschen. Ein bereits geloeschter Film (404) gilt als Erfolg — das Ziel
+     * ist erreicht, und ein Fehler wuerde die Zeile fuer immer abweichend
+     * halten.
+     */
     suspend fun deleteMovie(id: Int)
+
+    /**
+     * Film ueber TMDb anlegen lassen. Der Server holt dabei Bilder, Besetzung
+     * und Metadaten selbst — ueber [createMovie] angelegt, stuende er auf der
+     * Shelf ohne all das da.
+     */
+    suspend fun importFromTmdb(
+        tmdbId: Int,
+        type: String,
+        inCollection: Boolean,
+        seasons: List<Int>?
+    ): SingleMovieResponse
 }
 
 enum class SyncPhase { PUSH, PULL, MEDIA, DONE }
