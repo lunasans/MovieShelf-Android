@@ -94,7 +94,20 @@ data class ApiEpisode(
 
 // --- Staffeln nachladen (TMDb über die Shelf) ---
 data class TmdbTvDetails(
-    val seasons: List<TmdbSeasonOption>? = null
+    val seasons: List<TmdbSeasonOption>? = null,
+    // Nur beim direkten TMDb-Zugriff gefuellt; ueber den Shelf-Proxy kommen
+    // lediglich die Staffeln.
+    val id: Int? = null,
+    val name: String? = null,
+    val overview: String? = null,
+    @SerializedName("first_air_date") val firstAirDate: String? = null,
+    @SerializedName("poster_path") val posterPath: String? = null,
+    @SerializedName("backdrop_path") val backdropPath: String? = null,
+    @SerializedName("vote_average") val voteAverage: Double? = null,
+    @SerializedName("episode_run_time") val episodeRunTime: List<Int>? = null,
+    val genres: List<at.neuhaus.movieshelf.data.api.TmdbGenre>? = null,
+    val credits: at.neuhaus.movieshelf.data.api.TmdbCredits? = null,
+    val videos: at.neuhaus.movieshelf.data.api.TmdbVideos? = null
 )
 
 data class TmdbSeasonOption(

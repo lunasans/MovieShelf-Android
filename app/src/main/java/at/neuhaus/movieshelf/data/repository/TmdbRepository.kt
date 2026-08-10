@@ -2,6 +2,7 @@ package at.neuhaus.movieshelf.data.repository
 
 import at.neuhaus.movieshelf.data.api.MovieShelfApi
 import at.neuhaus.movieshelf.data.api.TmdbApi
+import at.neuhaus.movieshelf.data.api.TmdbCredits
 import at.neuhaus.movieshelf.data.model.MovieUpdateRequest
 import at.neuhaus.movieshelf.data.model.TmdbSearchResponse
 
@@ -39,15 +40,19 @@ class TmdbRepository(
      * @return lokale ID des angelegten Films, oder `null` im Shelf-Betrieb —
      *   dort legt der Server ihn an und der Abgleich holt ihn.
      */
-    suspend fun import(tmdbId: Int, inCollection: Boolean): Long? {
+    suspend fun import(tmdbId: Int, inCollection: Boolean, series: Boolean = false): Long? {
         if (isShelfMode()) {
             movieRepository.importFromTmdb(tmdbId, inCollection)
             return null
         }
 
         val key = apiKeyProvider() ?: throw MissingTmdbKeyException()
-        val details = tmdbApi.getMovie(tmdbId, key)
+        return if (series) importSeries(tmdbId, key, inCollection)
+        else importMovie(tmdbId, key, inCollection)
+    }
 
+    private suspend fun importMovie(tmdbId: Int, key: String, inCollection: Boolean): Long? {
+        val details = tmdbApi.getMovie(tmdbId, key)
         val localId = movieRepository.createMovie(
             MovieUpdateRequest(
                 title = details.title ?: "Ohne Titel",
@@ -61,20 +66,68 @@ class TmdbRepository(
                 trailerUrl = details.trailerUrl,
                 inCollection = inCollection
             )
+        ) ?: return null
+
+        finish(localId, details.posterPath, details.backdropPath, details.credits)
+        return localId
+    }
+
+    private suspend fun importSeries(tmdbId: Int, key: String, inCollection: Boolean): Long? {
+        val details = tmdbApi.getSeries(tmdbId, key)
+        val localId = movieRepository.createMovie(
+            MovieUpdateRequest(
+                title = details.name ?: "Ohne Titel",
+                year = details.firstAirDate?.take(4)?.toIntOrNull() ?: 0,
+                collectionType = "Serie",
+                genre = details.genres?.mapNotNull { it.name }?.joinToString(", ")?.takeIf { it.isNotBlank() },
+                // Serien haben keine einzelne Laufzeit; TMDb liefert eine Liste
+                // ueblicher Episodenlaengen.
+                runtime = details.episodeRunTime?.firstOrNull(),
+                rating = details.voteAverage,
+                overview = details.overview,
+                inCollection = inCollection
+            )
+        ) ?: return null
+
+        finish(localId, details.posterPath, details.backdropPath, details.credits)
+        return localId
+    }
+
+    /**
+     * Bilder und Besetzung nachtragen.
+     *
+     * Bilder werden als TMDb-URL vermerkt statt heruntergeladen: Coil hält sie
+     * ohnehin im Cache, und ein eigener Speicher müsste selbst aufgeräumt
+     * werden.
+     */
+    private suspend fun finish(
+        localId: Long,
+        posterPath: String?,
+        backdropPath: String?,
+        credits: TmdbCredits?
+    ) {
+        movieRepository.setImageUrls(
+            localId = localId,
+            coverUrl = TmdbApi.imageUrl(posterPath),
+            backdropUrl = TmdbApi.imageUrl(backdropPath)
         )
 
-        // Bilder liegen bei TMDb unter einem Pfad, nicht unter einer vollen URL.
-        // Sie werden als URL vermerkt statt heruntergeladen: Coil hält sie
-        // ohnehin im Cache, und ein eigener Speicher müsste selbst aufgeräumt
-        // werden.
-        if (localId != null) {
-            movieRepository.setImageUrls(
-                localId = localId,
-                coverUrl = TmdbApi.imageUrl(details.posterPath),
-                backdropUrl = TmdbApi.imageUrl(details.backdropPath)
-            )
-        }
-        return localId
+        val cast = credits?.cast.orEmpty()
+            .sortedBy { it.order ?: Int.MAX_VALUE }
+            // Nur die vordere Besetzung: TMDb liefert bei grossen Produktionen
+            // hunderte Eintraege bis zur Statisterie.
+            .take(15)
+            .mapNotNull { member ->
+                member.name?.let {
+                    LocalCastMember(
+                        name = it,
+                        role = member.character,
+                        imageUrl = TmdbApi.imageUrl(member.profilePath),
+                        tmdbId = member.id
+                    )
+                }
+            }
+        if (cast.isNotEmpty()) movieRepository.setCast(localId, cast)
     }
 }
 

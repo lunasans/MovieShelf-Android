@@ -51,6 +51,7 @@ class MovieShelfApplication : Application(), ImageLoaderFactory {
     val movieRepository by lazy {
         MovieRepository(
             movieDao = database.movieDao(),
+            actorDao = database.actorDao(),
             pendingUploadDao = database.pendingUploadDao(),
             mediaStore = mediaStore,
             isShelfMode = { isShelfMode() }

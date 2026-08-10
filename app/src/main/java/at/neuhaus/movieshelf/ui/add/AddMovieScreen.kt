@@ -137,6 +137,40 @@ fun AddMovieScreen(
                         }
                     }
                     
+                    if (viewModel.searchUnavailable) {
+                        Card(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp, vertical = 8.dp),
+                            colors = CardDefaults.cardColors(
+                                containerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.5f)
+                            )
+                        ) {
+                            Text(
+                                "Für die Suche fehlt ein TMDb-Schlüssel. Du kannst ihn im Profil eintragen.",
+                                modifier = Modifier.padding(16.dp),
+                                style = MaterialTheme.typography.bodySmall
+                            )
+                        }
+                    }
+
+                    SingleChoiceSegmentedButtonRow(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 8.dp)
+                    ) {
+                        SegmentedButton(
+                            selected = !viewModel.searchSeries,
+                            onClick = { viewModel.onTypeChanged(false) },
+                            shape = SegmentedButtonDefaults.itemShape(index = 0, count = 2)
+                        ) { Text("Film") }
+                        SegmentedButton(
+                            selected = viewModel.searchSeries,
+                            onClick = { viewModel.onTypeChanged(true) },
+                            shape = SegmentedButtonDefaults.itemShape(index = 1, count = 2)
+                        ) { Text("Serie") }
+                    }
+
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()

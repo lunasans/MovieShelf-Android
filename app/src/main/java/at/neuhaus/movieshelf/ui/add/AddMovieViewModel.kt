@@ -27,6 +27,10 @@ class AddMovieViewModel(
     var successMessage by mutableStateOf<String?>(null)
     var importToCollection by mutableStateOf(true)
 
+    /** Suche nach Serien statt nach Filmen. */
+    var searchSeries by mutableStateOf(false)
+        private set
+
     init {
         viewModelScope.launch { searchUnavailable = !repository.isSearchAvailable() }
     }
@@ -50,7 +54,7 @@ class AddMovieViewModel(
         isLoading = true
         error = null
         try {
-            val response = repository.search(query)
+            val response = repository.search(query, searchSeries)
             searchResults = (response.results ?: emptyList()).map { it.toUiMap() }
         } catch (e: Exception) {
             error = "TMDb-Suche fehlgeschlagen: ${e.message}"
@@ -59,12 +63,23 @@ class AddMovieViewModel(
         }
     }
 
+    fun onTypeChanged(series: Boolean) {
+        if (searchSeries == series) return
+        searchSeries = series
+        // Ergebnisse gehoeren zum alten Typ und waeren jetzt irrefuehrend.
+        searchResults = emptyList()
+        if (searchQuery.length >= 2) {
+            searchJob?.cancel()
+            searchJob = viewModelScope.launch { performTmdbSearch(searchQuery) }
+        }
+    }
+
     fun importMovie(tmdbId: Int, onComplete: () -> Unit) {
         viewModelScope.launch {
             isImporting = true
             error = null
             try {
-                repository.import(tmdbId, importToCollection)
+                repository.import(tmdbId, importToCollection, searchSeries)
                 successMessage = "Film erfolgreich importiert!"
                 delay(1500)
                 onComplete()

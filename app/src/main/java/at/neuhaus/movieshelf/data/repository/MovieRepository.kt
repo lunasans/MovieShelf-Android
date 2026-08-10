@@ -1,6 +1,9 @@
 package at.neuhaus.movieshelf.data.repository
 
 import at.neuhaus.movieshelf.data.api.MovieShelfApi
+import at.neuhaus.movieshelf.data.local.db.ActorDao
+import at.neuhaus.movieshelf.data.local.db.ActorEntity
+import at.neuhaus.movieshelf.data.local.db.FilmActorCrossRef
 import at.neuhaus.movieshelf.data.local.db.MovieDao
 import at.neuhaus.movieshelf.data.local.db.MovieEntity
 import at.neuhaus.movieshelf.data.local.LocalStats
@@ -15,10 +18,19 @@ import at.neuhaus.movieshelf.data.model.Stats
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.RequestBody.Companion.toRequestBody
 
+/** Ein Darsteller, wie ihn TMDb liefert — Zwischenform fuer [MovieRepository.setCast]. */
+data class LocalCastMember(
+    val name: String,
+    val role: String? = null,
+    val imageUrl: String? = null,
+    val tmdbId: Int? = null
+)
+
 private const val CACHE_MAX_AGE_MS = 30 * 60 * 1000L // 30 Minuten
 
 class MovieRepository(
     private val movieDao: MovieDao,
+    private val actorDao: ActorDao,
     private val pendingUploadDao: PendingUploadDao,
     private val mediaStore: MediaStore,
     /**
@@ -93,8 +105,8 @@ class MovieRepository(
     /** Film über seine lokale ID lesen — Netz nur zum Auffrischen. */
     suspend fun getMovieByLocalId(localId: Long): Movie? {
         val local = movieDao.getByLocalId(localId)
-        val remoteId = local?.remoteId ?: return local?.toMovie()
-        if (!isShelfMode()) return local.toMovie()
+        val remoteId = local?.remoteId ?: return local?.let { withLocalCast(it) }
+        if (!isShelfMode()) return withLocalCast(local)
         return try {
             val fresh = api.getMovie(remoteId).data
             if (fresh == null) local.toMovie() else {
@@ -104,8 +116,58 @@ class MovieRepository(
             }
         } catch (e: Exception) {
             isOffline = true
-            local.toMovie()
+            withLocalCast(local)
         }
+    }
+
+    /**
+     * Besetzung aus der lokalen Tabelle nachreichen.
+     *
+     * Filme von der Shelf bringen ihre Darsteller als JSON mit; lokal
+     * angelegte haben dort nichts stehen und beziehen sie ueber `film_actor`.
+     */
+    private suspend fun withLocalCast(entity: MovieEntity): Movie {
+        val movie = entity.toMovie()
+        if (!movie.actors.isNullOrEmpty()) return movie
+        val cast = actorDao.getCastOf(entity.localId)
+        if (cast.isEmpty()) return movie
+        return movie.copy(
+            actors = cast.map { actor ->
+                at.neuhaus.movieshelf.data.model.Actor(
+                    id = actor.remoteId,
+                    name = actor.name,
+                    imageUrl = actor.imagePath,
+                    biography = actor.bio,
+                    birthDate = actor.birthday,
+                    placeOfBirth = actor.placeOfBirth
+                )
+            }
+        )
+    }
+
+    /** Besetzung eines lokal angelegten Films setzen. */
+    suspend fun setCast(localId: Long, cast: List<LocalCastMember>) {
+        val now = SyncClock.now()
+        val refs = cast.mapIndexedNotNull { index, member ->
+            val existing = actorDao.findLocalIdByName(member.name)
+            val actorLocalId = if (existing != null) existing else actorDao.insert(
+                ActorEntity(
+                    name = member.name,
+                    imagePath = member.imageUrl,
+                    tmdbId = member.tmdbId,
+                    createdAt = now,
+                    updatedAt = now
+                )
+            )
+            FilmActorCrossRef(
+                movieLocalId = localId,
+                actorLocalId = actorLocalId,
+                role = member.role,
+                isMainRole = index < 3,
+                sortOrder = index
+            )
+        }
+        actorDao.replaceCast(localId, refs)
     }
 
     suspend fun getRemoteId(localId: Long): Int? = movieDao.getByLocalId(localId)?.remoteId
