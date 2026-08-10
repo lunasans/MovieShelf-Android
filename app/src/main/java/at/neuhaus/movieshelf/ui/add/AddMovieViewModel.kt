@@ -4,15 +4,18 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
-import at.neuhaus.movieshelf.data.api.RetrofitClient
+import at.neuhaus.movieshelf.data.repository.MovieRepository
 import at.neuhaus.movieshelf.data.model.TmdbImportRequest
 import at.neuhaus.movieshelf.data.model.TmdbSearchItem
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
-class AddMovieViewModel : ViewModel() {
+class AddMovieViewModel(
+    private val repository: MovieRepository
+) : ViewModel() {
     var searchQuery by mutableStateOf("")
     var searchResults by mutableStateOf<List<Map<String, Any>>>(emptyList())
     var isLoading by mutableStateOf(false)
@@ -40,7 +43,7 @@ class AddMovieViewModel : ViewModel() {
         isLoading = true
         error = null
         try {
-            val response = RetrofitClient.api.searchTmdb(query)
+            val response = repository.searchTmdb(query)
             searchResults = (response.results ?: emptyList()).map { it.toUiMap() }
         } catch (e: Exception) {
             error = "TMDb-Suche fehlgeschlagen: ${e.message}"
@@ -54,11 +57,7 @@ class AddMovieViewModel : ViewModel() {
             isImporting = true
             error = null
             try {
-                RetrofitClient.api.importFromTmdb(TmdbImportRequest(
-                    tmdbId = tmdbId, 
-                    type = "movie",
-                    inCollection = importToCollection
-                ))
+                repository.importFromTmdb(tmdbId, importToCollection)
                 successMessage = "Film erfolgreich importiert!"
                 delay(1500)
                 onComplete()
@@ -67,6 +66,15 @@ class AddMovieViewModel : ViewModel() {
             } finally {
                 isImporting = false
             }
+        }
+    }
+
+    class Factory(
+        private val repository: MovieRepository
+    ) : ViewModelProvider.Factory {
+        override fun <T : ViewModel> create(modelClass: Class<T>): T {
+            @Suppress("UNCHECKED_CAST")
+            return AddMovieViewModel(repository) as T
         }
     }
 }

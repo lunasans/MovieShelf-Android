@@ -3,6 +3,8 @@ package at.neuhaus.movieshelf
 import android.app.Application
 import at.neuhaus.movieshelf.data.api.RetrofitClient
 import at.neuhaus.movieshelf.data.local.db.MovieShelfDatabase
+import at.neuhaus.movieshelf.data.repository.ActorRepository
+import at.neuhaus.movieshelf.data.repository.ListRepository
 import at.neuhaus.movieshelf.data.repository.MovieRepository
 import coil.ImageLoader
 import coil.ImageLoaderFactory
@@ -16,6 +18,14 @@ class MovieShelfApplication : Application(), ImageLoaderFactory {
 
     val movieRepository by lazy {
         MovieRepository(database.movieDao()) { RetrofitClient.api }
+    }
+
+    val listRepository by lazy {
+        ListRepository { RetrofitClient.api }
+    }
+
+    val actorRepository by lazy {
+        ActorRepository { RetrofitClient.api }
     }
 
     override fun newImageLoader(): ImageLoader {

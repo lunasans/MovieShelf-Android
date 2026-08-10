@@ -26,6 +26,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import at.neuhaus.movieshelf.MovieShelfApplication
 import at.neuhaus.movieshelf.data.model.Movie
 import at.neuhaus.movieshelf.ui.dashboard.MovieItem
 import at.neuhaus.movieshelf.ui.util.resolveImageUrl
@@ -38,7 +39,10 @@ fun ActorDetailScreen(
     onBack: () -> Unit,
     onMovieClick: (Movie) -> Unit
 ) {
-    val viewModel: ActorDetailViewModel = viewModel(factory = ActorDetailViewModel.Factory(actorId))
+    val app = LocalContext.current.applicationContext as MovieShelfApplication
+    val viewModel: ActorDetailViewModel = viewModel(
+        factory = ActorDetailViewModel.Factory(actorId, app.actorRepository)
+    )
     val actor = viewModel.actor
 
     Scaffold(

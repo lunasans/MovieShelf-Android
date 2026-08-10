@@ -27,6 +27,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
+import at.neuhaus.movieshelf.MovieShelfApplication
 import coil.compose.AsyncImage
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -36,7 +37,10 @@ fun AddMovieScreen(
     onMovieImported: () -> Unit,
     onCreateManual: () -> Unit = {}
 ) {
-    val viewModel: AddMovieViewModel = viewModel()
+    val app = LocalContext.current.applicationContext as MovieShelfApplication
+    val viewModel: AddMovieViewModel = viewModel(
+        factory = AddMovieViewModel.Factory(app.movieRepository)
+    )
     val isAdmin = at.neuhaus.movieshelf.data.SessionManager.user?.isAdmin == true
     val context = LocalContext.current
     val snackbarHostState = remember { SnackbarHostState() }

@@ -94,7 +94,8 @@ fun MovieDetailScreen(
                 onActorClick = onActorClick,
                 onActorNameClick = onActorNameClick,
                 onMovieClick = onMovieClick,
-                repository = app.movieRepository
+                repository = app.movieRepository,
+                listRepository = app.listRepository
             )
         }
     } else {
@@ -107,7 +108,8 @@ fun MovieDetailScreen(
             onActorClick = onActorClick,
             onActorNameClick = onActorNameClick,
             onMovieClick = onMovieClick,
-            repository = app.movieRepository
+            repository = app.movieRepository,
+            listRepository = app.listRepository
         )
     }
 }
@@ -123,11 +125,12 @@ private fun MovieDetailContent(
     onActorClick: (Int) -> Unit,
     onActorNameClick: (String) -> Unit,
     onMovieClick: (Movie) -> Unit,
-    repository: at.neuhaus.movieshelf.data.repository.MovieRepository
+    repository: at.neuhaus.movieshelf.data.repository.MovieRepository,
+    listRepository: at.neuhaus.movieshelf.data.repository.ListRepository
 ) {
     val viewModel: MovieDetailViewModel = viewModel(
         key = "$movieLocalId-$movieRemoteId",
-        factory = MovieDetailViewModel.Factory(movieLocalId, movieRemoteId, repository)
+        factory = MovieDetailViewModel.Factory(movieLocalId, movieRemoteId, repository, listRepository)
     )
     val movie = viewModel.movie
     val isAdmin = at.neuhaus.movieshelf.data.SessionManager.user?.isAdmin == true

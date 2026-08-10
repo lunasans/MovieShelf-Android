@@ -4,12 +4,15 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
-import at.neuhaus.movieshelf.data.api.RetrofitClient
+import at.neuhaus.movieshelf.data.repository.MovieRepository
 import at.neuhaus.movieshelf.data.model.*
 import kotlinx.coroutines.launch
 
-class StatsViewModel : ViewModel() {
+class StatsViewModel(
+    private val repository: MovieRepository
+) : ViewModel() {
     var stats by mutableStateOf<Stats?>(null)
     var isLoading by mutableStateOf(false)
     var error by mutableStateOf<String?>(null)
@@ -23,7 +26,7 @@ class StatsViewModel : ViewModel() {
             isLoading = true
             error = null
             try {
-                stats = RetrofitClient.api.getStats()
+                stats = repository.getStats()
             } catch (e: Exception) {
                 error = "Fehler beim Laden der Statistik: ${e.message}"
             } finally {
@@ -32,4 +35,12 @@ class StatsViewModel : ViewModel() {
         }
     }
 
+    class Factory(
+        private val repository: MovieRepository
+    ) : ViewModelProvider.Factory {
+        override fun <T : ViewModel> create(modelClass: Class<T>): T {
+            @Suppress("UNCHECKED_CAST")
+            return StatsViewModel(repository) as T
+        }
+    }
 }

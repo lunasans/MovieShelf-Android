@@ -149,6 +149,42 @@ class MovieRepository(
         movieDao.findLocalIdByRemoteId(id)?.let { movieDao.hardDelete(it) }
     }
 
+    // ── Aktionen am einzelnen Film ───────────────────────────────────────────
+    // Noch reine Netzaufrufe. Sie liegen hier statt in den ViewModels, damit
+    // Phase 3 sie an einer Stelle auf lokales Schreiben umstellen kann.
+
+    suspend fun toggleWishlist(remoteId: Int): Boolean? =
+        api.toggleWishlist(remoteId).wishlisted
+
+    suspend fun fetchTrailer(remoteId: Int): String? {
+        val response = api.fetchTrailer(remoteId)
+        return if (response.found == true) response.trailerUrl else null
+    }
+
+    suspend fun getTmdbTvDetails(tmdbId: Int) = api.getTmdbTvDetails(tmdbId)
+
+    suspend fun importSeasons(remoteId: Int, seasons: List<Int>) {
+        api.importSeasons(at.neuhaus.movieshelf.data.model.SeasonImportRequest(remoteId, seasons))
+    }
+
+    suspend fun removeSeasons(remoteId: Int, seasons: List<Int>) {
+        api.removeSeasons(at.neuhaus.movieshelf.data.model.SeasonImportRequest(remoteId, seasons))
+    }
+
+    suspend fun getStats() = api.getStats()
+
+    suspend fun searchTmdb(query: String) = api.searchTmdb(query)
+
+    suspend fun importFromTmdb(tmdbId: Int, inCollection: Boolean) {
+        api.importFromTmdb(
+            at.neuhaus.movieshelf.data.model.TmdbImportRequest(
+                tmdbId = tmdbId,
+                type = "movie",
+                inCollection = inCollection
+            )
+        )
+    }
+
     /**
      * Bild-Uploads über die lokale ID. Fehlt die Server-ID, existiert der Film
      * nur lokal — der Upload wird dann übersprungen und ab Phase 3 vorgemerkt.

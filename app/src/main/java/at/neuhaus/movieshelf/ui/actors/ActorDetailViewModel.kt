@@ -6,12 +6,15 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
-import at.neuhaus.movieshelf.data.api.RetrofitClient
 import at.neuhaus.movieshelf.data.model.Actor
 import at.neuhaus.movieshelf.data.model.Movie
+import at.neuhaus.movieshelf.data.repository.ActorRepository
 import kotlinx.coroutines.launch
 
-class ActorDetailViewModel(private val actorId: Int) : ViewModel() {
+class ActorDetailViewModel(
+    private val actorId: Int,
+    private val repository: ActorRepository
+) : ViewModel() {
     var actor by mutableStateOf<Actor?>(null)
     var isLoading by mutableStateOf(false)
     var error by mutableStateOf<String?>(null)
@@ -25,8 +28,7 @@ class ActorDetailViewModel(private val actorId: Int) : ViewModel() {
             isLoading = true
             error = null
             try {
-                    val response = RetrofitClient.api.getActor(actorId)
-                    actor = response.data
+                actor = repository.getActor(actorId)
             } catch (e: Exception) {
                 error = "Fehler beim Laden des Schauspielers: ${e.message}"
             } finally {
@@ -36,10 +38,13 @@ class ActorDetailViewModel(private val actorId: Int) : ViewModel() {
     }
 
 
-    class Factory(private val actorId: Int) : ViewModelProvider.Factory {
+    class Factory(
+        private val actorId: Int,
+        private val repository: ActorRepository
+    ) : ViewModelProvider.Factory {
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
             @Suppress("UNCHECKED_CAST")
-            return ActorDetailViewModel(actorId) as T
+            return ActorDetailViewModel(actorId, repository) as T
         }
     }
 }

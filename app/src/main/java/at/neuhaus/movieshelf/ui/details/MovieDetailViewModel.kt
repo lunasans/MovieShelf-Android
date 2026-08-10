@@ -6,14 +6,12 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
-import at.neuhaus.movieshelf.data.api.RetrofitClient
 import at.neuhaus.movieshelf.data.model.Actor
 import at.neuhaus.movieshelf.data.model.ListItemRef
-import at.neuhaus.movieshelf.data.model.ListMutationRequest
 import at.neuhaus.movieshelf.data.model.Movie
 import at.neuhaus.movieshelf.data.model.MovieListSummary
-import at.neuhaus.movieshelf.data.model.SeasonImportRequest
 import at.neuhaus.movieshelf.data.model.TmdbSeasonOption
+import at.neuhaus.movieshelf.data.repository.ListRepository
 import at.neuhaus.movieshelf.data.repository.MovieRepository
 import kotlinx.coroutines.launch
 
@@ -26,7 +24,8 @@ import kotlinx.coroutines.launch
 class MovieDetailViewModel(
     private var initialLocalId: Long,
     private val initialRemoteId: Int = 0,
-    private val repository: MovieRepository? = null
+    private val repository: MovieRepository,
+    private val listRepository: ListRepository
 ) : ViewModel() {
     var movie by mutableStateOf<Movie?>(null)
 
@@ -65,8 +64,6 @@ class MovieDetailViewModel(
 
     private suspend fun load(): Movie? {
         val repo = repository
-            ?: return RetrofitClient.api.getMovie(if (localId != 0L) 0 else initialRemoteId).data
-
         if (localId != 0L) return repo.getMovieByLocalId(localId)
 
         // Ohne lokale ID: erst nachschlagen, ob der Film lokal doch bekannt ist,
@@ -91,12 +88,7 @@ class MovieDetailViewModel(
 
         viewModelScope.launch {
             try {
-                // Über das Repository, damit auch der lokale Room-Cache aktualisiert wird.
-                if (repository != null) {
-                    repository.toggleWatched(currentMovie.id, currentState)
-                } else {
-                    RetrofitClient.api.toggleWatched(currentMovie.id)
-                }
+                repository.toggleWatched(currentMovie.id, currentState)
             } catch (e: Exception) {
                 movie = currentMovie // Rollback bei Fehler
                 error = "Fehler beim Aktualisieren: ${e.message}"
@@ -113,8 +105,8 @@ class MovieDetailViewModel(
 
         viewModelScope.launch {
             try {
-                val response = RetrofitClient.api.toggleWishlist(currentMovie.id)
-                movie = movie?.copy(isWishlisted = response.wishlisted ?: newState)
+                val wishlisted = repository.toggleWishlist(currentMovie.id)
+                movie = movie?.copy(isWishlisted = wishlisted ?: newState)
             } catch (e: Exception) {
                 movie = currentMovie // Rollback bei Fehler
                 error = "Fehler bei der Wunschliste: ${e.message}"
@@ -129,9 +121,9 @@ class MovieDetailViewModel(
             isFetchingTrailer = true
             error = null
             try {
-                val response = RetrofitClient.api.fetchTrailer(current.id)
-                if (response.found == true && !response.trailerUrl.isNullOrBlank()) {
-                    movie = current.copy(trailerUrl = response.trailerUrl)
+                val trailerUrl = repository.fetchTrailer(current.id)
+                if (!trailerUrl.isNullOrBlank()) {
+                    movie = current.copy(trailerUrl = trailerUrl)
                     listActionMessage = "Trailer gefunden und gespeichert."
                 } else {
                     error = "Kein Trailer gefunden."
@@ -180,7 +172,7 @@ class MovieDetailViewModel(
         viewModelScope.launch {
             seasonDialogLoading = true
             try {
-                val details = RetrofitClient.api.getTmdbTvDetails(tmdbId)
+                val details = repository.getTmdbTvDetails(tmdbId)
                 seasonOptions = (details.seasons ?: emptyList()).filter { it.seasonNumber > 0 }
             } catch (e: Exception) {
                 error = "Staffeln konnten nicht geladen werden."
@@ -208,10 +200,10 @@ class MovieDetailViewModel(
             seasonImporting = true
             try {
                 if (toAdd.isNotEmpty()) {
-                    RetrofitClient.api.importSeasons(SeasonImportRequest(current.id, toAdd))
+                    repository.importSeasons(current.id, toAdd)
                 }
                 if (toRemove.isNotEmpty()) {
-                    RetrofitClient.api.removeSeasons(SeasonImportRequest(current.id, toRemove))
+                    repository.removeSeasons(current.id, toRemove)
                 }
                 val parts = mutableListOf<String>()
                 if (toAdd.isNotEmpty()) parts.add("${toAdd.size} nachgeladen")
@@ -232,7 +224,7 @@ class MovieDetailViewModel(
     fun loadLists() {
         viewModelScope.launch {
             try {
-                availableLists = RetrofitClient.api.getLists().lists ?: emptyList()
+                availableLists = listRepository.getLists()
             } catch (e: Exception) {
                 // still ignorieren – Sheet zeigt dann leere Liste
             }
@@ -244,9 +236,7 @@ class MovieDetailViewModel(
         val current = movie ?: return
         viewModelScope.launch {
             try {
-                val items = ((list.items ?: emptyList()) + ListItemRef("movie", current.id))
-                    .distinctBy { it.type to it.id }
-                RetrofitClient.api.updateList(list.id, ListMutationRequest(list.name ?: "Liste", items))
+                listRepository.addMovieToList(list, current)
                 listActionMessage = "Zu \"${list.name ?: "Liste"}\" hinzugefügt."
             } catch (e: Exception) {
                 error = "Konnte nicht zur Liste hinzufügen."
@@ -257,11 +247,12 @@ class MovieDetailViewModel(
     class Factory(
         private val localId: Long,
         private val remoteId: Int = 0,
-        private val repository: MovieRepository? = null
+        private val repository: MovieRepository,
+        private val listRepository: ListRepository
     ) : ViewModelProvider.Factory {
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
             @Suppress("UNCHECKED_CAST")
-            return MovieDetailViewModel(localId, remoteId, repository) as T
+            return MovieDetailViewModel(localId, remoteId, repository, listRepository) as T
         }
     }
 }
