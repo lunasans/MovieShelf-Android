@@ -20,6 +20,10 @@ import at.neuhaus.movieshelf.data.sync.ListSyncApi
 import at.neuhaus.movieshelf.data.sync.ListSyncEngine
 import at.neuhaus.movieshelf.data.sync.SyncApi
 import at.neuhaus.movieshelf.data.sync.SyncEngine
+import at.neuhaus.movieshelf.data.sync.SyncWorker
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import coil.ImageLoader
 import coil.ImageLoaderFactory
 import coil.disk.DiskCache
@@ -48,6 +52,21 @@ class MovieShelfApplication : Application(), ImageLoaderFactory {
 
     suspend fun setAppMode(mode: AppMode) {
         database.settingDao().put(SettingKeys.MODE, mode.key)
+        applySyncSchedule(mode)
+    }
+
+    /** Hintergrundabgleich nur im Shelf-Betrieb — sonst gibt es kein Gegenüber. */
+    fun applySyncSchedule(mode: AppMode?) {
+        if (mode == AppMode.SHELF) SyncWorker.schedule(this) else SyncWorker.cancel(this)
+    }
+
+    override fun onCreate() {
+        super.onCreate()
+        // Beim Start nachziehen: der Zeitplan ueberlebt zwar Neustarts, aber
+        // nicht das Loeschen der App-Daten.
+        CoroutineScope(Dispatchers.IO).launch {
+            runCatching { applySyncSchedule(AppMode.from(database.settingDao().get(SettingKeys.MODE))) }
+        }
     }
 
     private suspend fun isShelfMode(): Boolean =

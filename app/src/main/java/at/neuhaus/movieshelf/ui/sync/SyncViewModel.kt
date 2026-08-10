@@ -6,6 +6,8 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import at.neuhaus.movieshelf.data.local.db.SettingDao
+import at.neuhaus.movieshelf.data.local.db.SettingKeys
 import at.neuhaus.movieshelf.data.sync.ListSyncEngine
 import at.neuhaus.movieshelf.data.sync.ListSyncResult
 import at.neuhaus.movieshelf.data.sync.SyncEngine
@@ -17,10 +19,17 @@ import kotlinx.coroutines.launch
 
 class SyncViewModel(
     private val syncEngine: SyncEngine,
-    private val listSyncEngine: ListSyncEngine
+    private val listSyncEngine: ListSyncEngine,
+    private val settingDao: SettingDao
 ) : ViewModel() {
 
     var lastSyncAt by mutableStateOf<String?>(null)
+        private set
+
+    /** Was der letzte Hintergrundlauf getan hat, `null` wenn noch keiner lief. */
+    var backgroundSummary by mutableStateOf<String?>(null)
+        private set
+    var backgroundAt by mutableStateOf<String?>(null)
         private set
     var preview by mutableStateOf<SyncPreview?>(null)
         private set
@@ -35,7 +44,11 @@ class SyncViewModel(
     var error by mutableStateOf<String?>(null)
 
     init {
-        viewModelScope.launch { lastSyncAt = syncEngine.lastSyncAt() }
+        viewModelScope.launch {
+            lastSyncAt = syncEngine.lastSyncAt()
+            backgroundAt = settingDao.get(SettingKeys.LAST_BACKGROUND_SYNC)
+            backgroundSummary = settingDao.get(SettingKeys.LAST_BACKGROUND_RESULT)
+        }
         viewModelScope.launch {
             syncEngine.progress.collectLatest { progress = it }
         }
@@ -85,11 +98,12 @@ class SyncViewModel(
 
     class Factory(
         private val syncEngine: SyncEngine,
-        private val listSyncEngine: ListSyncEngine
+        private val listSyncEngine: ListSyncEngine,
+        private val settingDao: SettingDao
     ) : ViewModelProvider.Factory {
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
             @Suppress("UNCHECKED_CAST")
-            return SyncViewModel(syncEngine, listSyncEngine) as T
+            return SyncViewModel(syncEngine, listSyncEngine, settingDao) as T
         }
     }
 }

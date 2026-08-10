@@ -33,7 +33,11 @@ import at.neuhaus.movieshelf.ui.theme.PillShape
 fun SyncScreen(onBack: () -> Unit) {
     val app = LocalContext.current.applicationContext as MovieShelfApplication
     val viewModel: SyncViewModel = viewModel(
-        factory = SyncViewModel.Factory(app.syncEngine, app.listSyncEngine)
+        factory = SyncViewModel.Factory(
+            app.syncEngine,
+            app.listSyncEngine,
+            app.database.settingDao()
+        )
     )
 
     Scaffold(
@@ -63,6 +67,17 @@ fun SyncScreen(onBack: () -> Unit) {
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
+
+                // Der Hintergrundlauf kann nichts melden, waehrend er laeuft —
+                // deshalb steht sein Ergebnis hier.
+                viewModel.backgroundSummary?.let { summary ->
+                    Spacer(Modifier.height(4.dp))
+                    Text(
+                        text = "Im Hintergrund${viewModel.backgroundAt?.let { " ($it)" } ?: ""}: $summary",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
             }
 
             viewModel.progress?.let { progress ->
