@@ -61,6 +61,9 @@ import coil.compose.AsyncImage
 fun DashboardScreen(
     onMovieClick: (Movie, List<Long>) -> Unit,
     onAboutClick: () -> Unit,
+    /** Fuehrt zum Abgleich — die Sammlung fuellt sich nur auf Knopfdruck. */
+    onSyncClick: () -> Unit = {},
+    isShelfMode: Boolean = false,
     reloadKey: Int = 0
 ) {
     val context = LocalContext.current
@@ -265,10 +268,32 @@ fun DashboardScreen(
                     }
                 } else if (!hasAnyShelfContent && !viewModel.isLoading) {
                     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            modifier = Modifier.padding(horizontal = 32.dp)
+                        ) {
                             Icon(Icons.Default.SearchOff, null, Modifier.size(64.dp), tint = MaterialTheme.colorScheme.outline)
                             Spacer(Modifier.height(16.dp))
-                            Text("Keine Filme gefunden", style = MaterialTheme.typography.titleMedium)
+                            Text("Noch keine Filme", style = MaterialTheme.typography.titleMedium)
+                            Spacer(Modifier.height(8.dp))
+                            Text(
+                                text = if (isShelfMode) {
+                                    "Deine Sammlung wird beim Abgleich von der Shelf geholt."
+                                } else {
+                                    "Lege deinen ersten Film über das Plus an."
+                                },
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                            )
+                            if (isShelfMode) {
+                                Spacer(Modifier.height(16.dp))
+                                Button(onClick = onSyncClick, shape = at.neuhaus.movieshelf.ui.theme.PillShape) {
+                                    Icon(Icons.Default.Sync, contentDescription = null, modifier = Modifier.size(18.dp))
+                                    Spacer(Modifier.width(8.dp))
+                                    Text("Jetzt abgleichen", fontWeight = FontWeight.Bold)
+                                }
+                            }
                         }
                     }
                 } else {

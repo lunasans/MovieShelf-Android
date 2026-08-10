@@ -19,6 +19,19 @@ interface MovieDao {
     @Query("SELECT * FROM movies WHERE localId = :localId LIMIT 1")
     suspend fun getByLocalId(localId: Long): MovieEntity?
 
+    /**
+     * Neuzugaenge — was die Shelf frueher ueber `tag=new` lieferte, kommt
+     * jetzt aus der eigenen Sammlung: die zuletzt hinzugekommenen Filme.
+     */
+    @Query("""
+        SELECT * FROM movies
+        WHERE isDeleted = 0 AND boxsetParentLocalId IS NULL
+          AND (inCollection = 1 OR inCollection IS NULL)
+        ORDER BY COALESCE(createdAt, '') DESC, localId DESC
+        LIMIT :limit
+    """)
+    suspend fun getNewest(limit: Int): List<MovieEntity>
+
     @Query("SELECT * FROM movies WHERE remoteId = :remoteId LIMIT 1")
     suspend fun getByRemoteId(remoteId: Int): MovieEntity?
 
@@ -80,22 +93,6 @@ interface MovieDao {
     }
 
     private fun isLocalFile(value: String?): Boolean = value?.startsWith("/") == true
-
-    /**
-     * Vollstand einspielen: einspielen und danach alles entfernen, was der
-     * Server nicht mehr kennt. Zeilen ohne [MovieEntity.syncedAt] bleiben
-     * unangetastet — sie existieren nur lokal und wären sonst verloren, bevor
-     * sie je hochgeladen wurden.
-     */
-    @Transaction
-    suspend fun replaceServerState(movies: List<MovieEntity>) {
-        upsertFromServer(movies)
-        val keep = movies.mapNotNull { it.remoteId }
-        if (keep.isNotEmpty()) deleteVanishedServerRows(keep)
-    }
-
-    @Query("DELETE FROM movies WHERE syncedAt IS NOT NULL AND remoteId NOT IN (:keep)")
-    suspend fun deleteVanishedServerRows(keep: List<Int>)
 
     @Query("UPDATE movies SET isWatched = :isWatched, updatedAt = :now WHERE localId = :localId")
     suspend fun updateWatched(localId: Long, isWatched: Boolean, now: String)

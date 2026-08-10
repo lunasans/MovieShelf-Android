@@ -355,6 +355,8 @@ fun MovieShelfApp(oauthCallbackUri: MutableState<Uri?> = mutableStateOf(null)) {
 
                     DashboardScreen(
                         reloadKey = refreshKey,
+                        isShelfMode = appMode == AppMode.SHELF,
+                        onSyncClick = { navController.navigate("sync") },
                         onMovieClick = { movie: Movie, allIds: List<Long> ->
                             navController.navigate(movieDetailsRoute(movie, allIds))
                         },

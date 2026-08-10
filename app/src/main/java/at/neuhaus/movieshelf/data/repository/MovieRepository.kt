@@ -55,76 +55,38 @@ class MovieRepository(
         private set
 
     /**
-     * Versucht alle Filme vom Server zu laden und cached sie.
-     * Fällt bei Fehler auf den lokalen Cache zurück.
-     * Bei pageSize=0 wird alles geladen (für Offline-Vollsync).
+     * Die Sammlung lesen — ausschliesslich aus der lokalen Datenbank.
+     *
+     * Frueher holte dieser Aufruf bei jedem Oeffnen den Serverstand und
+     * spiegelte ihn. Das war zweifach falsch: es erzeugte Verkehr, den niemand
+     * angefordert hat, und die Spiegelung loeschte jede synchronisierte Zeile,
+     * die nicht auf der ersten Seite stand — die Folgeseiten legten sie mit
+     * neuen lokalen IDs wieder an, wodurch heruntergeladene Bilder verwaisten.
+     *
+     * Daten kommen jetzt nur noch ueber den Abgleich herein, und der laeuft auf
+     * Knopfdruck oder im Hintergrund. Genauso macht es die Desktop-App.
      */
     suspend fun getMovies(page: Int = 1, perPage: Int = 30, tag: String? = null): List<Movie> {
-        if (!isShelfMode()) return localPage(page, perPage)
-        return try {
-            val response = api.getMovies(page = page, perPage = perPage, tag = tag)
-            val movies = response.data ?: emptyList()
-            val entities = movies.map { MovieEntity.fromServerMovie(it) }
-            // Erste Seite spiegelt den Serverstand, weitere Seiten ergänzen ihn.
-            // Beides hebt bekannte Filme auf ihre bestehende lokale Zeile, damit
-            // die lokalen IDs über Abrufe hinweg stabil bleiben.
-            if (page == 1) {
-                movieDao.replaceServerState(entities)
-            } else {
-                movieDao.upsertFromServer(entities)
-            }
-            isOffline = false
-            movies
-        } catch (e: Exception) {
-            isOffline = true
-            // Offline: konsistent aus dem Cache paginieren, statt bei Seite > 1
-            // eine leere Liste zu liefern (was die UI als "Ende erreicht" deutet).
-            localPage(page, perPage)
-        }
-    }
-
-    private suspend fun localPage(page: Int, perPage: Int): List<Movie> {
+        if (tag == "new") return movieDao.getNewest(perPage).map { it.toMovie() }
         val local = movieDao.getAllMovies().map { it.toMovie() }
-        return if (page <= 1) local else local.drop((page - 1) * perPage).take(perPage)
+        return if (page <= 1) local.take(perPage) else local.drop((page - 1) * perPage).take(perPage)
     }
 
-    /**
-     * Suche — online wenn möglich, sonst lokale Suche.
-     */
-    suspend fun searchMovies(query: String): List<Movie> {
-        if (!isShelfMode()) return movieDao.searchMovies(query).map { it.toMovie() }
-        return try {
-            val response = api.searchMovies(query)
-            isOffline = false
-            response.data ?: emptyList()
-        } catch (e: Exception) {
-            isOffline = true
-            movieDao.searchMovies(query).map { it.toMovie() }
-        }
-    }
+    /** Suche in der lokalen Sammlung. */
+    suspend fun searchMovies(query: String): List<Movie> =
+        movieDao.searchMovies(query).map { it.toMovie() }
 
     // ── Lokale Identität ─────────────────────────────────────────────────────
     // Ab hier arbeitet die Oberfläche mit lokalen IDs. Die Server-ID wird erst
     // unmittelbar vor dem Netzaufruf nachgeschlagen; fehlt sie, existiert die
     // Zeile nur lokal und der Aufruf entfällt (statt gegen ID 0 zu laufen).
 
-    /** Film über seine lokale ID lesen — Netz nur zum Auffrischen. */
-    suspend fun getMovieByLocalId(localId: Long): Movie? {
-        val local = movieDao.getByLocalId(localId)
-        val remoteId = local?.remoteId ?: return local?.let { withLocalCast(it) }
-        if (!isShelfMode()) return withLocalCast(local)
-        return try {
-            val fresh = api.getMovie(remoteId).data
-            if (fresh == null) local.toMovie() else {
-                movieDao.upsertFromServer(listOf(MovieEntity.fromServerMovie(fresh, SyncClock.now())))
-                isOffline = false
-                movieDao.getByLocalId(localId)?.toMovie() ?: fresh.copy(localId = localId)
-            }
-        } catch (e: Exception) {
-            isOffline = true
-            withLocalCast(local)
-        }
-    }
+    /**
+     * Film ueber seine lokale ID lesen. Kein Netzaufruf: der angezeigte Stand
+     * ist der, den der letzte Abgleich hinterlassen hat.
+     */
+    suspend fun getMovieByLocalId(localId: Long): Movie? =
+        movieDao.getByLocalId(localId)?.let { withLocalCast(it) }
 
     /**
      * Besetzung aus der lokalen Tabelle nachreichen.
