@@ -67,12 +67,22 @@ class MediaHostsTest {
     }
 
     @Test
-    fun `nur Shelf-Adressen bekommen den Token`() {
+    fun `nur die Shelf selbst bekommt den Token`() {
         val shelf = "https://shelf.example.com"
-        assertTrue(MediaHosts.needsShelfAuth("https://medien.example.com/img.jpg", shelf))
-        assertFalse(MediaHosts.needsShelfAuth("https://fremd.example.org/img.jpg", shelf))
-        // Den Shelf-Token an TMDb zu schicken waere ein Leck.
+        assertTrue(MediaHosts.needsShelfAuth("https://shelf.example.com/media/img.jpg", shelf))
+
+        // Die Medien-Domain ist Objektspeicher und liefert ohne Anmeldung aus.
+        // Ein Token dorthin waere ein Leck, obwohl der Host einem selbst gehoert.
+        assertFalse(MediaHosts.needsShelfAuth("https://medien.example.com/img.jpg", shelf))
         assertFalse(MediaHosts.needsShelfAuth("https://image.tmdb.org/t/p/w500/abc.jpg", shelf))
         assertFalse(MediaHosts.needsShelfAuth("https://medien.example.com/img.jpg", null))
+    }
+
+    @Test
+    fun `die Medien-Domain bleibt zum Laden erlaubt`() {
+        // Erlaubt heisst nicht angemeldet: geladen wird von dort, nur ohne Token.
+        val shelf = "https://shelf.example.com"
+        assertTrue(MediaHosts.isAllowed("https://medien.example.com/img.jpg", shelf))
+        assertFalse(MediaHosts.needsShelfAuth("https://medien.example.com/img.jpg", shelf))
     }
 }

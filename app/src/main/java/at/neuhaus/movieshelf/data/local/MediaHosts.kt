@@ -58,11 +58,21 @@ object MediaHosts {
         return isAllowed(parsed, shelfUrl?.toHttpUrlOrNull())
     }
 
-    /** Ob die Adresse zur Shelf gehört und damit den Anmelde-Token braucht. */
+    /**
+     * Ob die Adresse den Anmelde-Token braucht.
+     *
+     * Nur die Shelf selbst — **exakt** derselbe Host. Medien-Subdomains wie
+     * `medien.movieshelf.info` sind Objektspeicher (R2) und liefern Bilder
+     * ohne Anmeldung aus; ein Token dorthin waere ein Leck, auch wenn der Host
+     * einem selbst gehoert. Die Desktop-App laedt Bilder ebenfalls ohne
+     * Anmeldedaten.
+     *
+     * Fuer den Download entscheidet weiterhin [isAllowed], das die
+     * Medien-Domain zulaesst — erlaubt heisst hier also nicht angemeldet.
+     */
     fun needsShelfAuth(url: String, shelfUrl: String?): Boolean {
         val parsed = url.toHttpUrlOrNull() ?: return false
-        if (parsed.host == TMDB_IMAGE_HOST) return false
         val shelf = shelfUrl?.toHttpUrlOrNull() ?: return false
-        return baseDomain(parsed.host) == baseDomain(shelf.host)
+        return parsed.host == shelf.host && parsed.port == shelf.port
     }
 }
