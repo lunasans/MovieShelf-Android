@@ -30,16 +30,6 @@ enum class ShelfCategory(val label: String) {
     SERIEN("Serien")
 }
 
-data class FilterState(
-    val selectedGenres: Set<String> = emptySet(),
-    val selectedDirectors: Set<String> = emptySet(),
-    val yearFrom: Int? = null,
-    val yearTo: Int? = null
-) {
-    val isActive: Boolean
-        get() = selectedGenres.isNotEmpty() || selectedDirectors.isNotEmpty() || yearFrom != null || yearTo != null
-}
-
 class DashboardViewModel(private val repository: MovieRepository) : ViewModel() {
 
     var movies by mutableStateOf<List<Movie>>(emptyList())
@@ -53,17 +43,8 @@ class DashboardViewModel(private val repository: MovieRepository) : ViewModel() 
 
     var searchQuery by mutableStateOf("")
     var sortOption by mutableStateOf(SortOption.BY_NEWEST)
-    var filterState by mutableStateOf(FilterState())
 
-    // Für den Filter-BottomSheet
-    var availableGenres by mutableStateOf<List<String>>(emptyList())
-        private set
-    var availableDirectors by mutableStateOf<List<String>>(emptyList())
-        private set
-    var yearRange by mutableStateOf<Pair<Int, Int>?>(null)
-        private set
-
-    // Vertikale "Shelf"-Reihen der Startseite (unabhängig von Suche/Filter)
+    // Vertikale "Shelf"-Reihen der Startseite (unabhaengig von der Suche)
     var newMoviesShelf by mutableStateOf<List<Movie>>(emptyList())
         private set
     var filmeShelf by mutableStateOf<List<Movie>>(emptyList())
@@ -103,7 +84,6 @@ class DashboardViewModel(private val repository: MovieRepository) : ViewModel() 
                 currentPage = 1
                 hasMore = result.size >= pageSize && !isOffline
                 recompute()
-                refreshFilterOptions()
                 loadAllRemainingPages()
             } catch (e: Exception) {
                 error = friendlyError(e)
@@ -201,16 +181,6 @@ class DashboardViewModel(private val repository: MovieRepository) : ViewModel() 
         recompute()
     }
 
-    fun onFilterChanged(newFilter: FilterState) {
-        filterState = newFilter
-        recompute()
-    }
-
-    fun clearFilters() {
-        filterState = FilterState()
-        recompute()
-    }
-
     fun onSearchQueryChange(newQuery: String) {
         searchQuery = newQuery
         searchJob?.cancel()
@@ -257,8 +227,8 @@ class DashboardViewModel(private val repository: MovieRepository) : ViewModel() 
     }
 
     /**
-     * Reine Berechnung: filtert + sortiert aus [allLoadedMovies], [filterState] und [sortOption]
-     * und gibt die fertige Liste zurück (kein State-Schreiben). Thread-sicher, da der nicht
+     * Reine Berechnung: waehlt die Reihe aus [allLoadedMovies] und sortiert nach
+     * [sortOption]; gibt die fertige Liste zurueck (kein State-Schreiben). Thread-sicher, da der nicht
      * thread-sichere [Collator] und der Titel-Comparator lokal erzeugt werden.
      */
     private fun computeFilteredSorted(): List<Movie> {
@@ -281,29 +251,6 @@ class DashboardViewModel(private val repository: MovieRepository) : ViewModel() 
                 filtered = filtered.filter { it.id in newIds }
             }
             null -> {}
-        }
-
-        // Genre-Filter (Komma-separierte Genre-Spalte)
-        if (filterState.selectedGenres.isNotEmpty()) {
-            filtered = filtered.filter { movie ->
-                val movieGenres = movie.genre?.split(",")?.map { it.trim().lowercase() } ?: emptyList()
-                filterState.selectedGenres.any { selected -> movieGenres.contains(selected.lowercase()) }
-            }
-        }
-
-        // Regisseur-Filter
-        if (filterState.selectedDirectors.isNotEmpty()) {
-            filtered = filtered.filter { movie ->
-                filterState.selectedDirectors.contains(movie.director)
-            }
-        }
-
-        // Jahr-Filter
-        filterState.yearFrom?.let { from ->
-            filtered = filtered.filter { (it.year ?: 0) >= from }
-        }
-        filterState.yearTo?.let { to ->
-            filtered = filtered.filter { (it.year ?: Int.MAX_VALUE) <= to }
         }
 
         return when (sortOption) {
@@ -337,14 +284,6 @@ class DashboardViewModel(private val repository: MovieRepository) : ViewModel() 
     /** Bewertung tolerant parsen: akzeptiert "8.5" und "8,5"; ungültig -> nach unten. */
     private fun parseRating(rating: String?): Double =
         rating?.replace(',', '.')?.toDoubleOrNull() ?: -1.0
-
-    private fun refreshFilterOptions() {
-        viewModelScope.launch {
-            availableGenres = repository.getDistinctGenres()
-            availableDirectors = repository.getDistinctDirectors()
-            yearRange = repository.getYearRange()
-        }
-    }
 
     private suspend fun performSearch(query: String) {
         isLoading = true

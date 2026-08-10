@@ -80,10 +80,6 @@ open class FakeMovieDao : MovieDao {
     override suspend fun getBoxsetChildren(boxsetLocalId: Long): List<MovieEntity> = unused()
     override suspend fun getMovieCount(): Int = unused()
     override suspend fun getLastCacheTime(): Long? = unused()
-    override suspend fun getDistinctGenres(): List<String> = unused()
-    override suspend fun getDistinctDirectors(): List<String> = unused()
-    override suspend fun getMinYear(): Int? = unused()
-    override suspend fun getMaxYear(): Int? = unused()
 
     private fun unused(): Nothing =
         throw AssertionError("Der Abgleich sollte diese Methode nicht aufrufen")

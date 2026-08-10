@@ -621,15 +621,4 @@ class MovieRepository(
     suspend fun isCacheAvailable(): Boolean =
         movieDao.getMovieCount() > 0
 
-    suspend fun getDistinctGenres(): List<String> =
-        movieDao.getDistinctGenres().flatMap { it.split(",") }.map { it.trim() }.filter { it.isNotBlank() }.distinct().sorted()
-
-    suspend fun getDistinctDirectors(): List<String> =
-        movieDao.getDistinctDirectors()
-
-    suspend fun getYearRange(): Pair<Int, Int>? {
-        val min = movieDao.getMinYear() ?: return null
-        val max = movieDao.getMaxYear() ?: return null
-        return min to max
-    }
 }

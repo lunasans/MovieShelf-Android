@@ -78,7 +78,6 @@ fun DashboardScreen(
     }
 
     var showSortMenu by remember { mutableStateOf(false) }
-    var showFilterSheet by remember { mutableStateOf(false) }
     val gridState = rememberLazyGridState()
 
     // Pagination: lade mehr wenn nahe am Ende
@@ -90,13 +89,6 @@ fun DashboardScreen(
     }
     LaunchedEffect(shouldLoadMore) {
         if (shouldLoadMore) viewModel.loadMore()
-    }
-
-    if (showFilterSheet) {
-        FilterBottomSheet(
-            viewModel = viewModel,
-            onDismiss = { showFilterSheet = false }
-        )
     }
 
     Scaffold(
@@ -117,18 +109,6 @@ fun DashboardScreen(
                             )
                         },
                         actions = {
-                            // Filter-Button (hervorgehoben wenn aktiv)
-                            IconButton(onClick = { showFilterSheet = true }) {
-                                BadgedBox(
-                                    badge = {
-                                        if (viewModel.filterState.isActive) {
-                                            Badge()
-                                        }
-                                    }
-                                ) {
-                                    Icon(Icons.Default.FilterList, contentDescription = "Filter")
-                                }
-                            }
                             // Sort-Dropdown
                             Box {
                                 IconButton(onClick = { showSortMenu = true }) {
@@ -192,33 +172,6 @@ fun DashboardScreen(
                         }
                     }
 
-                    // Aktive Filter-Chips
-                    if (viewModel.filterState.isActive) {
-                        ActiveFilterChips(
-                            filterState = viewModel.filterState,
-                            onClearAll = { viewModel.clearFilters() },
-                            onRemoveGenre = { genre ->
-                                viewModel.onFilterChanged(
-                                    viewModel.filterState.copy(
-                                        selectedGenres = viewModel.filterState.selectedGenres - genre
-                                    )
-                                )
-                            },
-                            onRemoveDirector = { director ->
-                                viewModel.onFilterChanged(
-                                    viewModel.filterState.copy(
-                                        selectedDirectors = viewModel.filterState.selectedDirectors - director
-                                    )
-                                )
-                            },
-                            onClearYear = {
-                                viewModel.onFilterChanged(
-                                    viewModel.filterState.copy(yearFrom = null, yearTo = null)
-                                )
-                            }
-                        )
-                    }
-
                     OutlinedTextField(
                         value = viewModel.searchQuery,
                         onValueChange = { viewModel.onSearchQueryChange(it) },
@@ -253,8 +206,7 @@ fun DashboardScreen(
             onRefresh = { viewModel.loadMovies(refresh = true) },
             modifier = Modifier.padding(innerPadding)
         ) {
-            val isBrowsing = !viewModel.filterState.isActive && viewModel.searchQuery.isBlank() &&
-                viewModel.selectedShelf == null
+            val isBrowsing = viewModel.searchQuery.isBlank() && viewModel.selectedShelf == null
 
             if (isBrowsing) {
                 // "Shelf"-Gruppierung: vertikal gestapelte, horizontal scrollbare Reihen
@@ -368,15 +320,12 @@ fun DashboardScreen(
                         Icon(Icons.Default.SearchOff, null, Modifier.size(64.dp), tint = MaterialTheme.colorScheme.outline)
                         Spacer(Modifier.height(16.dp))
                         Text("Keine Filme gefunden", style = MaterialTheme.typography.titleMedium)
-                        if (viewModel.filterState.isActive || viewModel.searchQuery.isNotEmpty() ||
-                            viewModel.selectedShelf != null
-                        ) {
+                        if (viewModel.searchQuery.isNotEmpty() || viewModel.selectedShelf != null) {
                             TextButton(onClick = {
                                 viewModel.onSearchQueryChange("")
-                                viewModel.clearFilters()
                                 viewModel.clearShelf()
                             }) {
-                                Text("Filter zurücksetzen")
+                                Text("Auswahl aufheben")
                             }
                         }
                     }
@@ -415,138 +364,6 @@ fun DashboardScreen(
             }
         }
     }
-}
-
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
-@Composable
-private fun FilterBottomSheet(
-    viewModel: DashboardViewModel,
-    onDismiss: () -> Unit
-) {
-    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-    var localFilter by remember { mutableStateOf(viewModel.filterState) }
-
-    ModalBottomSheet(
-        onDismissRequest = onDismiss,
-        sheetState = sheetState
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 20.dp)
-                .padding(bottom = 32.dp)
-        ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text("Filter", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
-                if (localFilter.isActive) {
-                    TextButton(onClick = { localFilter = FilterState() }) { Text("Zurücksetzen") }
-                }
-            }
-
-            Spacer(Modifier.height(16.dp))
-
-            // Erscheinungsjahr
-            Text("Erscheinungsjahr", style = MaterialTheme.typography.labelLarge)
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                YearPicker(
-                    label = "Von",
-                    value = localFilter.yearFrom,
-                    onValueChange = { localFilter = localFilter.copy(yearFrom = it) }
-                )
-                Text("bis")
-                YearPicker(
-                    label = "Bis",
-                    value = localFilter.yearTo,
-                    onValueChange = { localFilter = localFilter.copy(yearTo = it) }
-                )
-            }
-
-            HorizontalDivider(Modifier.padding(vertical = 12.dp))
-
-            // Genre Multi-Select
-            Text("Genres", style = MaterialTheme.typography.labelLarge)
-            FlowRow(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(6.dp)
-            ) {
-                viewModel.availableGenres.forEach { genre ->
-                    val isSelected = localFilter.selectedGenres.contains(genre)
-                    FilterChip(
-                        selected = isSelected,
-                        onClick = {
-                            localFilter = localFilter.copy(
-                                selectedGenres = if (isSelected) localFilter.selectedGenres - genre else localFilter.selectedGenres + genre
-                            )
-                        },
-                        label = { Text(genre, fontSize = 12.sp) }
-                    )
-                }
-            }
-
-            HorizontalDivider(Modifier.padding(vertical = 12.dp))
-
-            // Regisseur Multi-Select
-            Text("Regisseure", style = MaterialTheme.typography.labelLarge)
-            FlowRow(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(6.dp)
-            ) {
-                viewModel.availableDirectors.take(15).forEach { director ->
-                    val isSelected = localFilter.selectedDirectors.contains(director)
-                    FilterChip(
-                        selected = isSelected,
-                        onClick = {
-                            localFilter = localFilter.copy(
-                                selectedDirectors = if (isSelected) localFilter.selectedDirectors - director else localFilter.selectedDirectors + director
-                            )
-                        },
-                        label = { Text(director, fontSize = 12.sp) }
-                    )
-                }
-            }
-
-            Spacer(Modifier.height(24.dp))
-
-            Button(
-                onClick = {
-                    viewModel.onFilterChanged(localFilter)
-                    onDismiss()
-                },
-                modifier = Modifier.fillMaxWidth(),
-                shape = MaterialTheme.shapes.medium
-            ) {
-                Text("Anwenden")
-            }
-        }
-    }
-}
-
-@Composable
-fun YearPicker(label: String, value: Int?, onValueChange: (Int?) -> Unit) {
-    var text by remember(value) { mutableStateOf(value?.toString() ?: "") }
-    OutlinedTextField(
-        value = text,
-        onValueChange = {
-            if (it.isEmpty()) {
-                text = ""
-                onValueChange(null)
-            } else if (it.length <= 4 && it.all { char -> char.isDigit() }) {
-                text = it
-                if (it.length == 4) onValueChange(it.toInt())
-            }
-        },
-        label = { Text(label) },
-        modifier = Modifier.width(90.dp),
-        singleLine = true,
-        textStyle = MaterialTheme.typography.bodySmall
-    )
 }
 
 /** Wechselintervall des Hero-Sliders — wie im Web (`setInterval(..., 8000)`). */
@@ -814,58 +631,6 @@ fun MovieShelfRow(
                     onClick = { onClick(movie) }
                 )
             }
-        }
-    }
-}
-
-@OptIn(ExperimentalLayoutApi::class, ExperimentalMaterial3Api::class)
-@Composable
-fun ActiveFilterChips(
-    filterState: FilterState,
-    onClearAll: () -> Unit,
-    onRemoveGenre: (String) -> Unit,
-    onRemoveDirector: (String) -> Unit,
-    onClearYear: () -> Unit
-) {
-    FlowRow(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 4.dp),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-        verticalArrangement = Arrangement.spacedBy(4.dp)
-    ) {
-        InputChip(
-            selected = true,
-            onClick = onClearAll,
-            label = { Text("Alle löschen") },
-            trailingIcon = { Icon(Icons.Default.Close, null, Modifier.size(14.dp)) }
-        )
-
-        filterState.selectedGenres.forEach { genre ->
-            InputChip(
-                selected = true,
-                onClick = { onRemoveGenre(genre) },
-                label = { Text(genre) },
-                trailingIcon = { Icon(Icons.Default.Close, null, Modifier.size(14.dp)) }
-            )
-        }
-
-        filterState.selectedDirectors.forEach { director ->
-            InputChip(
-                selected = true,
-                onClick = { onRemoveDirector(director) },
-                label = { Text(director) },
-                trailingIcon = { Icon(Icons.Default.Close, null, Modifier.size(14.dp)) }
-            )
-        }
-
-        if (filterState.yearFrom != null || filterState.yearTo != null) {
-            InputChip(
-                selected = true,
-                onClick = onClearYear,
-                label = { Text("${filterState.yearFrom ?: "..."}-${filterState.yearTo ?: "..."}") },
-                trailingIcon = { Icon(Icons.Default.Close, null, Modifier.size(14.dp)) }
-            )
         }
     }
 }

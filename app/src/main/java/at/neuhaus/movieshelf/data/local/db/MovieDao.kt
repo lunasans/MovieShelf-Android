@@ -171,7 +171,7 @@ interface MovieDao {
     @Query("SELECT * FROM movies WHERE isDeleted = 0 AND boxsetParentLocalId = :boxsetLocalId")
     suspend fun getBoxsetChildren(boxsetLocalId: Long): List<MovieEntity>
 
-    // ── Kennzahlen für Filter und Statistik ──────────────────────────────────
+    // ── Kennzahlen ───────────────────────────────────────────────────────────
 
     @Query("""
         SELECT COUNT(*) FROM movies
@@ -183,33 +183,4 @@ interface MovieDao {
     @Query("SELECT MAX(cachedAt) FROM movies")
     suspend fun getLastCacheTime(): Long?
 
-    @Query("""
-        SELECT DISTINCT genre FROM movies
-        WHERE isDeleted = 0 AND genre IS NOT NULL AND genre != ''
-          AND boxsetParentLocalId IS NULL AND (inCollection = 1 OR inCollection IS NULL)
-        ORDER BY genre
-    """)
-    suspend fun getDistinctGenres(): List<String>
-
-    @Query("""
-        SELECT DISTINCT director FROM movies
-        WHERE isDeleted = 0 AND director IS NOT NULL AND director != ''
-          AND boxsetParentLocalId IS NULL AND (inCollection = 1 OR inCollection IS NULL)
-        ORDER BY director
-    """)
-    suspend fun getDistinctDirectors(): List<String>
-
-    @Query("""
-        SELECT MIN(year) FROM movies
-        WHERE isDeleted = 0 AND year IS NOT NULL AND boxsetParentLocalId IS NULL
-          AND (inCollection = 1 OR inCollection IS NULL)
-    """)
-    suspend fun getMinYear(): Int?
-
-    @Query("""
-        SELECT MAX(year) FROM movies
-        WHERE isDeleted = 0 AND year IS NOT NULL AND boxsetParentLocalId IS NULL
-          AND (inCollection = 1 OR inCollection IS NULL)
-    """)
-    suspend fun getMaxYear(): Int?
 }
