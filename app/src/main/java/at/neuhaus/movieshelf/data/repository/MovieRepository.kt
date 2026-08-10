@@ -428,6 +428,18 @@ class MovieRepository(
     }
 
     /**
+     * Bildablage aufraeumen: Dateien ohne zugehoerige Zeile entfernen.
+     *
+     * Laeuft nach dem Abgleich, weil erst dann feststeht, welche Zeilen es
+     * wirklich noch gibt — vorher koennte eine gerade geloeschte Zeile beim
+     * naechsten Pull zurueckkommen.
+     */
+    suspend fun cleanupOrphanedArtwork(): Int = mediaStore.removeOrphans(
+        movieLocalIds = movieDao.getAllLocalIds().toSet(),
+        actorLocalIds = actorDao.getAllLocalIds().toSet()
+    )
+
+    /**
      * Bilder eines lokal angelegten Films zum Hochladen vormerken.
      *
      * Wird nach dem ersten erfolgreichen Push aufgerufen: der Film ist dann in

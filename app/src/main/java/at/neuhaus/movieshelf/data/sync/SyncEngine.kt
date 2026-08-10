@@ -47,6 +47,8 @@ class SyncEngine(
     private val upsertSeries: suspend (Long, List<SeasonWithEpisodes>) -> Unit = { _, _ -> },
     /** Fehlende Bilder holen — laeuft in der Medien-Phase. */
     private val downloadMissingArtwork: suspend () -> Int = { 0 },
+    /** Bilddateien ohne zugehoerige Zeile entfernen. */
+    private val cleanupOrphanedArtwork: suspend () -> Int = { 0 },
     /**
      * Bilder eines neu hochgeladenen Films zum Upload vormerken. Ohne diesen
      * Schritt stuende ein eigenstaendig angelegter Film in der Shelf ohne
@@ -83,6 +85,7 @@ class SyncEngine(
         // selben Durchgang noch einmal geholt werden.
         flushPendingUploads()
         val artwork = downloadMissingArtwork()
+        cleanupOrphanedArtwork()
         onProgress(SyncProgress(SyncPhase.DONE))
         _progress.value = null
         return SyncResult(push = pushed, pull = pulled, artworkStored = artwork)

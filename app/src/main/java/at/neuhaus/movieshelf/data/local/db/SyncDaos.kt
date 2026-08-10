@@ -39,6 +39,9 @@ interface ActorDao {
     @Query("SELECT * FROM actors WHERE syncedAt IS NULL OR updatedAt > syncedAt")
     suspend fun getDirty(): List<ActorEntity>
 
+    @Query("SELECT localId FROM actors")
+    suspend fun getAllLocalIds(): List<Long>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun setCast(refs: List<FilmActorCrossRef>)
 

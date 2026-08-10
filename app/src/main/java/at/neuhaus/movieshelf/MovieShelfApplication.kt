@@ -107,6 +107,7 @@ class MovieShelfApplication : Application(), ImageLoaderFactory {
                 database.seriesDao().upsertSeries(localId, seasons)
             },
             downloadMissingArtwork = { movieRepository.downloadMissingArtwork() },
+            cleanupOrphanedArtwork = { movieRepository.cleanupOrphanedArtwork() },
             queueArtworkUpload = { movieRepository.queueArtworkUpload(it) }
         )
     }

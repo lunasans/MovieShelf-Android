@@ -64,6 +64,7 @@ open class FakeMovieDao : MovieDao {
     override suspend fun getAllMovies(): List<MovieEntity> = unused()
     override suspend fun getAllForStats(): List<MovieEntity> = unused()
     override suspend fun getNewest(limit: Int): List<MovieEntity> = unused()
+    override suspend fun getAllLocalIds(): List<Long> = unused()
     override suspend fun searchMovies(query: String): List<MovieEntity> = unused()
     override suspend fun update(movie: MovieEntity) = unused()
     override suspend fun updateWatched(localId: Long, isWatched: Boolean, now: String) = unused()

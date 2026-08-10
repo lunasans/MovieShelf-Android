@@ -89,6 +89,32 @@ class MediaStore(private val baseDir: File) {
         }
     }
 
+    /**
+     * Dateien entfernen, zu denen es keine Zeile mehr gibt.
+     *
+     * Nötig, weil Bilder nicht in der Datenbank stehen, sondern daneben: eine
+     * Zeile kann verschwinden, ohne dass ihre Datei es merkt. Der frühere
+     * Abruf, der beim Öffnen des Dashboards Zeilen löschte und mit neuen IDs
+     * wieder anlegte, hat auf diese Weise Altlasten hinterlassen.
+     *
+     * @return wie viele Dateien entfernt wurden.
+     */
+    fun removeOrphans(movieLocalIds: Set<Long>, actorLocalIds: Set<Long>): Int {
+        var removed = 0
+        coversDir.listFiles()?.forEach { file ->
+            val stem = file.name.substringBeforeLast('.')
+            val keep = when {
+                // Abgebrochener Schreibvorgang — nie ein gültiges Bild.
+                file.name.endsWith(".part") -> false
+                stem.startsWith("actor_") -> stem.removePrefix("actor_").toLongOrNull() in actorLocalIds
+                stem.endsWith("_backdrop") -> stem.removeSuffix("_backdrop").toLongOrNull() in movieLocalIds
+                else -> stem.toLongOrNull() in movieLocalIds
+            }
+            if (!keep && file.delete()) removed++
+        }
+        return removed
+    }
+
     /** Ob ein Pfad in unsere Ablage zeigt — sonst ist es eine fremde Adresse. */
     fun isLocalPath(path: String?): Boolean =
         path != null && path.startsWith(baseDir.absolutePath)

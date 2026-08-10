@@ -55,6 +55,10 @@ interface MovieDao {
     @Query("SELECT * FROM movies WHERE isDeleted = 0")
     suspend fun getAllForStats(): List<MovieEntity>
 
+    /** Nur die IDs — Grundlage fuer das Aufraeumen der Bildablage. */
+    @Query("SELECT localId FROM movies")
+    suspend fun getAllLocalIds(): List<Long>
+
     /** Alle Zeilen mit lokalen, noch nicht übertragenen Änderungen. */
     @Query("SELECT * FROM movies WHERE syncedAt IS NULL OR updatedAt > syncedAt")
     suspend fun getDirtyMovies(): List<MovieEntity>
