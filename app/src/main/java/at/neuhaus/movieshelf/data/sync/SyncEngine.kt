@@ -9,6 +9,9 @@ import at.neuhaus.movieshelf.data.local.db.SyncClock
 import at.neuhaus.movieshelf.data.model.ExportResponse
 import at.neuhaus.movieshelf.data.model.MovieUpdateRequest
 import at.neuhaus.movieshelf.data.model.SingleMovieResponse
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 
 /**
  * Zweiseitiger Abgleich zwischen lokaler Sammlung und Shelf.
@@ -45,6 +48,21 @@ class SyncEngine(
 ) {
     private val api: SyncApi get() = apiProvider()
 
+    private val _progress = MutableStateFlow<SyncProgress?>(null)
+
+    /**
+     * Fortschritt des laufenden Abgleichs, `null` wenn keiner laeuft.
+     *
+     * Als Flow statt als Rueckruf, weil der Abgleich die Oberflaeche
+     * ueberleben soll: wer den Bildschirm dreht oder kurz woandershin
+     * wechselt, findet den laufenden Abgleich wieder vor.
+     */
+    val progress: StateFlow<SyncProgress?> = _progress.asStateFlow()
+
+    private fun onProgress(value: SyncProgress) {
+        _progress.value = value
+    }
+
     /**
      * Vollständiger Abgleich: erst lokale Änderungen hoch, dann den Serverstand
      * herunter, dann die vorgemerkten Bilder.
@@ -52,8 +70,57 @@ class SyncEngine(
     suspend fun runFullSync(full: Boolean = false): SyncResult {
         val pushed = push()
         val pulled = pull(full)
+        onProgress(SyncProgress(SyncPhase.MEDIA))
         flushPendingUploads()
+        onProgress(SyncProgress(SyncPhase.DONE))
+        _progress.value = null
         return SyncResult(push = pushed, pull = pulled)
+    }
+
+    /**
+     * Was ein Abgleich tun wuerde, ohne etwas zu tun.
+     *
+     * Holt den Serverstand und zaehlt beide Richtungen durch. Der Export wird
+     * damit zweimal geholt — einmal fuer die Vorschau, einmal beim Anwenden.
+     * Das ist der Preis dafuer, dass niemand Loeschungen bestaetigt, die er
+     * nicht gesehen hat.
+     */
+    suspend fun preview(full: Boolean = false): SyncPreview {
+        val dirty = movieDao.getDirtyMovies()
+        val toCreate = dirty.count { !it.isDeleted && it.remoteId == null }
+        val toUpdate = dirty.count { !it.isDeleted && it.remoteId != null }
+        val toDeleteRemote = dirty.count { it.isDeleted }
+
+        val since = if (full) null else settingDao.get(SettingKeys.LAST_SYNC_AT)
+        val response = api.exportMovies(since)
+        val movies = response.movies ?: emptyList()
+
+        var incomingNew = 0
+        var incomingUpdated = 0
+        var incomingDeleted = 0
+        var keptLocal = 0
+
+        for (movie in movies) {
+            val existing = movieDao.getByRemoteId(movie.id)
+            when {
+                movie.isDeleted == true -> if (existing != null) incomingDeleted++
+                existing == null -> incomingNew++
+                existing.isDirty -> keptLocal++
+                else -> incomingUpdated++
+            }
+        }
+
+        return SyncPreview(
+            toCreate = toCreate,
+            toUpdate = toUpdate,
+            toDeleteRemote = toDeleteRemote,
+            incomingNew = incomingNew,
+            incomingUpdated = incomingUpdated,
+            incomingDeleted = incomingDeleted,
+            keptLocal = keptLocal,
+            isDelta = response.isDelta == true,
+            lastSyncAt = since
+        )
     }
 
     // ── Hochladen ────────────────────────────────────────────────────────────
@@ -71,7 +138,9 @@ class SyncEngine(
         var deleted = 0
         val errors = mutableListOf<SyncError>()
 
-        for (entity in movieDao.getDirtyMovies()) {
+        val dirty = movieDao.getDirtyMovies()
+        for ((index, entity) in dirty.withIndex()) {
+            onProgress(SyncProgress(SyncPhase.PUSH, index, dirty.size, entity.title))
             val now = SyncClock.now()
             try {
                 when {
@@ -116,6 +185,7 @@ class SyncEngine(
      * erfolgreichen Abgleich geändert hat.
      */
     suspend fun pull(full: Boolean = false): PullResult {
+        onProgress(SyncProgress(SyncPhase.PULL))
         val since = if (full) null else settingDao.get(SettingKeys.LAST_SYNC_AT)
         val response = api.exportMovies(since)
         val movies = response.movies ?: emptyList()
@@ -125,7 +195,8 @@ class SyncEngine(
         var deleted = 0
         val errors = mutableListOf<SyncError>()
 
-        for (movie in movies) {
+        for ((index, movie) in movies.withIndex()) {
+            onProgress(SyncProgress(SyncPhase.PULL, index, movies.size, movie.title))
             try {
                 if (movie.isDeleted == true) {
                     movieDao.findLocalIdByRemoteId(movie.id)?.let {
@@ -226,6 +297,37 @@ interface SyncApi {
     suspend fun createMovie(request: MovieUpdateRequest): SingleMovieResponse
     suspend fun updateMovie(id: Int, request: MovieUpdateRequest): SingleMovieResponse
     suspend fun deleteMovie(id: Int)
+}
+
+enum class SyncPhase { PUSH, PULL, MEDIA, DONE }
+
+data class SyncProgress(
+    val phase: SyncPhase,
+    val current: Int = 0,
+    val total: Int = 0,
+    /** Titel des gerade bearbeiteten Films, sofern es einen gibt. */
+    val subject: String? = null
+) {
+    val fraction: Float? get() = if (total > 0) current.toFloat() / total else null
+}
+
+/** Was ein Abgleich tun wuerde. Grundlage der Bestaetigung vor dem Loeschen. */
+data class SyncPreview(
+    val toCreate: Int = 0,
+    val toUpdate: Int = 0,
+    val toDeleteRemote: Int = 0,
+    val incomingNew: Int = 0,
+    val incomingUpdated: Int = 0,
+    val incomingDeleted: Int = 0,
+    /** Zeilen, die lokale Aenderungen behalten und deshalb nicht ueberschrieben werden. */
+    val keptLocal: Int = 0,
+    val isDelta: Boolean = false,
+    val lastSyncAt: String? = null
+) {
+    val outgoing: Int get() = toCreate + toUpdate + toDeleteRemote
+    val incoming: Int get() = incomingNew + incomingUpdated + incomingDeleted
+    val hasDeletions: Boolean get() = toDeleteRemote > 0 || incomingDeleted > 0
+    val isEmpty: Boolean get() = outgoing == 0 && incoming == 0
 }
 
 data class SyncError(val subject: String, val message: String)

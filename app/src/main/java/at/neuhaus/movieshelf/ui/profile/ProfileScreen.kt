@@ -15,6 +15,7 @@ import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Save
 import androidx.compose.material.icons.filled.Security
+import androidx.compose.material.icons.filled.Sync
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -39,7 +40,8 @@ import kotlinx.coroutines.launch
 fun ProfileScreen(
     onBack: () -> Unit,
     onListsClick: () -> Unit = {},
-    onTwoFactorClick: () -> Unit = {}
+    onTwoFactorClick: () -> Unit = {},
+    onSyncClick: () -> Unit = {}
 ) {
     val viewModel: ProfileViewModel = viewModel()
     val snackbarHostState = remember { SnackbarHostState() }
@@ -165,6 +167,34 @@ fun ProfileScreen(
                             )
                         }
                         Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null, tint = MaterialTheme.colorScheme.onSecondaryContainer)
+                    }
+                }
+
+                Spacer(Modifier.height(16.dp))
+
+                // Abgleich mit der Shelf
+                Card(
+                    onClick = onSyncClick,
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                    )
+                ) {
+                    Row(
+                        modifier = Modifier.padding(16.dp).fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(Icons.Default.Sync, contentDescription = null)
+                        Spacer(Modifier.width(16.dp))
+                        Column(Modifier.weight(1f)) {
+                            Text("Abgleich", fontWeight = FontWeight.Bold)
+                            Text(
+                                "Sammlung mit der Shelf abgleichen",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null, tint = MaterialTheme.colorScheme.outline)
                     }
                 }
 

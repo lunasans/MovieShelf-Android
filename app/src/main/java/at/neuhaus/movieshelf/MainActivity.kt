@@ -43,6 +43,7 @@ import at.neuhaus.movieshelf.ui.twofactor.TwoFactorScreen
 import at.neuhaus.movieshelf.ui.profile.ProfileScreen
 import at.neuhaus.movieshelf.ui.setup.SetupScreen
 import at.neuhaus.movieshelf.ui.stats.StatsScreen
+import at.neuhaus.movieshelf.ui.sync.SyncScreen
 import at.neuhaus.movieshelf.ui.theme.MovieShelfTheme
 import com.google.android.play.core.appupdate.AppUpdateManagerFactory
 import com.google.android.play.core.install.InstallStateUpdatedListener
@@ -324,8 +325,12 @@ fun MovieShelfApp(oauthCallbackUri: MutableState<Uri?> = mutableStateOf(null)) {
                     ProfileScreen(
                         onBack = { navController.popBackStack() },
                         onListsClick = { navController.navigate("lists") },
-                        onTwoFactorClick = { navController.navigate("twofactor") }
+                        onTwoFactorClick = { navController.navigate("twofactor") },
+                        onSyncClick = { navController.navigate("sync") }
                     )
+                }
+                composable("sync") {
+                    SyncScreen(onBack = { navController.popBackStack() })
                 }
                 composable("twofactor") {
                     TwoFactorScreen(onBack = { navController.popBackStack() })
