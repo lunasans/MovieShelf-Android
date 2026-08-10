@@ -2,6 +2,7 @@ package at.neuhaus.movieshelf
 
 import android.app.Application
 import at.neuhaus.movieshelf.data.api.RetrofitClient
+import at.neuhaus.movieshelf.data.local.ImageDownloader
 import at.neuhaus.movieshelf.data.local.MediaStore
 import at.neuhaus.movieshelf.data.local.db.AppMode
 import at.neuhaus.movieshelf.data.local.db.MovieShelfDatabase
@@ -33,6 +34,10 @@ class MovieShelfApplication : Application(), ImageLoaderFactory {
 
     val mediaStore by lazy { MediaStore(filesDir) }
 
+    private val imageDownloader by lazy {
+        ImageDownloader(shelfClientProvider = { RetrofitClient.httpClient })
+    }
+
     /**
      * Betriebsmodus, `null` solange nicht gewaehlt. Liegt in der Datenbank,
      * damit er mit ihr verworfen wird — siehe [AppMode].
@@ -54,6 +59,8 @@ class MovieShelfApplication : Application(), ImageLoaderFactory {
             actorDao = database.actorDao(),
             pendingUploadDao = database.pendingUploadDao(),
             mediaStore = mediaStore,
+            imageDownloader = imageDownloader,
+            shelfUrlProvider = { RetrofitClient.baseUrl.takeIf { it.isNotBlank() } },
             isShelfMode = { isShelfMode() }
         ) { RetrofitClient.api }
     }
@@ -86,7 +93,9 @@ class MovieShelfApplication : Application(), ImageLoaderFactory {
             flushPendingUploads = { movieRepository.flushPendingUploads() },
             upsertSeries = { localId, seasons ->
                 database.seriesDao().upsertSeries(localId, seasons)
-            }
+            },
+            downloadMissingArtwork = { movieRepository.downloadMissingArtwork() },
+            queueArtworkUpload = { movieRepository.queueArtworkUpload(it) }
         )
     }
 

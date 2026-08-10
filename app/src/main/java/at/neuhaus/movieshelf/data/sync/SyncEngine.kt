@@ -44,7 +44,15 @@ class SyncEngine(
      * als Funktion hereingereicht, damit der Film-Abgleich nicht an der
      * Serien-Tabelle haengt.
      */
-    private val upsertSeries: suspend (Long, List<SeasonWithEpisodes>) -> Unit = { _, _ -> }
+    private val upsertSeries: suspend (Long, List<SeasonWithEpisodes>) -> Unit = { _, _ -> },
+    /** Fehlende Bilder holen — laeuft in der Medien-Phase. */
+    private val downloadMissingArtwork: suspend () -> Int = { 0 },
+    /**
+     * Bilder eines neu hochgeladenen Films zum Upload vormerken. Ohne diesen
+     * Schritt stuende ein eigenstaendig angelegter Film in der Shelf ohne
+     * Cover, weil der Anlege-Aufruf nur Textfelder uebertraegt.
+     */
+    private val queueArtworkUpload: suspend (Long) -> Unit = {}
 ) {
     private val api: SyncApi get() = apiProvider()
 
@@ -71,10 +79,13 @@ class SyncEngine(
         val pushed = push()
         val pulled = pull(full)
         onProgress(SyncProgress(SyncPhase.MEDIA))
+        // Erst hoch, dann runter: ein gerade hochgeladenes Cover soll nicht im
+        // selben Durchgang noch einmal geholt werden.
         flushPendingUploads()
+        val artwork = downloadMissingArtwork()
         onProgress(SyncProgress(SyncPhase.DONE))
         _progress.value = null
-        return SyncResult(push = pushed, pull = pulled)
+        return SyncResult(push = pushed, pull = pulled, artworkStored = artwork)
     }
 
     /**
@@ -161,6 +172,7 @@ class SyncEngine(
                         val response = api.createMovie(entity.toUpdateRequest()).data
                         if (response != null) {
                             movieDao.markSynced(entity.localId, now, response.id)
+                            queueArtworkUpload(entity.localId)
                             created++
                         }
                     }
@@ -352,7 +364,9 @@ data class PullResult(
 
 data class SyncResult(
     val push: PushResult,
-    val pull: PullResult
+    val pull: PullResult,
+    /** Wie viele Bilder in dieser Runde dauerhaft abgelegt wurden. */
+    val artworkStored: Int = 0
 ) {
     val errors: List<SyncError> get() = push.errors + pull.errors
     val hasErrors: Boolean get() = errors.isNotEmpty()

@@ -95,6 +95,25 @@ interface MovieDao {
     @Query("UPDATE movies SET backdropUrl = :url, updatedAt = :now WHERE localId = :localId")
     suspend fun updateBackdropUrl(localId: Long, url: String?, now: String)
 
+    @Query("UPDATE movies SET coverLocalPath = :path WHERE localId = :localId")
+    suspend fun updateCoverLocalPath(localId: Long, path: String?)
+
+    @Query("UPDATE movies SET backdropLocalPath = :path WHERE localId = :localId")
+    suspend fun updateBackdropLocalPath(localId: Long, path: String?)
+
+    /**
+     * Zeilen, deren Bilder noch nicht heruntergeladen sind.
+     *
+     * Nur echte Adressen zaehlen — ein Film ohne Cover braucht keinen Anlauf.
+     */
+    @Query("""
+        SELECT * FROM movies
+        WHERE isDeleted = 0
+          AND ((coverUrl IS NOT NULL AND coverUrl != '' AND coverLocalPath IS NULL)
+            OR (backdropUrl IS NOT NULL AND backdropUrl != '' AND backdropLocalPath IS NULL))
+    """)
+    suspend fun getMoviesMissingArtwork(): List<MovieEntity>
+
     /** Zeile als übertragen stempeln — nach erfolgreichem Push oder Direktaufruf. */
     @Query("UPDATE movies SET syncedAt = :syncedAt, remoteId = COALESCE(:remoteId, remoteId) WHERE localId = :localId")
     suspend fun markSynced(localId: Long, syncedAt: String, remoteId: Int? = null)

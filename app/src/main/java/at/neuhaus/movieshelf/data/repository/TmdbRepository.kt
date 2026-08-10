@@ -96,9 +96,9 @@ class TmdbRepository(
     /**
      * Bilder und Besetzung nachtragen.
      *
-     * Bilder werden als TMDb-URL vermerkt statt heruntergeladen: Coil hält sie
-     * ohnehin im Cache, und ein eigener Speicher müsste selbst aufgeräumt
-     * werden.
+     * Die TMDb-Adresse wird vermerkt und das Bild sofort heruntergeladen — im
+     * eigenständigen Betrieb ist die Datei die einzige Quelle. Ein Verweis auf
+     * TMDb würde bedeuten, dass die Sammlung ohne Netz ohne Cover dasteht.
      */
     private suspend fun finish(
         localId: Long,

@@ -44,8 +44,19 @@ data class MovieEntity(
     val overview: String?,
     val runtime: Int?,
     val director: String?,
+    /** Kanonische Adresse: von der Shelf oder von TMDb. Geht so auch zurueck. */
     val coverUrl: String?,
     val backdropUrl: String?,
+    /**
+     * Heruntergeladene Datei, falls vorhanden.
+     *
+     * Bewusst neben [coverUrl] statt an deren Stelle: die Adresse bleibt der
+     * Stand, den Server und TMDb kennen, und darf beim naechsten Abgleich nicht
+     * durch einen Geraetepfad ersetzt werden. Angezeigt wird trotzdem die
+     * Datei — sie ist auch ohne Netz da.
+     */
+    val coverLocalPath: String? = null,
+    val backdropLocalPath: String? = null,
     val trailerUrl: String?,
     val edition: String?,
     val regionCode: String?,
@@ -99,8 +110,9 @@ data class MovieEntity(
             overview = overview,
             runtime = runtime,
             director = director,
-            coverUrl = coverUrl,
-            backdropUrl = backdropUrl,
+            // Die heruntergeladene Datei hat Vorrang: sie ist auch offline da.
+            coverUrl = coverLocalPath ?: coverUrl,
+            backdropUrl = backdropLocalPath ?: backdropUrl,
             trailerUrl = trailerUrl,
             edition = edition,
             regionCode = regionCode,

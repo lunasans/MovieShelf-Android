@@ -6,7 +6,10 @@ import at.neuhaus.movieshelf.data.local.db.ActorEntity
 import at.neuhaus.movieshelf.data.local.db.FilmActorCrossRef
 import at.neuhaus.movieshelf.data.local.db.MovieDao
 import at.neuhaus.movieshelf.data.local.db.MovieEntity
+import at.neuhaus.movieshelf.data.local.ArtworkKind
+import at.neuhaus.movieshelf.data.local.ImageDownloader
 import at.neuhaus.movieshelf.data.local.LocalStats
+import at.neuhaus.movieshelf.data.local.MediaHosts
 import at.neuhaus.movieshelf.data.local.MediaStore
 import at.neuhaus.movieshelf.data.local.db.PendingUploadDao
 import at.neuhaus.movieshelf.data.local.db.PendingUploadEntity
@@ -33,6 +36,9 @@ class MovieRepository(
     private val actorDao: ActorDao,
     private val pendingUploadDao: PendingUploadDao,
     private val mediaStore: MediaStore,
+    private val imageDownloader: ImageDownloader,
+    /** Basisadresse der Shelf — entscheidet ueber Freigabe und Anmeldung. */
+    private val shelfUrlProvider: () -> String?,
     /**
      * Ob die App an eine Shelf gebunden ist. Im eigenstaendigen Betrieb
      * unterbleibt jeder Netzaufruf — nicht nur, weil er scheitern wuerde,
@@ -237,12 +243,14 @@ class MovieRepository(
         // Ohne Server-ID oder ohne Shelf gibt es nichts zu melden — die Zeile
         // kann sofort weg statt als Grabstein liegen zu bleiben.
         if (remoteId == null || !isShelfMode()) {
+            mediaStore.deleteArtworkOf(localId)
             movieDao.hardDelete(localId)
             return
         }
         movieDao.markDeleted(localId, SyncClock.now())
         try {
             api.deleteMovie(remoteId)
+            mediaStore.deleteArtworkOf(localId)
             movieDao.hardDelete(localId)
             isOffline = false
         } catch (e: Exception) {
@@ -392,6 +400,92 @@ class MovieRepository(
         val now = SyncClock.now()
         if (coverUrl != null) movieDao.updateCoverUrl(localId, coverUrl, now)
         if (backdropUrl != null) movieDao.updateBackdropUrl(localId, backdropUrl, now)
+        // Sofort holen, damit der Film gleich ein Bild hat und nicht erst nach
+        // dem naechsten Abgleich.
+        downloadMissingArtwork()
+    }
+
+    /**
+     * Fehlende Bilder herunterladen.
+     *
+     * Betrifft beide Betriebsarten: Cover der Shelf genauso wie die von TMDb
+     * uebernommenen. Die Adresse in [MovieEntity.coverUrl] bleibt stehen — sie
+     * ist der Stand, den Server und TMDb kennen; die Datei tritt daneben und
+     * wird angezeigt. Wuerde die Adresse ersetzt, holte der naechste Abgleich
+     * sie zurueck und der Download begaenne von vorn.
+     *
+     * @return wie viele Bilder neu abgelegt wurden.
+     */
+    suspend fun downloadMissingArtwork(): Int {
+        val shelfUrl = shelfUrlProvider()
+        var stored = 0
+
+        for (entity in movieDao.getMoviesMissingArtwork()) {
+            if (entity.coverLocalPath == null) {
+                if (fetchArtwork(entity.localId, entity.coverUrl, ArtworkKind.COVER, shelfUrl)) stored++
+            }
+            if (entity.backdropLocalPath == null) {
+                if (fetchArtwork(entity.localId, entity.backdropUrl, ArtworkKind.BACKDROP, shelfUrl)) stored++
+            }
+        }
+        return stored
+    }
+
+    private suspend fun fetchArtwork(
+        localId: Long,
+        rawUrl: String?,
+        kind: String,
+        shelfUrl: String?
+    ): Boolean {
+        val url = absoluteUrl(rawUrl, shelfUrl) ?: return false
+        if (!MediaHosts.isAllowed(url, shelfUrl)) return false
+
+        val (bytes, mimeType) = imageDownloader.download(
+            url = url,
+            authenticated = MediaHosts.needsShelfAuth(url, shelfUrl)
+        ) ?: return false
+
+        val file = mediaStore.saveArtwork(localId, kind, bytes, mimeType) ?: return false
+        if (kind == ArtworkKind.COVER) movieDao.updateCoverLocalPath(localId, file.absolutePath)
+        else movieDao.updateBackdropLocalPath(localId, file.absolutePath)
+        return true
+    }
+
+    /**
+     * Relative Shelf-Pfade zu einer vollstaendigen Adresse ergaenzen; alles
+     * andere unveraendert lassen. Bereits lokale Pfade sind keine Adressen.
+     */
+    private fun absoluteUrl(rawUrl: String?, shelfUrl: String?): String? {
+        val trimmed = rawUrl?.trim()?.takeIf { it.isNotBlank() } ?: return null
+        if (trimmed.startsWith("/") || mediaStore.isLocalPath(trimmed)) {
+            if (mediaStore.isLocalPath(trimmed)) return null
+            val base = shelfUrl?.trimEnd('/') ?: return null
+            return base + trimmed
+        }
+        return trimmed.takeIf { it.startsWith("http") }
+    }
+
+    /**
+     * Bilder eines lokal angelegten Films zum Hochladen vormerken.
+     *
+     * Wird nach dem ersten erfolgreichen Push aufgerufen: der Film ist dann in
+     * der Shelf, sein Cover aber noch nicht — ohne diesen Schritt bliebe er
+     * dort ohne Bild stehen.
+     */
+    suspend fun queueArtworkUpload(localId: Long) {
+        val now = SyncClock.now()
+        for (kind in listOf(ArtworkKind.COVER, ArtworkKind.BACKDROP)) {
+            val file = mediaStore.artworkFile(localId, kind) ?: continue
+            pendingUploadDao.put(
+                PendingUploadEntity(
+                    movieLocalId = localId,
+                    kind = kind,
+                    filePath = file.absolutePath,
+                    mimeType = if (file.extension == "png") "image/png" else "image/jpeg",
+                    createdAt = now
+                )
+            )
+        }
     }
 
     /** Vorgemerkte Bilder nachreichen. Wird ab Phase 4 vom Abgleich aufgerufen. */
@@ -415,7 +509,12 @@ class MovieRepository(
                     movieDao.markSynced(pending.movieLocalId, now)
                 }
                 pendingUploadDao.remove(pending.movieLocalId, pending.kind)
-                mediaStore.delete(pending.filePath)
+                // Nur die Vormerk-Datei entfernen. Zeigt der Eintrag auf die
+                // dauerhafte Ablage (nach einem Push aus dem eigenstaendigen
+                // Betrieb), bleibt sie liegen — sie ist das angezeigte Bild.
+                if (mediaStore.artworkFile(pending.movieLocalId, pending.kind)?.absolutePath != pending.filePath) {
+                    mediaStore.delete(pending.filePath)
+                }
             } catch (e: Exception) {
                 // Bleibt vorgemerkt; der nächste Anlauf versucht es erneut.
                 isOffline = true
