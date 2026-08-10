@@ -4,6 +4,7 @@ import at.neuhaus.movieshelf.data.local.db.MovieDao
 import at.neuhaus.movieshelf.data.local.db.MovieEntity
 import at.neuhaus.movieshelf.data.local.db.SettingDao
 import at.neuhaus.movieshelf.data.local.db.SettingKeys
+import at.neuhaus.movieshelf.data.local.db.SeasonWithEpisodes
 import at.neuhaus.movieshelf.data.local.db.SyncClock
 import at.neuhaus.movieshelf.data.model.ExportResponse
 import at.neuhaus.movieshelf.data.model.MovieUpdateRequest
@@ -34,7 +35,13 @@ class SyncEngine(
      * hereingereicht, damit der Abgleich nur von dem abhaengt, was er wirklich
      * braucht — und im Test ohne Datei- und Netzschicht auskommt.
      */
-    private val flushPendingUploads: suspend () -> Unit = {}
+    private val flushPendingUploads: suspend () -> Unit = {},
+    /**
+     * Staffeln und Episoden einer Serie einspielen. Wie [flushPendingUploads]
+     * als Funktion hereingereicht, damit der Film-Abgleich nicht an der
+     * Serien-Tabelle haengt.
+     */
+    private val upsertSeries: suspend (Long, List<SeasonWithEpisodes>) -> Unit = { _, _ -> }
 ) {
     private val api: SyncApi get() = apiProvider()
 
@@ -141,6 +148,14 @@ class SyncEngine(
                     listOf(if (existing != null) entity.copy(localId = existing.localId) else entity)
                 )
                 applied++
+
+                // Staffeln haengen an der lokalen ID, die erst nach dem
+                // Einspielen feststeht.
+                val seasons = movie.seasons
+                if (!seasons.isNullOrEmpty()) {
+                    val localId = movieDao.findLocalIdByRemoteId(movie.id)
+                    if (localId != null) upsertSeries(localId, seasons.toEntities())
+                }
             } catch (e: Exception) {
                 errors += SyncError(movie.title ?: "Film ${movie.id}", e.message ?: "Unbekannter Fehler")
             }
@@ -166,6 +181,34 @@ class SyncEngine(
             errors = errors
         )
     }
+
+        /**
+     * Staffeln der Shelf in lokale Zeilen uebersetzen. Die lokalen IDs bleiben
+     * offen — [SeriesDao.upsertSeries] hebt bekannte Nummern auf ihre
+     * bestehende Zeile, damit ein wiederholter Import keine zweite Folge 1
+     * anlegt.
+     */
+    private fun List<at.neuhaus.movieshelf.data.model.ApiSeason>.toEntities(): List<SeasonWithEpisodes> =
+        map { season ->
+            SeasonWithEpisodes(
+                season = at.neuhaus.movieshelf.data.local.db.SeasonEntity(
+                    remoteId = season.id,
+                    movieLocalId = 0,
+                    seasonNumber = season.seasonNumber,
+                    title = season.title,
+                    overview = season.overview
+                ),
+                episodes = (season.episodes ?: emptyList()).map { episode ->
+                    at.neuhaus.movieshelf.data.local.db.EpisodeEntity(
+                        remoteId = episode.id,
+                        seasonLocalId = 0,
+                        episodeNumber = episode.episodeNumber,
+                        title = episode.title,
+                        overview = episode.overview
+                    )
+                }
+            )
+        }
 
     /** Wann zuletzt erfolgreich abgeglichen wurde — `null` heißt: noch nie. */
     suspend fun lastSyncAt(): String? = settingDao.get(SettingKeys.LAST_SYNC_AT)

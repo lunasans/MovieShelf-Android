@@ -8,7 +8,10 @@ import at.neuhaus.movieshelf.data.repository.ActorRepository
 import at.neuhaus.movieshelf.data.repository.ListRepository
 import at.neuhaus.movieshelf.data.repository.MovieRepository
 import at.neuhaus.movieshelf.data.api.MovieShelfApi
+import at.neuhaus.movieshelf.data.model.ListItemRef
 import at.neuhaus.movieshelf.data.model.MovieUpdateRequest
+import at.neuhaus.movieshelf.data.sync.ListSyncApi
+import at.neuhaus.movieshelf.data.sync.ListSyncEngine
 import at.neuhaus.movieshelf.data.sync.SyncApi
 import at.neuhaus.movieshelf.data.sync.SyncEngine
 import coil.ImageLoader
@@ -44,8 +47,28 @@ class MovieShelfApplication : Application(), ImageLoaderFactory {
             movieDao = database.movieDao(),
             settingDao = database.settingDao(),
             apiProvider = { RetrofitApi(RetrofitClient.api) },
-            flushPendingUploads = { movieRepository.flushPendingUploads() }
+            flushPendingUploads = { movieRepository.flushPendingUploads() },
+            upsertSeries = { localId, seasons ->
+                database.seriesDao().upsertSeries(localId, seasons)
+            }
         )
+    }
+
+    val listSyncEngine by lazy {
+        ListSyncEngine(
+            listDao = database.listDao(),
+            movieDao = database.movieDao(),
+            externalMovieDao = database.externalMovieDao()
+        ) { RetrofitListApi(listRepository) }
+    }
+
+    /** Bindet die schmale [ListSyncApi] an das Listen-Repository. */
+    private class RetrofitListApi(private val repository: ListRepository) : ListSyncApi {
+        override suspend fun getLists() = repository.getLists()
+        override suspend fun getList(listId: Int) = repository.getList(listId)
+        override suspend fun setItems(listId: Int, name: String, items: List<ListItemRef>) {
+            repository.setItems(listId, name, items)
+        }
     }
 
     /** Bindet die schmale [SyncApi] an die vollständige Shelf-Schnittstelle. */
