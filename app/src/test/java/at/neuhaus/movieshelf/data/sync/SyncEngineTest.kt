@@ -252,6 +252,38 @@ class SyncEngineTest {
         assertTrue(dao.rows.isEmpty())
     }
 
+    // ── Einzelne Richtungen ──────────────────────────────────────────────────
+
+    @Test
+    fun `nur hochladen rueckt das Wasserzeichen nicht vor`() = runBlocking {
+        val settings = FakeSettingDao()
+        settings.values[SettingKeys.LAST_SYNC_AT] = "2026-08-09T00:00:00Z"
+        val api = FakeSyncApi(export = ExportResponse(exportedAt = "2026-08-10T13:00:00Z", movies = emptyList()))
+
+        engine(FakeMovieDao(), settings, api).runPushOnly()
+
+        // Das Wasserzeichen steht fuer "bis hierhin ist der Serverstand
+        // bekannt". Dieser Lauf hat ihn nicht geholt - es vorzuruecken wuerde
+        // den naechsten Delta-Pull um alles bringen, was inzwischen passiert ist.
+        assertEquals("2026-08-09T00:00:00Z", settings.values[SettingKeys.LAST_SYNC_AT])
+        assertNull("Der Serverstand wurde gar nicht abgefragt", api.lastSince)
+    }
+
+    @Test
+    fun `nur laden faesst den Server nicht an`() = runBlocking {
+        val dao = FakeMovieDao()
+        dao.rows += movie(localId = 1, remoteId = 10, title = "Lokal geaendert")
+            .copy(updatedAt = "2026-08-10T12:00:00Z", syncedAt = "2026-08-10T10:00:00Z")
+
+        val api = FakeSyncApi(export = ExportResponse(exportedAt = "t", movies = emptyList()))
+        val result = engine(dao, FakeSettingDao(), api).runPullOnly()
+
+        assertEquals(0, result.push.total)
+        assertTrue(api.updatedIds.isEmpty())
+        // Die abweichende Zeile bleibt liegen, bis jemand hochlaedt.
+        assertTrue(dao.rows.single().isDirty)
+    }
+
     // ── Staffeln: gerichtetes Spiegeln ───────────────────────────────────────
 
     @Test
@@ -317,7 +349,7 @@ class SyncEngineTest {
             created = serverMovie(id = 50, title = "Ohne Shelf angelegt")
         )
 
-        val result = engine(dao, FakeSettingDao(), api).runFullSync()
+        val result = engine(dao, FakeSettingDao(), api).runSync()
 
         assertEquals(2, result.push.created)
         // Entscheidend: der leere Serverstand darf den lokalen Bestand nicht
@@ -349,7 +381,7 @@ class SyncEngineTest {
     // ── Reihenfolge ──────────────────────────────────────────────────────────
 
     @Test
-    fun `voller Abgleich laedt erst hoch, dann herunter`() = runBlocking {
+    fun `Abgleich laedt erst herunter, dann hoch`() = runBlocking {
         val order = mutableListOf<String>()
         val dao = object : FakeMovieDao() {
             override suspend fun getDirtyMovies(): List<MovieEntity> {
@@ -364,11 +396,12 @@ class SyncEngineTest {
             }
         }
 
-        engine(dao, FakeSettingDao(), api).runFullSync()
+        engine(dao, FakeSettingDao(), api).runSync()
 
-        // Andersherum ueberschriebe der Pull genau die Zeilen, die gleich
-        // haetten hochgeladen werden sollen.
-        assertEquals(listOf("push", "pull"), order)
+        // Reihenfolge wie in der Desktop-App. Sicher ist beides, weil der Pull
+        // abweichende Zeilen nicht anfasst - aber so sieht man den Serverstand,
+        // bevor man ihn ueberschreibt.
+        assertEquals(listOf("pull", "push"), order)
     }
 
     // ── Hilfen ───────────────────────────────────────────────────────────────

@@ -33,7 +33,29 @@ class ListSyncEngine(
 ) {
     private val api: ListSyncApi get() = apiProvider()
 
+    /**
+     * Beide Richtungen. Erst laden, dann hochladen — so kommen
+     * Server-Ergaenzungen in die Vereinigung, die anschliessend hochgeht.
+     */
     suspend fun sync(): ListSyncResult {
+        val pulled = pullLists()
+        val pushed = pushLists()
+        return ListSyncResult(
+            listsApplied = maxOf(pulled.listsApplied, pushed.listsApplied),
+            itemsAdded = pulled.itemsAdded,
+            itemsRemoved = pushed.itemsRemoved,
+            errors = pulled.errors + pushed.errors
+        )
+    }
+
+    /**
+     * Server-Listen nach lokal: fehlende Eintraege anlegen und verknuepfen.
+     *
+     * Aendert den Server nicht und entfernt lokal nichts. Was hier entfernt
+     * wurde, traegt einen Merker und kommt deshalb nicht zurueck — die
+     * Entfernung wird erst vom Push weitergegeben.
+     */
+    suspend fun pullLists(): ListSyncResult {
         var listsApplied = 0
         var itemsAdded = 0
         var itemsRemoved = 0
@@ -53,25 +75,50 @@ class ListSyncEngine(
                 val tombstoned = listDao.getTombstones(listLocalId)
                     .map { it.itemType to it.remoteId }
                     .toSet()
-
-                val serverRefs = detail.items.orEmpty().mapNotNull { item ->
-                    val type = item.itemType ?: ListItemType.MOVIE
-                    if (item.id == 0) null else type to item.id
-                }.toSet()
-
                 val localRefs = localRefsOf(listLocalId)
 
-                // Vereinigung, abzüglich dessen, was hier absichtlich entfernt wurde.
-                val union = (serverRefs + localRefs) - tombstoned
-
-                // Lokal nachtragen, was noch fehlt.
-                for ((type, remoteId) in union - localRefs) {
+                for ((type, remoteId) in serverRefsOf(detail) - localRefs - tombstoned) {
                     val itemLocalId = resolveOrCreateItem(type, remoteId, detail) ?: continue
                     listDao.addItem(ListItemEntity(listLocalId, type, itemLocalId, SyncClock.now()))
                     itemsAdded++
                 }
+                listsApplied++
+            } catch (e: Exception) {
+                errors += SyncError(summary.name ?: "Liste ${summary.id}", e.message ?: "Unbekannter Fehler")
+            }
+        }
 
-                // Auf dem Server nachziehen, wenn sich etwas unterscheidet.
+        return ListSyncResult(listsApplied, itemsAdded, itemsRemoved, errors)
+    }
+
+    /**
+     * Lokale Listen zum Server: die Mitgliedschaft als Vereinigung schreiben.
+     *
+     * Ueberschreibt nicht — was serverseitig hinzugekommen ist, bleibt. Nur
+     * was hier ausdruecklich entfernt wurde, faellt heraus.
+     */
+    suspend fun pushLists(): ListSyncResult {
+        var listsApplied = 0
+        var itemsRemoved = 0
+        val errors = mutableListOf<SyncError>()
+
+        val summaries = try {
+            api.getLists()
+        } catch (e: Exception) {
+            return ListSyncResult(errors = listOf(SyncError("Listen", e.message ?: "Nicht erreichbar")))
+        }
+
+        for (summary in summaries) {
+            try {
+                val listLocalId = upsertList(summary)
+                val detail = api.getList(summary.id)
+
+                val tombstoned = listDao.getTombstones(listLocalId)
+                    .map { it.itemType to it.remoteId }
+                    .toSet()
+                val serverRefs = serverRefsOf(detail)
+                val union = (serverRefs + localRefsOf(listLocalId)) - tombstoned
+
                 if (union != serverRefs) {
                     api.setItems(
                         summary.id,
@@ -81,7 +128,7 @@ class ListSyncEngine(
                     itemsRemoved += (serverRefs - union).size
                 }
 
-                // Erst nach erfolgreichem Push verwerfen: sonst wüsste nach
+                // Erst nach erfolgreichem Push verwerfen: sonst wuesste nach
                 // einem Fehlschlag niemand mehr, dass etwas entfernt wurde.
                 listDao.clearTombstones(listLocalId)
                 listsApplied++
@@ -90,8 +137,14 @@ class ListSyncEngine(
             }
         }
 
-        return ListSyncResult(listsApplied, itemsAdded, itemsRemoved, errors)
+        return ListSyncResult(listsApplied, 0, itemsRemoved, errors)
     }
+
+    private fun serverRefsOf(detail: ListDetailResponse): Set<Pair<String, Int>> =
+        detail.items.orEmpty().mapNotNull { item ->
+            val type = item.itemType ?: ListItemType.MOVIE
+            if (item.id == 0) null else type to item.id
+        }.toSet()
 
     private suspend fun upsertList(summary: MovieListSummary): Long {
         val existing = listDao.findLocalIdByRemoteId(summary.id)

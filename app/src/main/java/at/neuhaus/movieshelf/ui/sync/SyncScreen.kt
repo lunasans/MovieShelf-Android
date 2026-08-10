@@ -131,6 +131,37 @@ fun SyncScreen(onBack: () -> Unit) {
                 }
             }
 
+            ShelfFormSection(title = "Einzelne Richtung", icon = Icons.Default.Sync) {
+                Text(
+                    "Beide Richtungen sind der Regelfall. Einzeln ist nützlich, wenn " +
+                        "nur eine Seite stimmen soll — etwa nach einem Fehlversuch.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    OutlinedButton(
+                        onClick = { viewModel.runPullOnly() },
+                        modifier = Modifier.weight(1f),
+                        shape = PillShape,
+                        enabled = !viewModel.isBusy
+                    ) {
+                        Icon(Icons.Default.CloudDownload, contentDescription = null, modifier = Modifier.size(18.dp))
+                        Spacer(Modifier.width(8.dp))
+                        Text("Nur laden")
+                    }
+                    OutlinedButton(
+                        onClick = { viewModel.runPushOnly() },
+                        modifier = Modifier.weight(1f),
+                        shape = PillShape,
+                        enabled = !viewModel.isBusy
+                    ) {
+                        Icon(Icons.Default.CloudUpload, contentDescription = null, modifier = Modifier.size(18.dp))
+                        Spacer(Modifier.width(8.dp))
+                        Text("Nur hochladen")
+                    }
+                }
+            }
+
             if (viewModel.preview == null && !viewModel.isBusy) {
                 Text(
                     "Der Abgleich startet erst nach einer Vorschau.",

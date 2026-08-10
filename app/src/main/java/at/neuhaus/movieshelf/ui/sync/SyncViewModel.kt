@@ -17,6 +17,9 @@ import at.neuhaus.movieshelf.data.sync.SyncResult
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 
+/** Welche Richtungen ein Lauf bedient. */
+enum class SyncDirection { PULL, PUSH, BOTH }
+
 class SyncViewModel(
     private val syncEngine: SyncEngine,
     private val listSyncEngine: ListSyncEngine,
@@ -65,14 +68,33 @@ class SyncViewModel(
     }
 
     /** Abgleich starten. Erst nach einer gesehenen Vorschau erreichbar. */
-    fun runSync(full: Boolean = false) {
+    fun runSync(full: Boolean = false) = run(SyncDirection.BOTH, full)
+
+    /** Nur laden: der Server bleibt unangetastet. */
+    fun runPullOnly(full: Boolean = false) = run(SyncDirection.PULL, full)
+
+    /** Nur hochladen: der Serverstand wird nicht geholt. */
+    fun runPushOnly() = run(SyncDirection.PUSH, false)
+
+    private fun run(direction: SyncDirection, full: Boolean) {
         if (isBusy) return
         viewModelScope.launch {
             isBusy = true
             error = null
             try {
-                result = syncEngine.runFullSync(full)
-                listResult = listSyncEngine.sync()
+                result = when (direction) {
+                    SyncDirection.BOTH -> syncEngine.runSync(full)
+                    SyncDirection.PULL -> syncEngine.runPullOnly(full)
+                    SyncDirection.PUSH -> syncEngine.runPushOnly()
+                }
+                // Listen in derselben Richtung: ein reiner Ladelauf darf den
+                // Server nicht anfassen, ein reiner Ladelauf umgekehrt nichts
+                // lokal entfernen.
+                listResult = when (direction) {
+                    SyncDirection.BOTH -> listSyncEngine.sync()
+                    SyncDirection.PULL -> listSyncEngine.pullLists()
+                    SyncDirection.PUSH -> listSyncEngine.pushLists()
+                }
                 lastSyncAt = syncEngine.lastSyncAt()
                 preview = null
             } catch (e: Exception) {

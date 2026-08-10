@@ -86,21 +86,62 @@ class SyncEngine(
     }
 
     /**
-     * Vollständiger Abgleich: erst lokale Änderungen hoch, dann den Serverstand
-     * herunter, dann die vorgemerkten Bilder.
+     * Beide Richtungen: erst den Serverstand holen, dann lokale Aenderungen
+     * hoch, dann die Bilder. Reihenfolge wie in der Desktop-App.
+     *
+     * Dass zuerst gezogen wird, kostet nichts: der Pull laesst abweichende
+     * Zeilen unangetastet, und der anschliessende Push traegt sie nach. Lokale
+     * Aenderungen gewinnen also in beiden Reihenfolgen — aber nur in dieser
+     * sieht man den Serverstand, bevor man ihn ueberschreibt.
      */
-    suspend fun runFullSync(full: Boolean = false): SyncResult {
-        val pushed = push()
+    suspend fun runSync(full: Boolean = false): SyncResult {
         val pulled = pull(full)
+        val pushed = push()
+        val artwork = media()
+        return finish(SyncResult(push = pushed, pull = pulled, artworkStored = artwork))
+    }
+
+    /**
+     * Nur laden. Der Server bleibt unangetastet; lokale Aenderungen bleiben
+     * liegen, bis jemand hochlaedt.
+     */
+    suspend fun runPullOnly(full: Boolean = false): SyncResult {
+        val pulled = pull(full)
+        val artwork = media()
+        return finish(SyncResult(push = PushResult(), pull = pulled, artworkStored = artwork))
+    }
+
+    /**
+     * Nur hochladen.
+     *
+     * Ruecke das Wasserzeichen dabei **nicht** vor — es steht fuer "bis hierhin
+     * ist der Serverstand bekannt", und den hat dieser Lauf nicht geholt. Es
+     * vorzuruecken hiesse, den naechsten Delta-Pull um alles zu bringen, was
+     * inzwischen serverseitig passiert ist. Da [pull] das Wasserzeichen selbst
+     * schreibt und hier nicht laeuft, ergibt sich das von allein.
+     */
+    suspend fun runPushOnly(): SyncResult {
+        val pushed = push()
         onProgress(SyncProgress(SyncPhase.MEDIA))
-        // Erst hoch, dann runter: ein gerade hochgeladenes Cover soll nicht im
-        // selben Durchgang noch einmal geholt werden.
         flushPendingUploads()
-        val artwork = downloadMissingArtwork()
+        return finish(SyncResult(push = pushed, pull = PullResult()))
+    }
+
+    /** Bilder: erst hochladen, dann fehlende holen, dann verwaiste entfernen. */
+    private suspend fun media(): Int {
+        onProgress(SyncProgress(SyncPhase.MEDIA))
+        // Ein gerade hochgeladenes Cover soll nicht im selben Durchgang noch
+        // einmal geholt werden.
+        flushPendingUploads()
+        val stored = downloadMissingArtwork()
         cleanupOrphanedArtwork()
+        return stored
+    }
+
+    private fun finish(result: SyncResult): SyncResult {
         onProgress(SyncProgress(SyncPhase.DONE))
         _progress.value = null
-        return SyncResult(push = pushed, pull = pulled, artworkStored = artwork)
+        return result
     }
 
     /**
