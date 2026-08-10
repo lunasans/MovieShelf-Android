@@ -65,10 +65,21 @@ interface MovieDao {
     suspend fun upsertFromServer(movies: List<MovieEntity>) {
         for (movie in movies) {
             val remoteId = movie.remoteId ?: continue
-            val existingId = findLocalIdByRemoteId(remoteId)
-            insert(if (existingId != null) movie.copy(localId = existingId) else movie)
+            val existing = getByRemoteId(remoteId)
+            insert(
+                if (existing == null) movie else movie.copy(
+                    localId = existing.localId,
+                    // Bereits heruntergeladene Bilder behalten: sonst ersetzte
+                    // der Pull den Dateipfad wieder durch die Adresse und das
+                    // Bild wuerde bei jedem Abgleich erneut geholt.
+                    coverUrl = existing.coverUrl.takeIf { isLocalFile(it) } ?: movie.coverUrl,
+                    backdropUrl = existing.backdropUrl.takeIf { isLocalFile(it) } ?: movie.backdropUrl
+                )
+            )
         }
     }
+
+    private fun isLocalFile(value: String?): Boolean = value?.startsWith("/") == true
 
     /**
      * Vollstand einspielen: einspielen und danach alles entfernen, was der
@@ -95,12 +106,6 @@ interface MovieDao {
     @Query("UPDATE movies SET backdropUrl = :url, updatedAt = :now WHERE localId = :localId")
     suspend fun updateBackdropUrl(localId: Long, url: String?, now: String)
 
-    @Query("UPDATE movies SET coverLocalPath = :path WHERE localId = :localId")
-    suspend fun updateCoverLocalPath(localId: Long, path: String?)
-
-    @Query("UPDATE movies SET backdropLocalPath = :path WHERE localId = :localId")
-    suspend fun updateBackdropLocalPath(localId: Long, path: String?)
-
     /**
      * Zeilen, deren Bilder noch nicht heruntergeladen sind.
      *
@@ -109,8 +114,7 @@ interface MovieDao {
     @Query("""
         SELECT * FROM movies
         WHERE isDeleted = 0
-          AND ((coverUrl IS NOT NULL AND coverUrl != '' AND coverLocalPath IS NULL)
-            OR (backdropUrl IS NOT NULL AND backdropUrl != '' AND backdropLocalPath IS NULL))
+          AND ((coverUrl LIKE 'http%') OR (backdropUrl LIKE 'http%'))
     """)
     suspend fun getMoviesMissingArtwork(): List<MovieEntity>
 

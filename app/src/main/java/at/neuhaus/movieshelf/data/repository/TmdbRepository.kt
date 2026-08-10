@@ -96,9 +96,9 @@ class TmdbRepository(
     /**
      * Bilder und Besetzung nachtragen.
      *
-     * Die TMDb-Adresse wird vermerkt und das Bild sofort heruntergeladen — im
-     * eigenständigen Betrieb ist die Datei die einzige Quelle. Ein Verweis auf
-     * TMDb würde bedeuten, dass die Sammlung ohne Netz ohne Cover dasteht.
+     * Die TMDb-Adresse wird eingetragen und das Bild sofort geholt; danach
+     * steht in der Spalte der Dateipfad und die Adresse ist weg. So entsteht
+     * genau ein Abruf bei TMDb und nicht bei jedem Anzeigen einer.
      */
     private suspend fun finish(
         localId: Long,

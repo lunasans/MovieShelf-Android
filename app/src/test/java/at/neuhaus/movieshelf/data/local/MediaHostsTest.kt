@@ -7,7 +7,7 @@ import org.junit.Test
 
 /**
  * Übernommen aus `media.test.ts` der Desktop-App, damit die Freigabeliste hier
- * dieselben Fälle abdeckt — plus die eine bewusste Abweichung: TMDb ist erlaubt.
+ * dieselben Fälle abdeckt.
  */
 class MediaHostsTest {
 
@@ -53,10 +53,10 @@ class MediaHostsTest {
     }
 
     @Test
-    fun `TMDb ist erlaubt, auch ohne Shelf`() {
-        // Abweichung zur Desktop-App: dort blockiert, hier noetig, weil der
-        // eigenstaendige Betrieb seine Cover von TMDb bezieht und sie ohne
-        // Download offline fehlen wuerden.
+    fun `TMDb ist als Bezugsquelle erlaubt`() {
+        // Einmaliger Download beim Import. Angezeigt wird danach die Datei -
+        // die Adresse steht nicht mehr in der Zeile und kann keinen weiteren
+        // Verkehr ausloesen.
         assertTrue(MediaHosts.isAllowed("https://image.tmdb.org/t/p/w500/abc.jpg", null))
         assertTrue(MediaHosts.isAllowed("https://image.tmdb.org/t/p/w500/abc.jpg", "https://shelf.example.com"))
     }
@@ -70,6 +70,7 @@ class MediaHostsTest {
     fun `nur Shelf-Adressen bekommen den Token`() {
         val shelf = "https://shelf.example.com"
         assertTrue(MediaHosts.needsShelfAuth("https://medien.example.com/img.jpg", shelf))
+        assertFalse(MediaHosts.needsShelfAuth("https://fremd.example.org/img.jpg", shelf))
         // Den Shelf-Token an TMDb zu schicken waere ein Leck.
         assertFalse(MediaHosts.needsShelfAuth("https://image.tmdb.org/t/p/w500/abc.jpg", shelf))
         assertFalse(MediaHosts.needsShelfAuth("https://medien.example.com/img.jpg", null))

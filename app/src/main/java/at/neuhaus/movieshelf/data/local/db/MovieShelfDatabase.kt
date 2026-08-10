@@ -31,7 +31,7 @@ import androidx.room.RoomDatabase
         SettingEntity::class,
         PendingUploadEntity::class
     ],
-    version = 9,
+    version = 10,
     exportSchema = false
 )
 abstract class MovieShelfDatabase : RoomDatabase() {

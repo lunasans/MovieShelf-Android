@@ -421,12 +421,8 @@ class MovieRepository(
         var stored = 0
 
         for (entity in movieDao.getMoviesMissingArtwork()) {
-            if (entity.coverLocalPath == null) {
-                if (fetchArtwork(entity.localId, entity.coverUrl, ArtworkKind.COVER, shelfUrl)) stored++
-            }
-            if (entity.backdropLocalPath == null) {
-                if (fetchArtwork(entity.localId, entity.backdropUrl, ArtworkKind.BACKDROP, shelfUrl)) stored++
-            }
+            if (fetchArtwork(entity.localId, entity.coverUrl, ArtworkKind.COVER, shelfUrl)) stored++
+            if (fetchArtwork(entity.localId, entity.backdropUrl, ArtworkKind.BACKDROP, shelfUrl)) stored++
         }
         return stored
     }
@@ -446,8 +442,11 @@ class MovieRepository(
         ) ?: return false
 
         val file = mediaStore.saveArtwork(localId, kind, bytes, mimeType) ?: return false
-        if (kind == ArtworkKind.COVER) movieDao.updateCoverLocalPath(localId, file.absolutePath)
-        else movieDao.updateBackdropLocalPath(localId, file.absolutePath)
+        // Die Adresse wird durch den Dateipfad ersetzt, wie `cover_path` in der
+        // Desktop-App. Damit kann sie nicht zum Rueckfall werden.
+        val now = SyncClock.now()
+        if (kind == ArtworkKind.COVER) movieDao.updateCoverUrl(localId, file.absolutePath, now)
+        else movieDao.updateBackdropUrl(localId, file.absolutePath, now)
         return true
     }
 
@@ -457,8 +456,9 @@ class MovieRepository(
      */
     private fun absoluteUrl(rawUrl: String?, shelfUrl: String?): String? {
         val trimmed = rawUrl?.trim()?.takeIf { it.isNotBlank() } ?: return null
-        if (trimmed.startsWith("/") || mediaStore.isLocalPath(trimmed)) {
-            if (mediaStore.isLocalPath(trimmed)) return null
+        // Bereits eine lokale Datei: nichts zu holen.
+        if (mediaStore.isLocalPath(trimmed)) return null
+        if (trimmed.startsWith("/")) {
             val base = shelfUrl?.trimEnd('/') ?: return null
             return base + trimmed
         }

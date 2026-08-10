@@ -44,19 +44,16 @@ data class MovieEntity(
     val overview: String?,
     val runtime: Int?,
     val director: String?,
-    /** Kanonische Adresse: von der Shelf oder von TMDb. Geht so auch zurueck. */
+    /**
+     * Bildquelle — wie `cover_path` in der Desktop-App **eine** Spalte.
+     *
+     * Zunaechst die Adresse, von der das Bild zu holen ist (Shelf oder TMDb).
+     * Nach erfolgreichem Download steht hier der Pfad der lokalen Datei und die
+     * Adresse ist weg. Damit kann sie nicht zum Rueckfall werden und beim
+     * Anzeigen erneut Verkehr verursachen.
+     */
     val coverUrl: String?,
     val backdropUrl: String?,
-    /**
-     * Heruntergeladene Datei, falls vorhanden.
-     *
-     * Bewusst neben [coverUrl] statt an deren Stelle: die Adresse bleibt der
-     * Stand, den Server und TMDb kennen, und darf beim naechsten Abgleich nicht
-     * durch einen Geraetepfad ersetzt werden. Angezeigt wird trotzdem die
-     * Datei — sie ist auch ohne Netz da.
-     */
-    val coverLocalPath: String? = null,
-    val backdropLocalPath: String? = null,
     val trailerUrl: String?,
     val edition: String?,
     val regionCode: String?,
@@ -110,9 +107,8 @@ data class MovieEntity(
             overview = overview,
             runtime = runtime,
             director = director,
-            // Die heruntergeladene Datei hat Vorrang: sie ist auch offline da.
-            coverUrl = coverLocalPath ?: coverUrl,
-            backdropUrl = backdropLocalPath ?: backdropUrl,
+            coverUrl = coverUrl,
+            backdropUrl = backdropUrl,
             trailerUrl = trailerUrl,
             edition = edition,
             regionCode = regionCode,

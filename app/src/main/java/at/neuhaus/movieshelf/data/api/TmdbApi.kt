@@ -21,6 +21,10 @@ import java.util.concurrent.TimeUnit
  * Der Schlüssel wird pro Aufruf mitgegeben statt über einen Interceptor: er
  * kann sich jederzeit ändern, und ein Interceptor müsste ihn dann bei jedem
  * Aufruf neu aus dem Keystore lesen.
+ *
+ * Bild-Adressen dienen ausschliesslich dem einmaligen Herunterladen. Nach dem
+ * Download steht in der Datenbank der Dateipfad; verlinkt wird auf TMDb nie,
+ * sonst entstuende dort bei jedem Anzeigen erneut Verkehr.
  */
 interface TmdbApi {
 
@@ -58,6 +62,13 @@ interface TmdbApi {
         const val BASE_URL = "https://api.themoviedb.org/3/"
         const val IMAGE_BASE_URL = "https://image.tmdb.org/t/p/w500"
 
+        /**
+         * Vollstaendige Bild-Adresse aus einem TMDb-Pfad wie `/abc123.jpg`.
+         * Nur als Bezugsquelle gedacht — siehe Klassenkommentar.
+         */
+        fun imageUrl(path: String?): String? =
+            path?.takeIf { it.isNotBlank() }?.let { IMAGE_BASE_URL + it }
+
         fun create(): TmdbApi {
             val client = OkHttpClient.Builder()
                 .connectTimeout(15, TimeUnit.SECONDS)
@@ -71,10 +82,6 @@ interface TmdbApi {
                 .build()
                 .create(TmdbApi::class.java)
         }
-
-        /** Vollständige Bild-URL aus einem TMDb-Pfad wie `/abc123.jpg`. */
-        fun imageUrl(path: String?): String? =
-            path?.takeIf { it.isNotBlank() }?.let { IMAGE_BASE_URL + it }
     }
 }
 

@@ -12,12 +12,11 @@ import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
  * derselben registrierbaren Domain, weil Shelf-Installationen ihre Bilder oft
  * von einer eigenen Medien-Domain ausliefern.
  *
- * **Abweichung zur Desktop-App:** dort ist TMDb ausdrücklich blockiert, und
- * eigenständig übernommene Filme behalten die TMDb-Adresse. Auf dem Telefon ist
- * das keine Option — ohne Netz stünde die Sammlung dann ohne Cover da, und
- * genau dafür ist der eigenständige Betrieb gedacht. `image.tmdb.org` ist
- * deshalb zusätzlich erlaubt: ein fest eingebauter, bekannter Host, keine frei
- * wählbare Adresse.
+ * TMDb steht hier als **Bezugsquelle** drin, nicht als Anzeigeadresse: ein Bild
+ * wird genau einmal geholt und liegt danach als Datei vor. Eine TMDb-Adresse
+ * erreicht die Anzeige nie — sonst entstuende bei jedem Blaettern durch die
+ * Sammlung erneut Verkehr dort. Dafuer sorgt die getrennte Spalte
+ * `coverSourceUrl` in `MovieEntity`, die ausschliesslich der Download liest.
  */
 object MediaHosts {
 
@@ -46,6 +45,7 @@ object MediaHosts {
 
     /** Ob von dieser Adresse geladen werden darf. */
     fun isAllowed(url: HttpUrl, shelfUrl: HttpUrl?): Boolean {
+        // Einmaliger Bezug, kein wiederkehrender Abruf — siehe Klassenkommentar.
         if (url.host == TMDB_IMAGE_HOST) return true
         if (shelfUrl == null) return false
         if (url.scheme != shelfUrl.scheme) return false
