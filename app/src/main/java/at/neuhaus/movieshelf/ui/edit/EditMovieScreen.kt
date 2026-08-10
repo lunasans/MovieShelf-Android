@@ -11,9 +11,13 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.Notes
 import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.filled.Collections
 import androidx.compose.material.icons.filled.DeleteOutline
 import androidx.compose.material.icons.filled.Image
+import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Inventory2
 import androidx.compose.material.icons.filled.Save
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material.icons.filled.Wallpaper
@@ -28,6 +32,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import at.neuhaus.movieshelf.MovieShelfApplication
+import at.neuhaus.movieshelf.ui.components.ShelfFormSection
+import at.neuhaus.movieshelf.ui.components.ShelfSectionSpacing
+import at.neuhaus.movieshelf.ui.components.ShelfTextField
+import at.neuhaus.movieshelf.ui.theme.PillShape
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -156,198 +164,204 @@ fun EditMovieScreen(
                         .padding(padding)
                         .verticalScroll(rememberScrollState())
                         .padding(horizontal = 20.dp, vertical = 16.dp),
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                    verticalArrangement = Arrangement.spacedBy(ShelfSectionSpacing)
                 ) {
-                    OutlinedTextField(
-                        value = viewModel.title,
-                        onValueChange = { viewModel.title = it },
-                        label = { Text("Titel *") },
-                        modifier = Modifier.fillMaxWidth(),
-                        singleLine = true,
-                        isError = viewModel.title.isBlank()
-                    )
-
-                    Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                        OutlinedTextField(
-                            value = viewModel.year,
-                            onValueChange = { v -> viewModel.year = v.filter { it.isDigit() }.take(4) },
-                            label = { Text("Jahr *") },
-                            modifier = Modifier.weight(1f),
-                            singleLine = true,
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+                    // Sektions-Zuschnitt und Beschriftungen folgen dem Web-Formular
+                    // (`admin/movies/edit.blade.php`), damit beide Oberflächen
+                    // dieselbe Gliederung haben.
+                    ShelfFormSection(title = "Stammdaten", icon = Icons.Default.Info) {
+                        ShelfTextField(
+                            value = viewModel.title,
+                            onValueChange = { viewModel.title = it },
+                            label = "Originaltitel / Titel *",
+                            modifier = Modifier.fillMaxWidth(),
+                            isError = viewModel.title.isBlank()
                         )
-                        OutlinedTextField(
-                            value = viewModel.runtime,
-                            onValueChange = { v -> viewModel.runtime = v.filter { it.isDigit() }.take(4) },
-                            label = { Text("Laufzeit (Min.)") },
-                            modifier = Modifier.weight(1f),
-                            singleLine = true,
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+
+                        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                            ShelfTextField(
+                                value = viewModel.year,
+                                onValueChange = { v -> viewModel.year = v.filter { it.isDigit() }.take(4) },
+                                label = "Erscheinungsjahr *",
+                                modifier = Modifier.weight(1f),
+                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+                            )
+                            ShelfTextField(
+                                value = viewModel.runtime,
+                                onValueChange = { v -> viewModel.runtime = v.filter { it.isDigit() }.take(4) },
+                                label = "Laufzeit (Min.)",
+                                modifier = Modifier.weight(1f),
+                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+                            )
+                        }
+
+                        CollectionTypeDropdown(
+                            value = viewModel.collectionType,
+                            onValueChange = { viewModel.collectionType = it }
                         )
-                    }
 
-                    CollectionTypeDropdown(
-                        value = viewModel.collectionType,
-                        onValueChange = { viewModel.collectionType = it }
-                    )
-
-                    OutlinedTextField(
-                        value = viewModel.genre,
-                        onValueChange = { viewModel.genre = it },
-                        label = { Text("Genre (Komma-getrennt)") },
-                        modifier = Modifier.fillMaxWidth(),
-                        singleLine = true
-                    )
-
-                    OutlinedTextField(
-                        value = viewModel.director,
-                        onValueChange = { viewModel.director = it },
-                        label = { Text("Regisseur") },
-                        modifier = Modifier.fillMaxWidth(),
-                        singleLine = true
-                    )
-
-                    Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                        OutlinedTextField(
-                            value = viewModel.rating,
-                            onValueChange = { viewModel.rating = it },
-                            label = { Text("Bewertung (0–10)") },
-                            modifier = Modifier.weight(1f),
-                            singleLine = true,
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal)
-                        )
                         TagDropdown(
                             value = viewModel.tag,
                             onValueChange = { viewModel.tag = it },
-                            modifier = Modifier.weight(1f)
+                            modifier = Modifier.fillMaxWidth()
+                        )
+
+                        ShelfTextField(
+                            value = viewModel.genre,
+                            onValueChange = { viewModel.genre = it },
+                            label = "Genre / Kategorien",
+                            placeholder = "Komma-getrennt",
+                            modifier = Modifier.fillMaxWidth()
+                        )
+
+                        ShelfTextField(
+                            value = viewModel.director,
+                            onValueChange = { viewModel.director = it },
+                            label = "Regisseur",
+                            modifier = Modifier.fillMaxWidth()
+                        )
+
+                        ShelfTextField(
+                            value = viewModel.rating,
+                            onValueChange = { viewModel.rating = it },
+                            label = "TMDb Bewertung",
+                            placeholder = "0–10",
+                            modifier = Modifier.fillMaxWidth(),
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal)
                         )
                     }
 
-                    OutlinedTextField(
-                        value = viewModel.trailerUrl,
-                        onValueChange = { viewModel.trailerUrl = it },
-                        label = { Text("Trailer-URL") },
-                        modifier = Modifier.fillMaxWidth(),
-                        singleLine = true,
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri, imeAction = ImeAction.Next)
-                    )
+                    ShelfFormSection(title = "Handlung & Details", icon = Icons.AutoMirrored.Filled.Notes) {
+                        ShelfTextField(
+                            value = viewModel.overview,
+                            onValueChange = { viewModel.overview = it },
+                            label = "Filmhandlung / Storyline",
+                            modifier = Modifier.fillMaxWidth().heightIn(min = 120.dp),
+                            singleLine = false,
+                            minLines = 4
+                        )
 
-                    OutlinedTextField(
-                        value = viewModel.overview,
-                        onValueChange = { viewModel.overview = it },
-                        label = { Text("Beschreibung") },
-                        modifier = Modifier.fillMaxWidth().heightIn(min = 120.dp),
-                        minLines = 4
-                    )
+                        ShelfTextField(
+                            value = viewModel.trailerUrl,
+                            onValueChange = { viewModel.trailerUrl = it },
+                            label = "Trailer URL (YouTube)",
+                            placeholder = "https://www.youtube.com/watch?v=...",
+                            modifier = Modifier.fillMaxWidth(),
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri, imeAction = ImeAction.Next)
+                        )
+                    }
 
-                    // Physische Sammlung
-                    Text("Physische Sammlung", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
-
-                    OutlinedTextField(
-                        value = viewModel.edition,
-                        onValueChange = { viewModel.edition = it },
-                        label = { Text("Edition / Auflage") },
-                        modifier = Modifier.fillMaxWidth(),
-                        singleLine = true,
-                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next)
-                    )
-
-                    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                        OutlinedTextField(
-                            value = viewModel.regionCode,
-                            onValueChange = { viewModel.regionCode = it },
-                            label = { Text("Regionalcode") },
-                            modifier = Modifier.weight(1f),
-                            singleLine = true,
+                    ShelfFormSection(title = "Physische Sammlung", icon = Icons.Default.Collections) {
+                        ShelfTextField(
+                            value = viewModel.edition,
+                            onValueChange = { viewModel.edition = it },
+                            label = "Edition / Auflage",
+                            placeholder = "z.B. Steelbook, Director's Cut",
+                            modifier = Modifier.fillMaxWidth(),
                             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next)
                         )
-                        OutlinedTextField(
-                            value = viewModel.discLocation,
-                            onValueChange = { viewModel.discLocation = it },
-                            label = { Text("Standort im Regal") },
-                            modifier = Modifier.weight(1f),
-                            singleLine = true,
-                            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next)
-                        )
-                    }
 
-                    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                        OutlinedTextField(
-                            value = viewModel.purchaseDate,
-                            onValueChange = { viewModel.purchaseDate = it },
-                            label = { Text("Kaufdatum (JJJJ-MM-TT)") },
-                            modifier = Modifier.weight(1f),
-                            singleLine = true,
-                            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next)
-                        )
-                        OutlinedTextField(
-                            value = viewModel.purchasePrice,
-                            onValueChange = { viewModel.purchasePrice = it },
-                            label = { Text("Kaufpreis (€)") },
-                            modifier = Modifier.weight(1f),
-                            singleLine = true,
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal, imeAction = ImeAction.Next)
-                        )
-                    }
-
-                    ConditionDropdown(
-                        value = viewModel.condition,
-                        onValueChange = { viewModel.condition = it },
-                        modifier = Modifier.fillMaxWidth()
-                    )
-
-                    // Bilder
-                    Text("Bilder", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                        OutlinedButton(
-                            onClick = {
-                                coverPicker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
-                            },
-                            modifier = Modifier.weight(1f),
-                            enabled = !viewModel.isUploadingCover
-                        ) {
-                            if (viewModel.isUploadingCover) {
-                                CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp)
-                            } else {
-                                Icon(Icons.Default.Image, contentDescription = null, modifier = Modifier.size(18.dp))
-                                Spacer(Modifier.width(8.dp))
-                                Text("Cover")
-                            }
-                        }
-                        OutlinedButton(
-                            onClick = {
-                                backdropPicker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
-                            },
-                            modifier = Modifier.weight(1f),
-                            enabled = !viewModel.isUploadingBackdrop
-                        ) {
-                            if (viewModel.isUploadingBackdrop) {
-                                CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp)
-                            } else {
-                                Icon(Icons.Default.Wallpaper, contentDescription = null, modifier = Modifier.size(18.dp))
-                                Spacer(Modifier.width(8.dp))
-                                Text("Backdrop")
-                            }
-                        }
-                    }
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Column(Modifier.weight(1f)) {
-                            Text("In Sammlung", fontWeight = FontWeight.Bold)
-                            Text(
-                                "Film ist Teil der Sammlung (nicht nur Wunschliste)",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                            ShelfTextField(
+                                value = viewModel.regionCode,
+                                onValueChange = { viewModel.regionCode = it },
+                                label = "Regionalcode",
+                                placeholder = "z.B. 2, B, Free",
+                                modifier = Modifier.weight(1f),
+                                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next)
+                            )
+                            ShelfTextField(
+                                value = viewModel.discLocation,
+                                onValueChange = { viewModel.discLocation = it },
+                                label = "Standort im Regal",
+                                placeholder = "z.B. Regal 3, Fach B",
+                                modifier = Modifier.weight(1f),
+                                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next)
                             )
                         }
-                        Switch(
-                            checked = viewModel.inCollection,
-                            onCheckedChange = { viewModel.inCollection = it }
+
+                        ConditionDropdown(
+                            value = viewModel.condition,
+                            onValueChange = { viewModel.condition = it },
+                            modifier = Modifier.fillMaxWidth()
                         )
+
+                        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                            ShelfTextField(
+                                value = viewModel.purchaseDate,
+                                onValueChange = { viewModel.purchaseDate = it },
+                                label = "Kaufdatum",
+                                placeholder = "JJJJ-MM-TT",
+                                modifier = Modifier.weight(1f),
+                                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next)
+                            )
+                            ShelfTextField(
+                                value = viewModel.purchasePrice,
+                                onValueChange = { viewModel.purchasePrice = it },
+                                label = "Kaufpreis (€)",
+                                placeholder = "0,00",
+                                modifier = Modifier.weight(1f),
+                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal, imeAction = ImeAction.Next)
+                            )
+                        }
+                    }
+
+                    ShelfFormSection(title = "Visuelle Medien", icon = Icons.Default.Image) {
+                        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                            OutlinedButton(
+                                onClick = {
+                                    coverPicker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+                                },
+                                modifier = Modifier.weight(1f),
+                                shape = PillShape,
+                                enabled = !viewModel.isUploadingCover
+                            ) {
+                                if (viewModel.isUploadingCover) {
+                                    CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp)
+                                } else {
+                                    Icon(Icons.Default.Image, contentDescription = null, modifier = Modifier.size(18.dp))
+                                    Spacer(Modifier.width(8.dp))
+                                    Text("Cover", fontWeight = FontWeight.SemiBold)
+                                }
+                            }
+                            OutlinedButton(
+                                onClick = {
+                                    backdropPicker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+                                },
+                                modifier = Modifier.weight(1f),
+                                shape = PillShape,
+                                enabled = !viewModel.isUploadingBackdrop
+                            ) {
+                                if (viewModel.isUploadingBackdrop) {
+                                    CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp)
+                                } else {
+                                    Icon(Icons.Default.Wallpaper, contentDescription = null, modifier = Modifier.size(18.dp))
+                                    Spacer(Modifier.width(8.dp))
+                                    Text("Backdrop", fontWeight = FontWeight.SemiBold)
+                                }
+                            }
+                        }
+                    }
+
+                    ShelfFormSection(title = "Status", icon = Icons.Default.Inventory2) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Column(Modifier.weight(1f)) {
+                                Text("In Sammlung", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
+                                Text(
+                                    "Film ist Teil der Sammlung (nicht nur Wunschliste)",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                            Switch(
+                                checked = viewModel.inCollection,
+                                onCheckedChange = { viewModel.inCollection = it }
+                            )
+                        }
                     }
 
                     Spacer(Modifier.height(8.dp))
@@ -355,6 +369,7 @@ fun EditMovieScreen(
                     Button(
                         onClick = { viewModel.save() },
                         modifier = Modifier.fillMaxWidth(),
+                        shape = PillShape,
                         enabled = !viewModel.isSaving && !viewModel.isDeleting
                     ) {
                         if (viewModel.isSaving) {
@@ -446,13 +461,12 @@ private fun CollectionTypeDropdown(
         expanded = expanded,
         onExpandedChange = { expanded = it }
     ) {
-        OutlinedTextField(
+        ShelfTextField(
             value = value,
             onValueChange = onValueChange,
-            label = { Text("Typ *") },
+            label = "Typ *",
             trailingIcon = { Icon(Icons.Default.ArrowDropDown, contentDescription = null) },
             isError = value.isBlank(),
-            singleLine = true,
             modifier = Modifier
                 .fillMaxWidth()
                 .menuAnchor(MenuAnchorType.PrimaryEditable)
@@ -499,13 +513,12 @@ private fun ConditionDropdown(
         onExpandedChange = { expanded = it },
         modifier = modifier
     ) {
-        OutlinedTextField(
+        ShelfTextField(
             value = label,
             onValueChange = {},
             readOnly = true,
-            label = { Text("Zustand") },
+            label = "Zustand",
             trailingIcon = { Icon(Icons.Default.ArrowDropDown, contentDescription = null) },
-            singleLine = true,
             modifier = Modifier
                 .fillMaxWidth()
                 .menuAnchor(MenuAnchorType.PrimaryNotEditable)
@@ -545,12 +558,11 @@ private fun TagDropdown(
         onExpandedChange = { expanded = it },
         modifier = modifier
     ) {
-        OutlinedTextField(
+        ShelfTextField(
             value = value,
             onValueChange = onValueChange,
-            label = { Text("Medium / Format") },
+            label = "Medium / Format",
             trailingIcon = { Icon(Icons.Default.ArrowDropDown, contentDescription = null) },
-            singleLine = true,
             modifier = Modifier
                 .fillMaxWidth()
                 .menuAnchor(MenuAnchorType.PrimaryEditable)

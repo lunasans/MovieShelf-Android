@@ -25,7 +25,9 @@ import androidx.navigation.compose.rememberNavController
 import at.neuhaus.movieshelf.ui.components.FloatingNavBar
 import at.neuhaus.movieshelf.data.SessionManager
 import at.neuhaus.movieshelf.data.api.RetrofitClient
+import androidx.compose.foundation.isSystemInDarkTheme
 import at.neuhaus.movieshelf.data.local.DataStoreManager
+import at.neuhaus.movieshelf.data.local.ThemeMode
 import at.neuhaus.movieshelf.data.model.Movie
 import at.neuhaus.movieshelf.ui.about.AboutScreen
 import at.neuhaus.movieshelf.ui.actors.ActorDetailScreen
@@ -71,7 +73,15 @@ class MainActivity : ComponentActivity() {
         setContent {
             val dsm = remember { DataStoreManager(applicationContext) }
             val dynamicColor by dsm.dynamicColor.collectAsState(initial = false)
-            MovieShelfTheme(dynamicColor = dynamicColor) {
+            val themeMode by dsm.themeMode.collectAsState(initial = ThemeMode.DARK)
+            MovieShelfTheme(
+                darkTheme = when (themeMode) {
+                    ThemeMode.DARK -> true
+                    ThemeMode.LIGHT -> false
+                    ThemeMode.SYSTEM -> isSystemInDarkTheme()
+                },
+                dynamicColor = dynamicColor
+            ) {
                 MovieShelfApp(oauthCallbackUri)
             }
         }

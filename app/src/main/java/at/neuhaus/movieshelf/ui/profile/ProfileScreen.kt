@@ -9,6 +9,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.automirrored.filled.PlaylistPlay
+import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.Person
@@ -30,6 +31,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import android.os.Build
 import at.neuhaus.movieshelf.data.local.DataStoreManager
+import at.neuhaus.movieshelf.data.local.ThemeMode
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -45,6 +47,7 @@ fun ProfileScreen(
     val dataStoreManager = remember { DataStoreManager(context) }
     val scope = rememberCoroutineScope()
     val dynamicColor by dataStoreManager.dynamicColor.collectAsState(initial = false)
+    val themeMode by dataStoreManager.themeMode.collectAsState(initial = ThemeMode.DARK)
     val supportsDynamic = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
 
     LaunchedEffect(viewModel.error) {
@@ -191,6 +194,47 @@ fun ProfileScreen(
                             )
                         }
                         Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null, tint = MaterialTheme.colorScheme.outline)
+                    }
+                }
+
+                Spacer(Modifier.height(16.dp))
+
+                // Hell/Dunkel. Standard ist dunkel wie die Web-Oberfläche;
+                // "System" bleibt für alle, die es Android-üblich wollen.
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                    )
+                ) {
+                    Column(Modifier.padding(16.dp)) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(Icons.Default.DarkMode, contentDescription = null)
+                            Spacer(Modifier.width(16.dp))
+                            Column {
+                                Text("Erscheinungsbild", fontWeight = FontWeight.Bold)
+                                Text(
+                                    "MovieShelf ist auf den dunklen Look ausgelegt",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
+                        Spacer(Modifier.height(12.dp))
+                        SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
+                            ThemeMode.entries.forEachIndexed { index, mode ->
+                                SegmentedButton(
+                                    selected = themeMode == mode,
+                                    onClick = { scope.launch { dataStoreManager.saveThemeMode(mode) } },
+                                    shape = SegmentedButtonDefaults.itemShape(
+                                        index = index,
+                                        count = ThemeMode.entries.size
+                                    )
+                                ) {
+                                    Text(mode.label)
+                                }
+                            }
+                        }
                     }
                 }
 

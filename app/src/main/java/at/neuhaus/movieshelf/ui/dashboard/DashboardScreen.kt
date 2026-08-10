@@ -12,9 +12,13 @@ import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
@@ -22,12 +26,17 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.fromHtml
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -36,9 +45,13 @@ import at.neuhaus.movieshelf.MovieShelfApplication
 import at.neuhaus.movieshelf.R
 import at.neuhaus.movieshelf.data.model.Movie
 import at.neuhaus.movieshelf.ui.components.FloatingNavBar
-import at.neuhaus.movieshelf.ui.components.HeadingText
 import at.neuhaus.movieshelf.ui.components.PosterCard
 import at.neuhaus.movieshelf.ui.components.RatingBadge
+import at.neuhaus.movieshelf.ui.theme.BackgroundDark
+import at.neuhaus.movieshelf.ui.theme.HeroBannerShape
+import at.neuhaus.movieshelf.ui.theme.NavAccentRed
+import at.neuhaus.movieshelf.ui.theme.NavAccentRose500
+import kotlinx.coroutines.delay
 import at.neuhaus.movieshelf.ui.util.MovieCardSkeleton
 import at.neuhaus.movieshelf.ui.util.resolveImageUrl
 import coil.compose.AsyncImage
@@ -265,9 +278,27 @@ fun DashboardScreen(
                             .verticalScroll(rememberScrollState())
                             .padding(bottom = 100.dp)
                     ) {
+                        // Hero speist sich aus den Neuzugängen; ohne Backdrop
+                        // wirkt der Banner beschnitten, daher nur solche Filme.
+                        val heroMovies = remember(viewModel.newMoviesShelf) {
+                            viewModel.newMoviesShelf
+                                .filter { !it.backdropUrl.isNullOrBlank() }
+                                .take(5)
+                        }
+                        if (heroMovies.isNotEmpty()) {
+                            HeroSlider(
+                                movies = heroMovies,
+                                onClick = { movie ->
+                                    onMovieClick(movie, heroMovies.map { it.id })
+                                }
+                            )
+                            Spacer(Modifier.height(8.dp))
+                        }
+
                         if (viewModel.newMoviesShelf.isNotEmpty()) {
                             MovieShelfRow(
                                 title = "Neue Filme",
+                                icon = Icons.Default.NewReleases,
                                 movies = viewModel.newMoviesShelf,
                                 onClick = { movie ->
                                     onMovieClick(movie, viewModel.newMoviesShelf.map { it.id })
@@ -278,6 +309,7 @@ fun DashboardScreen(
                         if (viewModel.filmeShelf.isNotEmpty()) {
                             MovieShelfRow(
                                 title = "Filme",
+                                icon = Icons.Default.Movie,
                                 movies = viewModel.filmeShelf,
                                 onClick = { movie ->
                                     onMovieClick(movie, viewModel.filmeShelf.map { it.id })
@@ -288,6 +320,7 @@ fun DashboardScreen(
                         if (viewModel.seriesShelf.isNotEmpty()) {
                             MovieShelfRow(
                                 title = "Serien",
+                                icon = Icons.Default.Tv,
                                 movies = viewModel.seriesShelf,
                                 onClick = { movie ->
                                     onMovieClick(movie, viewModel.seriesShelf.map { it.id })
@@ -491,14 +524,186 @@ fun YearPicker(label: String, value: Int?, onValueChange: (Int?) -> Unit) {
     )
 }
 
+/** Wechselintervall des Hero-Sliders — wie im Web (`setInterval(..., 8000)`). */
+private const val HERO_AUTO_ADVANCE_MS = 8_000L
+
+/**
+ * Hero-Banner über den Shelf-Reihen, nachgebaut nach dem Slider im Web
+ * (`tenant/movies/partials/streaming-layout.blade.php`): Backdrop mit drei
+ * Gradient-Scrims nach `#0c0c0e`, "Featured"-Badge, großer Titel, Kurztext,
+ * heller Details-Button und Slider-Punkte. Wechselt automatisch, solange der
+ * Nutzer nicht selbst wischt.
+ *
+ * Die Scrims sind bewusst in beiden Themes dunkel: sie liegen auf einem Foto,
+ * die Schrift darauf ist immer weiß.
+ */
+@Composable
+fun HeroSlider(
+    movies: List<Movie>,
+    onClick: (Movie) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    if (movies.isEmpty()) return
+    val context = LocalContext.current
+    val pagerState = rememberPagerState(pageCount = { movies.size })
+
+    if (movies.size > 1) {
+        LaunchedEffect(pagerState) {
+            while (true) {
+                delay(HERO_AUTO_ADVANCE_MS)
+                // Ein laufender Wisch des Nutzers hat Vorrang.
+                if (!pagerState.isScrollInProgress) {
+                    pagerState.animateScrollToPage(
+                        page = (pagerState.currentPage + 1) % movies.size,
+                        animationSpec = tween(durationMillis = 900)
+                    )
+                }
+            }
+        }
+    }
+
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .height(420.dp)
+            .clip(HeroBannerShape)
+    ) {
+        HorizontalPager(state = pagerState, modifier = Modifier.fillMaxSize()) { page ->
+            val movie = movies[page]
+            Box(Modifier.fillMaxSize()) {
+                AsyncImage(
+                    model = resolveImageUrl(context, movie.backdropUrl ?: movie.coverUrl ?: ""),
+                    contentDescription = movie.title,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.fillMaxSize()
+                )
+                Box(
+                    Modifier
+                        .fillMaxSize()
+                        .background(
+                            Brush.verticalGradient(
+                                0f to BackgroundDark,
+                                0.25f to Color.Transparent,
+                                0.55f to BackgroundDark.copy(alpha = 0.6f),
+                                1f to BackgroundDark
+                            )
+                        )
+                )
+                Box(
+                    Modifier
+                        .fillMaxSize()
+                        .background(
+                            Brush.horizontalGradient(
+                                listOf(BackgroundDark, Color.Transparent, Color.Transparent)
+                            )
+                        )
+                )
+
+                Column(
+                    modifier = Modifier
+                        .align(Alignment.BottomStart)
+                        .padding(horizontal = 20.dp, vertical = 28.dp)
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            text = "Featured",
+                            style = MaterialTheme.typography.labelSmall.copy(letterSpacing = 1.5.sp),
+                            fontWeight = FontWeight.Black,
+                            color = Color.White,
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(6.dp))
+                                .background(NavAccentRed)
+                                .padding(horizontal = 8.dp, vertical = 3.dp)
+                        )
+                        Spacer(Modifier.width(10.dp))
+                        Text(
+                            text = listOfNotNull(movie.year?.toString(), movie.collectionType)
+                                .joinToString(" • "),
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White.copy(alpha = 0.6f)
+                        )
+                    }
+
+                    Spacer(Modifier.height(10.dp))
+
+                    Text(
+                        text = movie.title ?: "",
+                        style = MaterialTheme.typography.displaySmall.copy(
+                            fontWeight = FontWeight.Black,
+                            fontSize = 34.sp,
+                            lineHeight = 38.sp,
+                            letterSpacing = (-1).sp
+                        ),
+                        color = Color.White,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis
+                    )
+
+                    if (!movie.overview.isNullOrBlank()) {
+                        Spacer(Modifier.height(10.dp))
+                        Text(
+                            // Die Beschreibung kommt als HTML aus dem Quill-Editor.
+                            text = AnnotatedString.fromHtml(movie.overview).text,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = Color.White.copy(alpha = 0.7f),
+                            maxLines = 3,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
+
+                    Spacer(Modifier.height(18.dp))
+
+                    Button(
+                        onClick = { onClick(movie) },
+                        shape = RoundedCornerShape(16.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color.White,
+                            contentColor = Color.Black
+                        ),
+                        contentPadding = PaddingValues(horizontal = 24.dp, vertical = 12.dp)
+                    ) {
+                        Icon(Icons.Default.PlayArrow, contentDescription = null, modifier = Modifier.size(22.dp))
+                        Spacer(Modifier.width(8.dp))
+                        Text("Details", fontWeight = FontWeight.Black)
+                    }
+                }
+            }
+        }
+
+        if (movies.size > 1) {
+            Row(
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .padding(end = 20.dp, bottom = 20.dp),
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                repeat(movies.size) { index ->
+                    val selected = pagerState.currentPage == index
+                    Box(
+                        Modifier
+                            .height(6.dp)
+                            .width(if (selected) 20.dp else 6.dp)
+                            .clip(CircleShape)
+                            .background(if (selected) Color.White else Color.White.copy(alpha = 0.35f))
+                    )
+                }
+            }
+        }
+    }
+}
+
 /**
  * "Shelf"-Gruppierung: eine horizontal scrollbare, betitelte Filmreihe
  * ("Neue Filme" / "Filme" / "Serien"), analog zu den Sektionen im Web-Dashboard.
+ * Der Header folgt dort dem Muster „Gradient-Kachel + fetter Titel + Anzahl",
+ * nicht dem gedimmten Versal-Header der Formulare.
  */
 @Composable
 fun MovieShelfRow(
     title: String,
     movies: List<Movie>,
+    icon: ImageVector,
     onClick: (Movie) -> Unit,
     onShowAll: (() -> Unit)? = null
 ) {
@@ -507,19 +712,66 @@ fun MovieShelfRow(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp),
+                .padding(horizontal = 16.dp, vertical = 4.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            HeadingText(
-                text = title,
-                modifier = Modifier.padding(vertical = 4.dp),
-                style = MaterialTheme.typography.titleMedium
-            )
+            Row(
+                modifier = Modifier.weight(1f),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Box(
+                    modifier = Modifier
+                        .shadow(
+                            elevation = 8.dp,
+                            shape = RoundedCornerShape(12.dp),
+                            ambientColor = NavAccentRed,
+                            spotColor = NavAccentRed
+                        )
+                        .clip(RoundedCornerShape(12.dp))
+                        // Alle Reihen tragen den Marken-Verlauf; unterschieden
+                        // wird über das Icon, nicht über die Farbe.
+                        .background(Brush.linearGradient(listOf(NavAccentRose500, NavAccentRed)))
+                        .size(36.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(icon, contentDescription = null, tint = Color.White, modifier = Modifier.size(20.dp))
+                }
+                Spacer(Modifier.width(12.dp))
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.titleLarge.copy(
+                        fontWeight = FontWeight.Black,
+                        fontSize = 20.sp
+                    ),
+                    color = MaterialTheme.colorScheme.onBackground,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+                if (movies.isNotEmpty()) {
+                    Spacer(Modifier.width(8.dp))
+                    Text(
+                        text = movies.size.toString(),
+                        style = MaterialTheme.typography.labelLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
             if (onShowAll != null) {
-                TextButton(onClick = onShowAll, contentPadding = PaddingValues(horizontal = 8.dp)) {
-                    Text("Alle anzeigen", style = MaterialTheme.typography.labelMedium)
-                    Icon(Icons.Default.KeyboardArrowRight, null, Modifier.size(16.dp))
+                TextButton(
+                    onClick = onShowAll,
+                    contentPadding = PaddingValues(horizontal = 8.dp),
+                    colors = ButtonDefaults.textButtonColors(
+                        contentColor = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                ) {
+                    Text(
+                        "Alle anzeigen".uppercase(),
+                        style = MaterialTheme.typography.labelSmall.copy(letterSpacing = 1.sp),
+                        fontWeight = FontWeight.Black
+                    )
+                    Icon(Icons.AutoMirrored.Filled.ArrowForward, null, Modifier.size(14.dp))
                 }
             }
         }

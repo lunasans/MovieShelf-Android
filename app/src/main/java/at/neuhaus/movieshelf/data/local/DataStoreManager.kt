@@ -20,11 +20,19 @@ import kotlinx.coroutines.launch
 
 val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "settings")
 
+/** Vom Nutzer wählbare Theme-Einstellung. */
+enum class ThemeMode(val label: String) {
+    DARK("Dunkel"),
+    LIGHT("Hell"),
+    SYSTEM("System")
+}
+
 class DataStoreManager(private val context: Context) {
 
     companion object {
         val SERVER_URL_KEY = stringPreferencesKey("server_url")
         val DYNAMIC_COLOR_KEY = booleanPreferencesKey("dynamic_color")
+        val THEME_MODE_KEY = stringPreferencesKey("theme_mode")
 
         private const val SECURE_PREFS_NAME  = "secure_auth"
         private const val KEY_AUTH_TOKEN      = "auth_token"
@@ -68,6 +76,17 @@ class DataStoreManager(private val context: Context) {
 
     suspend fun saveDynamicColor(enabled: Boolean) {
         context.dataStore.edit { it[DYNAMIC_COLOR_KEY] = enabled }
+    }
+
+    // --- Hell/Dunkel (nicht sicherheitskritisch) ---
+    // Standard ist DARK, weil die Web-Oberfläche ausschließlich dunkel ist und
+    // der "Shelf"-Look darauf ausgelegt ist.
+    val themeMode: Flow<ThemeMode> = context.dataStore.data.map { prefs ->
+        ThemeMode.entries.firstOrNull { it.name == prefs[THEME_MODE_KEY] } ?: ThemeMode.DARK
+    }
+
+    suspend fun saveThemeMode(mode: ThemeMode) {
+        context.dataStore.edit { it[THEME_MODE_KEY] = mode.name }
     }
 
     // --- Auth-Token (verschlüsselt) ---

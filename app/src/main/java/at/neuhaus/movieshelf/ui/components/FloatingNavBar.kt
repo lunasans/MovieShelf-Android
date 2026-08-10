@@ -30,9 +30,9 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import at.neuhaus.movieshelf.ui.theme.NavAccentBlue
-import at.neuhaus.movieshelf.ui.theme.NavAccentBlueDark
 import at.neuhaus.movieshelf.ui.theme.NavAccentRed
+import at.neuhaus.movieshelf.ui.theme.NavAccentRedDark
+import at.neuhaus.movieshelf.ui.theme.OnSurfaceVariantDark
 
 @Composable
 fun FloatingNavBar(
@@ -94,7 +94,9 @@ fun FloatingNavBar(
                     icon = Icons.AutoMirrored.Filled.Logout,
                     label = "Abmelden",
                     selected = false,
-                    accentColor = NavAccentRed,
+                    // Abmelden hebt sich neutral-grau ab: Rosé ist jetzt der
+                    // Marken-Akzent der ganzen Leiste und wäre hier doppelt.
+                    accentColor = OnSurfaceVariantDark,
                     onClick = onLogoutClick
                 )
             }
@@ -108,7 +110,7 @@ private fun NavPillItem(
     label: String,
     selected: Boolean,
     onClick: () -> Unit,
-    accentColor: Color = NavAccentBlue
+    accentColor: Color = NavAccentRed
 ) {
     val iconColor by animateColorAsState(
         targetValue = if (selected) Color.White else Color.White.copy(alpha = 0.55f),
@@ -149,14 +151,14 @@ private fun NavPillItem(
             Icon(
                 imageVector = icon,
                 contentDescription = label,
-                tint = if (accentColor == NavAccentBlue) iconColor else accentColor.copy(alpha = 0.85f),
+                tint = if (accentColor == NavAccentRed) iconColor else accentColor.copy(alpha = 0.85f),
                 modifier = Modifier.size(20.dp)
             )
         }
         Spacer(Modifier.height(2.dp))
         Text(
             text = label,
-            color = if (accentColor == NavAccentBlue) iconColor else accentColor.copy(alpha = 0.85f),
+            color = if (accentColor == NavAccentRed) iconColor else accentColor.copy(alpha = 0.85f),
             fontSize = 9.sp,
             fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
             letterSpacing = 0.2.sp
@@ -172,13 +174,13 @@ private fun AddCenterButton(onClick: () -> Unit) {
             .shadow(
                 elevation = 8.dp,
                 shape = CircleShape,
-                ambientColor = NavAccentBlue.copy(alpha = 0.4f),
-                spotColor = NavAccentBlue.copy(alpha = 0.6f)
+                ambientColor = NavAccentRed.copy(alpha = 0.4f),
+                spotColor = NavAccentRed.copy(alpha = 0.6f)
             )
             .clip(CircleShape)
             .background(
                 Brush.linearGradient(
-                    colors = listOf(NavAccentBlue, NavAccentBlueDark)
+                    colors = listOf(NavAccentRed, NavAccentRedDark)
                 )
             )
             .clickable(

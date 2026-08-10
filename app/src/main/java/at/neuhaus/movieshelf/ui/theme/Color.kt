@@ -2,11 +2,15 @@ package at.neuhaus.movieshelf.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
-// "Shelf"-Look: Cinematic Near-Black & Blue Accent (angelehnt an die
-// MovieShelf-Web-Oberfläche)
-val PrimaryDark = Color(0xFF3B82F6) // Blau (Haupt-Interaktionsfarbe)
-val OnPrimaryDark = Color(0xFF00224D)
-val SecondaryDark = Color(0xFFE11D48) // Rosé-Rot (Marken-/Admin-Akzent)
+// "Shelf"-Look: Cinematic Near-Black mit Rosé-Marke (angelehnt an die
+// MovieShelf-Web-Oberfläche).
+//
+// WICHTIG: Markenfarbe von MovieShelf ist Rose-600 (#E11D48) und gilt
+// flächendeckend — `primary`, `secondary` und `tertiary` sind deshalb alle
+// Rosé-Töne. Blau kommt in der App nicht mehr als Akzent vor.
+val PrimaryDark = Color(0xFFE11D48) // Rose-600 — Markenfarbe
+val OnPrimaryDark = Color(0xFFFFFFFF)
+val SecondaryDark = Color(0xFFE11D48) // Rose-600 — Markenfarbe
 val OnSecondaryDark = Color(0xFFFFFFFF)
 val SurfaceDark = Color(0xFF151519) // Dunkle Glass-Trägerfläche
 val BackgroundDark = Color(0xFF0C0C0E) // Near Black
@@ -17,14 +21,14 @@ val OnSurfaceDark = Color(0xFFF4F4F5) // Helle Schrift auf dunklen Surfaces
 val OnBackgroundDark = Color(0xFFF4F4F5)
 val SurfaceVariantDark = Color(0xFF1E1E23) // Etwas hellere Fläche (Karten/Chips)
 val OnSurfaceVariantDark = Color(0xFFA1A1AA) // Gedämpftes Grau für Metadaten
-val PrimaryContainerDark = Color(0xFF11305F) // Tiefes Blau
-val OnPrimaryContainerDark = Color(0xFFBFDBFE) // Helles Blau
+val PrimaryContainerDark = Color(0xFF5A0E22) // Tiefes Rosé
+val OnPrimaryContainerDark = Color(0xFFFFD9E2) // Helles Rosé
 val SecondaryContainerDark = Color(0xFF5A0E22) // Tiefes Rosé-Rot
 val OnSecondaryContainerDark = Color(0xFFFFD9E2)
-val TertiaryDark = Color(0xFF60A5FA) // Helles Blau als Tertiär-Akzent
-val OnTertiaryDark = Color(0xFF00224D)
-val TertiaryContainerDark = Color(0xFF1E4785)
-val OnTertiaryContainerDark = Color(0xFFDBEAFE)
+val TertiaryDark = Color(0xFFFB7185) // Rose-400 als heller Tertiär-Akzent
+val OnTertiaryDark = Color(0xFF410010)
+val TertiaryContainerDark = Color(0xFF9F1239) // Rose-800
+val OnTertiaryContainerDark = Color(0xFFFFD9E2)
 val OutlineDark = Color(0xFF5C5C66) // Subtile Konturen
 val OutlineVariantDark = Color(0xFF2E2E35)
 val OnErrorDark = Color(0xFF370B0E)
@@ -34,10 +38,10 @@ val InverseSurfaceDark = Color(0xFFF4F4F5)
 val InverseOnSurfaceDark = Color(0xFF151519)
 val ScrimDark = Color(0xFF000000)
 
-// Light Theme (Clean & Soft, gleiche Blau/Rosé-Markenfarben)
-val PrimaryLight = Color(0xFF2563EB) // Blau
+// Light Theme (Clean & Soft, gleiche Farbrollen wie Dark)
+val PrimaryLight = Color(0xFFE11D48) // Rose-600 — Markenfarbe
 val OnPrimaryLight = Color(0xFFFFFFFF)
-val SecondaryLight = Color(0xFFE11D48) // Rosé-Rot
+val SecondaryLight = Color(0xFFE11D48) // Rose-600 — Markenfarbe
 val OnSecondaryLight = Color(0xFFFFFFFF)
 val BackgroundLight = Color(0xFFF5F5F7)
 val SurfaceLight = Color(0xFFFFFFFF)
@@ -47,14 +51,14 @@ val OnSurfaceLight = Color(0xFF1A1A1A)
 val OnBackgroundLight = Color(0xFF1A1A1A)
 val SurfaceVariantLight = Color(0xFFE4E7EC) // Leicht blau-graue Fläche (Karten/Chips)
 val OnSurfaceVariantLight = Color(0xFF54565C) // Gedämpft für Metadaten
-val PrimaryContainerLight = Color(0xFFDBEAFE) // Sanftes Blau
-val OnPrimaryContainerLight = Color(0xFF00224D) // Dunkles Blau
+val PrimaryContainerLight = Color(0xFFFFD9E2) // Sanftes Rosé
+val OnPrimaryContainerLight = Color(0xFF410010) // Tiefes Rosé
 val SecondaryContainerLight = Color(0xFFFFD9E2) // Sanftes Rosé-Rot
 val OnSecondaryContainerLight = Color(0xFF410010)
-val TertiaryLight = Color(0xFF1D4ED8) // Tiefes Blau als Akzent
+val TertiaryLight = Color(0xFFBE123C) // Rose-700 als tiefer Akzent
 val OnTertiaryLight = Color(0xFFFFFFFF)
-val TertiaryContainerLight = Color(0xFFDBEAFE)
-val OnTertiaryContainerLight = Color(0xFF00224D)
+val TertiaryContainerLight = Color(0xFFFFD9E2)
+val OnTertiaryContainerLight = Color(0xFF410010)
 val OutlineLight = Color(0xFF83868C)
 val OutlineVariantLight = Color(0xFFCFD2D8)
 val ErrorLight = Color(0xFFB3261E)
@@ -65,17 +69,13 @@ val InverseSurfaceLight = Color(0xFF2B2B2D)
 val InverseOnSurfaceLight = Color(0xFFF5EEEF)
 val ScrimLight = Color(0xFF000000)
 
-// === Marken-Akzent: EIN kohärentes Blau (beide Themes) ===
-// Haupt-Interaktionsakzent der App. Wird in der Navigation und für
-// blau-harmonisierte M3-Tokens (primary/tertiary) verwendet.
-val NavAccentBlue = Color(0xFF3B82F6) // Sattes Marken-Blau (Hauptakzent)
-val NavAccentBlueDark = Color(0xFF1D4ED8) // Tiefes Dunkelblau (Glow/Schatten/Gradient-Enden)
-val NavAccentBlueLight = Color(0xFF60A5FA) // Leicht hellerer Blauton (Gradient-Mitte)
-
-// Sekundärer/Admin-Akzent (Rosé-Rot), analog zur Web-Version
-val NavAccentRed = Color(0xFFE11D48)
-val NavAccentRedDark = Color(0xFF9F1239)
-val NavAccentRedLight = Color(0xFFFB7185)
+// === Marken-Akzent (Rose), beide Themes ===
+// Einziger Akzent der App: Navigation, Gradient-Kacheln, Glow und Schatten.
+// Blau gibt es hier bewusst nicht mehr — Rose gilt flächendeckend.
+val NavAccentRed = Color(0xFFE11D48) // Rose-600 — Markenfarbe
+val NavAccentRedDark = Color(0xFF9F1239) // Rose-800 (Glow/Schatten/Gradient-Enden)
+val NavAccentRedLight = Color(0xFFFB7185) // Rose-400 (Gradient-Mitte)
+val NavAccentRose500 = Color(0xFFF43F5E) // Rose-500 (helles Ende des Marken-Verlaufs)
 
 // Glass-Tokens für frosted-glass Panels (Nav-Bar, Badges, Overlays)
 val GlassWhite08 = Color(0x14FFFFFF) // 8% weißes Overlay

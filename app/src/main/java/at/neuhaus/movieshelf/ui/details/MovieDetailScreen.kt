@@ -51,6 +51,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import at.neuhaus.movieshelf.data.model.Actor
 import at.neuhaus.movieshelf.data.model.Movie
+import at.neuhaus.movieshelf.ui.components.ShelfFormSection
 import at.neuhaus.movieshelf.ui.theme.NavAccentRed
 import at.neuhaus.movieshelf.ui.util.resolveImageUrl
 import coil.compose.AsyncImage
@@ -698,37 +699,65 @@ private fun MovieHeader(
         )
     }
 
-    if (!movie.edition.isNullOrBlank()) {
-        Spacer(Modifier.height(8.dp))
-        MetadataItem(icon = Icons.Default.Album, text = "Edition: ${movie.edition}", modifier = fadeModifier)
+    PhysicalCollectionCard(movie = movie, modifier = fadeModifier)
+}
+
+/**
+ * Die physischen Sammlungs-Daten (Edition, Regalplatz, Kauf, Zustand) gehören
+ * inhaltlich zusammen und stehen deshalb auf einer eigenen "Regalbrett"-Karte
+ * statt als lose Metadaten-Zeilen zwischen den Filmdaten.
+ */
+@Composable
+private fun PhysicalCollectionCard(movie: Movie, modifier: Modifier = Modifier) {
+    val conditionLabel = when (movie.condition) {
+        "new" -> "Neu"
+        "like_new" -> "Wie neu"
+        "good" -> "Gut"
+        "acceptable" -> "Akzeptabel"
+        "damaged" -> "Beschädigt"
+        else -> movie.condition
     }
-    if (!movie.regionCode.isNullOrBlank()) {
-        Spacer(Modifier.height(8.dp))
-        MetadataItem(icon = Icons.Default.Public, text = "Region: ${movie.regionCode}", modifier = fadeModifier)
-    }
-    if (!movie.discLocation.isNullOrBlank()) {
-        Spacer(Modifier.height(8.dp))
-        MetadataItem(icon = Icons.Default.LocationOn, text = "Standort: ${movie.discLocation}", modifier = fadeModifier)
-    }
-    if (!movie.condition.isNullOrBlank()) {
-        val conditionLabel = when (movie.condition) {
-            "new" -> "Neu"
-            "like_new" -> "Wie neu"
-            "good" -> "Gut"
-            "acceptable" -> "Akzeptabel"
-            "damaged" -> "Beschädigt"
-            else -> movie.condition
+    val entries = listOfNotNull(
+        movie.edition?.takeIf { it.isNotBlank() }?.let { Triple(Icons.Default.Album, "Edition", it) },
+        movie.regionCode?.takeIf { it.isNotBlank() }?.let { Triple(Icons.Default.Public, "Region", it) },
+        movie.discLocation?.takeIf { it.isNotBlank() }?.let { Triple(Icons.Default.LocationOn, "Standort", it) },
+        conditionLabel?.takeIf { it.isNotBlank() }?.let { Triple(Icons.Default.Verified, "Zustand", it) },
+        movie.purchaseDate?.takeIf { it.isNotBlank() }?.let { Triple(Icons.Default.CalendarToday, "Gekauft", it) },
+        movie.purchasePrice?.let { Triple(Icons.Default.Euro, "Kaufpreis", "$it €") }
+    )
+    if (entries.isEmpty()) return
+
+    Spacer(Modifier.height(16.dp))
+    // Gleiche Glas-Karte wie im Formular, damit Detail- und Edit-Ansicht
+    // denselben Block zeigen.
+    ShelfFormSection(
+        title = "Physische Sammlung",
+        icon = Icons.Default.Collections,
+        modifier = modifier
+    ) {
+        entries.forEach { (icon, label, value) ->
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    modifier = Modifier.size(16.dp),
+                    tint = MaterialTheme.colorScheme.secondary
+                )
+                Spacer(Modifier.width(10.dp))
+                Text(
+                    text = label,
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.width(96.dp)
+                )
+                Text(
+                    text = value,
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+            }
         }
-        Spacer(Modifier.height(8.dp))
-        MetadataItem(icon = Icons.Default.Verified, text = "Zustand: $conditionLabel", modifier = fadeModifier)
-    }
-    if (!movie.purchaseDate.isNullOrBlank()) {
-        Spacer(Modifier.height(8.dp))
-        MetadataItem(icon = Icons.Default.CalendarToday, text = "Gekauft: ${movie.purchaseDate}", modifier = fadeModifier)
-    }
-    movie.purchasePrice?.let {
-        Spacer(Modifier.height(8.dp))
-        MetadataItem(icon = Icons.Default.Euro, text = "Kaufpreis: $it €", modifier = fadeModifier)
     }
 }
 
