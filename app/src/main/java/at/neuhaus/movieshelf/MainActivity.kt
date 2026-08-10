@@ -301,9 +301,7 @@ fun MovieShelfApp(oauthCallbackUri: MutableState<Uri?> = mutableStateOf(null)) {
         SetupScreen(
             dataStoreManager = dataStoreManager,
             onSetupComplete = { initializationError = false },
-            onUseWithoutAccount = {
-                scope.launch { app.setAppMode(AppMode.STANDALONE) }
-            }
+            onChangeMode = { scope.launch { app.clearAppMode() } }
         )
     } else if (!isInitialized || isLoadingAuth) {
         Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -338,9 +336,7 @@ fun MovieShelfApp(oauthCallbackUri: MutableState<Uri?> = mutableStateOf(null)) {
                                 dataStoreManager.saveAuthToken(null)
                             }
                         },
-                        onLeaveShelfMode = {
-                            scope.launch { app.setAppMode(AppMode.STANDALONE) }
-                        },
+                        onChangeMode = { scope.launch { app.clearAppMode() } },
                         oauthCallbackUri = oauthCallbackUri.value,
                         onOAuthCallbackConsumed = { oauthCallbackUri.value = null }
                     )

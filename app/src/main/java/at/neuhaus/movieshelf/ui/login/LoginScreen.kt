@@ -36,11 +36,11 @@ fun LoginScreen(
     onLoginSuccess: () -> Unit,
     onResetUrl: () -> Unit,
     /**
-     * Zurueck zur Moduswahl. Ohne diesen Weg sitzt fest, wer sich abmeldet:
-     * die Betriebsart steht auf "mit Shelf" und der Login ist die einzige
-     * Tuer.
+     * Zurueck zur Auswahl der Betriebsart. Ohne diesen Weg sitzt fest, wer
+     * sich abmeldet: die Betriebsart steht auf "mit Shelf" und der Login ist
+     * die einzige Tuer.
      */
-    onLeaveShelfMode: () -> Unit = {},
+    onChangeMode: () -> Unit = {},
     oauthCallbackUri: Uri? = null,
     onOAuthCallbackConsumed: () -> Unit = {}
 ) {
@@ -255,15 +255,13 @@ fun LoginScreen(
                     Text("Server-URL ändern")
                 }
 
-                TextButton(onClick = onLeaveShelfMode) {
-                    Text("Ohne Konto weitermachen")
+                OutlinedButton(
+                    onClick = onChangeMode,
+                    modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                    shape = at.neuhaus.movieshelf.ui.theme.PillShape
+                ) {
+                    Text("Andere Betriebsart wählen")
                 }
-                Text(
-                    text = "Deine bereits geladene Sammlung bleibt auf dem Gerät.",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    textAlign = TextAlign.Center
-                )
             }
         }
     }

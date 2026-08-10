@@ -55,6 +55,16 @@ class MovieShelfApplication : Application(), ImageLoaderFactory {
         applySyncSchedule(mode)
     }
 
+    /**
+     * Betriebsart wieder offen lassen, damit die Auswahl mit den beiden
+     * Kacheln erscheint. Die Sammlung bleibt unangetastet — nur die Frage,
+     * woher sie kuenftig kommt, wird neu gestellt.
+     */
+    suspend fun clearAppMode() {
+        database.settingDao().remove(SettingKeys.MODE)
+        applySyncSchedule(null)
+    }
+
     /** Hintergrundabgleich nur im Shelf-Betrieb — sonst gibt es kein Gegenüber. */
     fun applySyncSchedule(mode: AppMode?) {
         if (mode == AppMode.SHELF) SyncWorker.schedule(this) else SyncWorker.cancel(this)
