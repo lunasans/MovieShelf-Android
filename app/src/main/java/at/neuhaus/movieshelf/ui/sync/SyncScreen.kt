@@ -18,11 +18,15 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import at.neuhaus.movieshelf.MovieShelfApplication
 import at.neuhaus.movieshelf.data.sync.SyncPhase
+import at.neuhaus.movieshelf.data.sync.SyncAction
+import at.neuhaus.movieshelf.data.sync.SyncDirection
 import at.neuhaus.movieshelf.data.sync.SyncPreview
+import at.neuhaus.movieshelf.data.sync.SyncPreviewItem
 import at.neuhaus.movieshelf.data.sync.SyncResult
 import at.neuhaus.movieshelf.ui.components.ShelfFormSection
 import at.neuhaus.movieshelf.ui.components.ShelfSectionSpacing
@@ -216,6 +220,62 @@ private fun PreviewSection(preview: SyncPreview) {
                 style = MaterialTheme.typography.bodySmall,
                 fontWeight = FontWeight.SemiBold,
                 color = MaterialTheme.colorScheme.error
+            )
+        }
+
+        if (preview.items.isNotEmpty()) {
+            Spacer(Modifier.height(12.dp))
+            HorizontalDivider()
+            Spacer(Modifier.height(8.dp))
+            preview.items.forEach { PreviewItemRow(it) }
+            if (preview.overflow > 0) {
+                Text(
+                    "… und ${preview.overflow} weitere",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+    }
+}
+
+/**
+ * Ein Posten der Vorschau. Die Richtung steht als Pfeil davor, damit auf einen
+ * Blick erkennbar ist, welche Seite sich ändert.
+ */
+@Composable
+private fun PreviewItemRow(item: SyncPreviewItem) {
+    Row(modifier = Modifier.padding(vertical = 3.dp), verticalAlignment = Alignment.Top) {
+        Icon(
+            imageVector = if (item.direction == SyncDirection.PULL) Icons.Default.CloudDownload
+            else Icons.Default.CloudUpload,
+            contentDescription = null,
+            modifier = Modifier.size(14.dp).padding(top = 3.dp),
+            tint = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        Spacer(Modifier.width(8.dp))
+        Column(Modifier.weight(1f)) {
+            Text(
+                text = buildString {
+                    append(item.title ?: "Ohne Titel")
+                    item.year?.takeIf { it > 0 }?.let { append(" ($it)") }
+                },
+                style = MaterialTheme.typography.bodySmall,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+            val detail = when (item.action) {
+                SyncAction.NEW -> "neu"
+                SyncAction.DELETED -> "wird entfernt"
+                SyncAction.KEPT_LOCAL -> "lokale Änderung behalten"
+                SyncAction.UPDATED -> if (item.changes.isEmpty()) "geändert"
+                else item.changes.joinToString(", ")
+            }
+            Text(
+                detail,
+                style = MaterialTheme.typography.labelSmall,
+                color = if (item.action == SyncAction.DELETED) MaterialTheme.colorScheme.error
+                else MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
     }

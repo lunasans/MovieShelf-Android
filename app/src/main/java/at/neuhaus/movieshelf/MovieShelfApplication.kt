@@ -113,6 +113,11 @@ class MovieShelfApplication : Application(), ImageLoaderFactory {
             },
             upsertCast = { localId, actors -> movieRepository.saveServerCast(localId, actors) },
             pruneSeasons = { localId, keep -> database.seriesDao().pruneSeasons(localId, keep) },
+            localSeasonSignature = { localId ->
+                database.seriesDao().getSeasons(localId)
+                    .map { "${it.seasonNumber}:${database.seriesDao().getEpisodes(it.localId).size}" }
+                    .sorted()
+            },
             downloadMissingArtwork = { movieRepository.downloadMissingArtwork() },
             cleanupOrphanedArtwork = { movieRepository.cleanupOrphanedArtwork() },
             queueArtworkUpload = { movieRepository.queueArtworkUpload(it) }

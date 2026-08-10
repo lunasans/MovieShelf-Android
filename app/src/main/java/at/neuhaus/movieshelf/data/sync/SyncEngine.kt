@@ -55,6 +55,8 @@ class SyncEngine(
     private val localSeasonNumbers: suspend (Long) -> List<Int> = { emptyList() },
     /** Besetzung eines Films aus der Server-Antwort uebernehmen. */
     private val upsertCast: suspend (Long, List<at.neuhaus.movieshelf.data.model.Actor>) -> Unit = { _, _ -> },
+    /** Lokale Staffeln als "Nummer:Episodenzahl", sortiert - fuer die Vorschau. */
+    private val localSeasonSignature: suspend (Long) -> List<String> = { emptyList() },
     /** Fehlende Bilder holen — laeuft in der Medien-Phase. */
     private val downloadMissingArtwork: suspend () -> Int = { 0 },
     /** Bilddateien ohne zugehoerige Zeile entfernen. */
@@ -166,18 +168,51 @@ class SyncEngine(
         var incomingUpdated = 0
         var incomingDeleted = 0
         var keptLocal = 0
+        val items = mutableListOf<SyncPreviewItem>()
+
+        fun note(item: SyncPreviewItem) {
+            if (items.size < PREVIEW_LIMIT) items += item
+        }
 
         for (movie in movies) {
             val existing = movieDao.getByRemoteId(movie.id)
             when {
-                movie.isDeleted == true -> if (existing != null) incomingDeleted++
-                existing == null -> incomingNew++
-                existing.isDirty -> keptLocal++
-                else -> incomingUpdated++
+                movie.isDeleted == true -> if (existing != null) {
+                    incomingDeleted++
+                    note(SyncPreviewItem(movie.title, movie.year, SyncAction.DELETED, SyncDirection.PULL))
+                }
+                existing == null -> {
+                    incomingNew++
+                    note(SyncPreviewItem(movie.title, movie.year, SyncAction.NEW, SyncDirection.PULL))
+                }
+                existing.isDirty -> {
+                    keptLocal++
+                    note(SyncPreviewItem(movie.title, movie.year, SyncAction.KEPT_LOCAL, SyncDirection.PULL))
+                }
+                else -> {
+                    val changes = changedFields(movie, existing)
+                    if (changes.isNotEmpty()) {
+                        incomingUpdated++
+                        note(SyncPreviewItem(movie.title, movie.year, SyncAction.UPDATED, SyncDirection.PULL, changes))
+                    }
+                }
             }
         }
 
+        for (entity in dirty) {
+            val action = when {
+                entity.isDeleted -> SyncAction.DELETED
+                entity.remoteId == null -> SyncAction.NEW
+                else -> SyncAction.UPDATED
+            }
+            note(SyncPreviewItem(entity.title, entity.year, action, SyncDirection.PUSH))
+        }
+
+        val total = incomingNew + incomingUpdated + incomingDeleted + keptLocal + dirty.size
+
         return SyncPreview(
+            items = items,
+            overflow = maxOf(0, total - items.size),
             toCreate = toCreate,
             toUpdate = toUpdate,
             toDeleteRemote = toDeleteRemote,
@@ -391,6 +426,52 @@ class SyncEngine(
     }
 
         /**
+     * Welche Felder sich gegenueber dem lokalen Stand unterscheiden.
+     *
+     * Nur Felder, die der Nutzer auch sieht - sonst listet die Vorschau
+     * Unterschiede auf, die niemandem etwas sagen. Verglichen wird als Text,
+     * weil Zahl und Zeichenkette je nach Quelle unterschiedlich ankommen.
+     */
+    private suspend fun changedFields(server: Movie, local: MovieEntity): List<String> {
+        val changes = mutableListOf<String>()
+        fun compare(label: String, a: Any?, b: Any?) {
+            if (a?.toString().orEmpty() != b?.toString().orEmpty()) changes += label
+        }
+
+        compare("Titel", server.title, local.title)
+        compare("Jahr", server.year, local.year)
+        compare("Genre", server.genre, local.genre)
+        compare("Regie", server.director, local.director)
+        compare("Laufzeit", server.runtime, local.runtime)
+        compare("Bewertung", server.rating, local.rating)
+        compare("Altersfreigabe", server.ratingAge, local.ratingAge)
+        compare("Handlung", server.overview, local.overview)
+        compare("Typ", server.collectionType, local.collectionType)
+        compare("Medium", server.tag, local.tag)
+        compare("Trailer", server.trailerUrl, local.trailerUrl)
+
+        if (server.collectionType == "Serie" && seasonsDiffer(local.localId, server.seasons)) {
+            changes += "Staffeln"
+        }
+        return changes
+    }
+
+    /**
+     * Ob sich die Staffeln unterscheiden - verglichen wird nur Nummer und
+     * Episodenzahl, kein Feldabgleich. Das genuegt, um eine auf der Shelf
+     * entfernte Staffel als Aenderung zu erkennen.
+     */
+    private suspend fun seasonsDiffer(
+        localId: Long,
+        serverSeasons: List<at.neuhaus.movieshelf.data.model.ApiSeason>?
+    ): Boolean {
+        val server = serverSeasons.orEmpty()
+            .map { "${it.seasonNumber}:${it.episodes.orEmpty().size}" }
+            .sorted()
+        return localSeasonSignature(localId) != server
+    }
+
+    /**
      * Staffeln der Shelf in lokale Zeilen uebersetzen. Die lokalen IDs bleiben
      * offen — [SeriesDao.upsertSeries] hebt bekannte Nummern auf ihre
      * bestehende Zeile, damit ein wiederholter Import keine zweite Folge 1
@@ -472,8 +553,28 @@ data class SyncProgress(
     val fraction: Float? get() = if (total > 0) current.toFloat() / total else null
 }
 
+/** Wie viele Einzelposten die Vorschau hoechstens auffuehrt. */
+private const val PREVIEW_LIMIT = 100
+
+enum class SyncAction { NEW, UPDATED, DELETED, KEPT_LOCAL }
+
+enum class SyncDirection { PULL, PUSH }
+
+/** Ein einzelner Posten der Vorschau. */
+data class SyncPreviewItem(
+    val title: String?,
+    val year: Int?,
+    val action: SyncAction,
+    val direction: SyncDirection,
+    /** Bei [SyncAction.UPDATED]: welche Felder sich unterscheiden. */
+    val changes: List<String> = emptyList()
+)
+
 /** Was ein Abgleich tun wuerde. Grundlage der Bestaetigung vor dem Loeschen. */
 data class SyncPreview(
+    val items: List<SyncPreviewItem> = emptyList(),
+    /** Wie viele Posten ueber PREVIEW_LIMIT hinaus anfallen. */
+    val overflow: Int = 0,
     val toCreate: Int = 0,
     val toUpdate: Int = 0,
     val toDeleteRemote: Int = 0,

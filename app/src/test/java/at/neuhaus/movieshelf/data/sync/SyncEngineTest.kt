@@ -252,6 +252,54 @@ class SyncEngineTest {
         assertTrue(dao.rows.isEmpty())
     }
 
+    // ── Vorschau im Detail ───────────────────────────────────────────────────
+
+    @Test
+    fun `Vorschau benennt die geaenderten Felder`() = runBlocking {
+        val dao = FakeMovieDao()
+        dao.rows += movie(localId = 1, remoteId = 10, title = "Alt")
+            .copy(year = 2020, updatedAt = "t", syncedAt = "t")
+
+        val engine = engine(
+            dao,
+            FakeSettingDao(),
+            FakeSyncApi(export = ExportResponse(exportedAt = "t2", movies = listOf(
+                serverMovie(id = 10, title = "Neu").copy(year = 2021, director = "Nolan")
+            )))
+        )
+
+        val preview = engine.preview()
+
+        assertEquals(1, preview.incomingUpdated)
+        val item = preview.items.single { it.direction == SyncDirection.PULL }
+        assertEquals(SyncAction.UPDATED, item.action)
+        // Nur Felder, die der Nutzer sieht - und alle drei geaenderten.
+        assertEquals(listOf("Titel", "Jahr", "Regie"), item.changes)
+    }
+
+    @Test
+    fun `Vorschau fuehrt beide Richtungen auf`() = runBlocking {
+        val dao = FakeMovieDao()
+        dao.rows += movie(localId = 1, remoteId = null, title = "Nur lokal")
+            .copy(updatedAt = "t", syncedAt = null)
+
+        val engine = engine(
+            dao,
+            FakeSettingDao(),
+            FakeSyncApi(export = ExportResponse(exportedAt = "t2", movies = listOf(
+                serverMovie(id = 10, title = "Nur auf dem Server")
+            )))
+        )
+
+        val preview = engine.preview()
+
+        assertEquals(
+            listOf(SyncDirection.PULL, SyncDirection.PUSH),
+            preview.items.map { it.direction }
+        )
+        assertEquals(0, preview.overflow)
+    }
+
     // ── Einzelne Richtungen ──────────────────────────────────────────────────
 
     @Test
