@@ -21,8 +21,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -53,6 +55,7 @@ fun ProfileScreen(
     val scope = rememberCoroutineScope()
     val dynamicColor by dataStoreManager.dynamicColor.collectAsState(initial = false)
     val themeMode by dataStoreManager.themeMode.collectAsState(initial = ThemeMode.DARK)
+    val tmdbApiKey by dataStoreManager.tmdbApiKey.collectAsState(initial = null)
     val supportsDynamic = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
 
     LaunchedEffect(viewModel.error) {
@@ -151,6 +154,62 @@ fun ProfileScreen(
                                 shape = at.neuhaus.movieshelf.ui.theme.PillShape
                             ) {
                                 Text("Shelf verbinden", fontWeight = FontWeight.Bold)
+                            }
+                        }
+                    }
+
+                    Spacer(Modifier.height(16.dp))
+
+                    // TMDb-Schluessel: nur ohne Shelf noetig, weil dort deren
+                    // Proxy die Suche uebernimmt.
+                    var keyInput by remember(tmdbApiKey) { mutableStateOf(tmdbApiKey.orEmpty()) }
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)
+                        )
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(20.dp),
+                            verticalArrangement = Arrangement.spacedBy(10.dp)
+                        ) {
+                            Text("TMDb-Schlüssel", fontWeight = FontWeight.Bold)
+                            Text(
+                                "Für die Filmsuche brauchst du einen eigenen, kostenlosen Schlüssel " +
+                                    "von themoviedb.org. Er wird verschlüsselt auf diesem Gerät gespeichert " +
+                                    "und nur an TMDb geschickt.",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            OutlinedTextField(
+                                value = keyInput,
+                                onValueChange = { keyInput = it },
+                                label = { Text("API-Schlüssel") },
+                                placeholder = { Text("z.B. 8f2c…") },
+                                modifier = Modifier.fillMaxWidth(),
+                                singleLine = true
+                            )
+                            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                                Button(
+                                    onClick = { dataStoreManager.saveTmdbApiKey(keyInput) },
+                                    modifier = Modifier.weight(1f),
+                                    shape = at.neuhaus.movieshelf.ui.theme.PillShape,
+                                    enabled = keyInput.isNotBlank() && keyInput != tmdbApiKey
+                                ) {
+                                    Text("Speichern", fontWeight = FontWeight.Bold)
+                                }
+                                if (!tmdbApiKey.isNullOrBlank()) {
+                                    OutlinedButton(
+                                        onClick = {
+                                            dataStoreManager.saveTmdbApiKey(null)
+                                            keyInput = ""
+                                        },
+                                        modifier = Modifier.weight(1f),
+                                        shape = at.neuhaus.movieshelf.ui.theme.PillShape
+                                    ) {
+                                        Text("Entfernen")
+                                    }
+                                }
                             }
                         }
                     }

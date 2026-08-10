@@ -9,7 +9,10 @@ import at.neuhaus.movieshelf.data.local.db.SettingKeys
 import at.neuhaus.movieshelf.data.repository.ActorRepository
 import at.neuhaus.movieshelf.data.repository.ListRepository
 import at.neuhaus.movieshelf.data.repository.MovieRepository
+import at.neuhaus.movieshelf.data.repository.TmdbRepository
 import at.neuhaus.movieshelf.data.api.MovieShelfApi
+import at.neuhaus.movieshelf.data.api.TmdbApi
+import at.neuhaus.movieshelf.data.local.DataStoreManager
 import at.neuhaus.movieshelf.data.model.ListItemRef
 import at.neuhaus.movieshelf.data.model.MovieUpdateRequest
 import at.neuhaus.movieshelf.data.sync.ListSyncApi
@@ -60,6 +63,18 @@ class MovieShelfApplication : Application(), ImageLoaderFactory {
 
     val actorRepository by lazy {
         ActorRepository { RetrofitClient.api }
+    }
+
+    private val dataStoreManager by lazy { DataStoreManager(this) }
+
+    val tmdbRepository by lazy {
+        TmdbRepository(
+            movieRepository = movieRepository,
+            tmdbApi = TmdbApi.create(),
+            shelfApiProvider = { RetrofitClient.api },
+            isShelfMode = { isShelfMode() },
+            apiKeyProvider = { dataStoreManager.currentTmdbApiKey() }
+        )
     }
 
     val syncEngine by lazy {

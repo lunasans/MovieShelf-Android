@@ -6,16 +6,19 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
-import at.neuhaus.movieshelf.data.repository.MovieRepository
-import at.neuhaus.movieshelf.data.model.TmdbImportRequest
+import at.neuhaus.movieshelf.data.repository.TmdbRepository
 import at.neuhaus.movieshelf.data.model.TmdbSearchItem
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 class AddMovieViewModel(
-    private val repository: MovieRepository
+    private val repository: TmdbRepository
 ) : ViewModel() {
+
+    /** Ohne Shelf und ohne Schluessel gibt es nichts zu suchen. */
+    var searchUnavailable by mutableStateOf(false)
+        private set
     var searchQuery by mutableStateOf("")
     var searchResults by mutableStateOf<List<Map<String, Any>>>(emptyList())
     var isLoading by mutableStateOf(false)
@@ -23,6 +26,10 @@ class AddMovieViewModel(
     var error by mutableStateOf<String?>(null)
     var successMessage by mutableStateOf<String?>(null)
     var importToCollection by mutableStateOf(true)
+
+    init {
+        viewModelScope.launch { searchUnavailable = !repository.isSearchAvailable() }
+    }
 
     private var searchJob: Job? = null
 
@@ -43,7 +50,7 @@ class AddMovieViewModel(
         isLoading = true
         error = null
         try {
-            val response = repository.searchTmdb(query)
+            val response = repository.search(query)
             searchResults = (response.results ?: emptyList()).map { it.toUiMap() }
         } catch (e: Exception) {
             error = "TMDb-Suche fehlgeschlagen: ${e.message}"
@@ -57,7 +64,7 @@ class AddMovieViewModel(
             isImporting = true
             error = null
             try {
-                repository.importFromTmdb(tmdbId, importToCollection)
+                repository.import(tmdbId, importToCollection)
                 successMessage = "Film erfolgreich importiert!"
                 delay(1500)
                 onComplete()
@@ -70,7 +77,7 @@ class AddMovieViewModel(
     }
 
     class Factory(
-        private val repository: MovieRepository
+        private val repository: TmdbRepository
     ) : ViewModelProvider.Factory {
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
             @Suppress("UNCHECKED_CAST")

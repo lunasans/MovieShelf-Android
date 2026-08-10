@@ -322,6 +322,16 @@ class MovieRepository(
         }
     }
 
+    /**
+     * Bild-Adressen setzen, ohne etwas hochzuladen — fuer Filme, die aus TMDb
+     * uebernommen wurden und deren Bilder dort liegen bleiben.
+     */
+    suspend fun setImageUrls(localId: Long, coverUrl: String?, backdropUrl: String?) {
+        val now = SyncClock.now()
+        if (coverUrl != null) movieDao.updateCoverUrl(localId, coverUrl, now)
+        if (backdropUrl != null) movieDao.updateBackdropUrl(localId, backdropUrl, now)
+    }
+
     /** Vorgemerkte Bilder nachreichen. Wird ab Phase 4 vom Abgleich aufgerufen. */
     suspend fun flushPendingUploads() {
         if (!isShelfMode()) return

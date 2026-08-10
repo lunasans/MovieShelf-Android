@@ -38,6 +38,7 @@ class DataStoreManager(private val context: Context) {
         private const val KEY_AUTH_TOKEN      = "auth_token"
         private const val KEY_OAUTH_STATE     = "oauth_state"
         private const val KEY_OAUTH_VERIFIER  = "oauth_verifier"
+        private const val KEY_TMDB_API        = "tmdb_api_key"
     }
 
     /**
@@ -87,6 +88,24 @@ class DataStoreManager(private val context: Context) {
 
     suspend fun saveThemeMode(mode: ThemeMode) {
         context.dataStore.edit { it[THEME_MODE_KEY] = mode.name }
+    }
+
+    // --- TMDb-Schlüssel (verschlüsselt) ---
+    // Der Nutzer hinterlegt seinen eigenen, wie in der Desktop-App. Ein im APK
+    // mitgelieferter Schlüssel waere extrahierbar und haenge an einem fremden
+    // Kontingent; deshalb liegt er hier neben dem Auth-Token im Keystore und
+    // nicht im normalen DataStore.
+    private val _tmdbApiKey by lazy { MutableStateFlow(securePrefs.getString(KEY_TMDB_API, null)) }
+    val tmdbApiKey: Flow<String?> get() = _tmdbApiKey.asStateFlow()
+
+    fun currentTmdbApiKey(): String? = _tmdbApiKey.value
+
+    fun saveTmdbApiKey(key: String?) {
+        val trimmed = key?.trim()?.takeIf { it.isNotBlank() }
+        securePrefs.edit().apply {
+            if (trimmed == null) remove(KEY_TMDB_API) else putString(KEY_TMDB_API, trimmed)
+        }.apply()
+        _tmdbApiKey.value = trimmed
     }
 
     // --- Auth-Token (verschlüsselt) ---

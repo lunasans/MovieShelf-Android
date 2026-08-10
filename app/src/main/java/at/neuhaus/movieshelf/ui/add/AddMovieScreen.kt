@@ -39,7 +39,7 @@ fun AddMovieScreen(
 ) {
     val app = LocalContext.current.applicationContext as MovieShelfApplication
     val viewModel: AddMovieViewModel = viewModel(
-        factory = AddMovieViewModel.Factory(app.movieRepository)
+        factory = AddMovieViewModel.Factory(app.tmdbRepository)
     )
     val isAdmin = at.neuhaus.movieshelf.data.SessionManager.user?.isAdmin == true
     val context = LocalContext.current

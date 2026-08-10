@@ -194,6 +194,52 @@ class SyncEngineTest {
         assertTrue(dao.rows.first { it.localId == 1L }.isDirty)
     }
 
+    // ── Wechsel vom eigenstaendigen Betrieb zur Shelf ────────────────────────
+
+    @Test
+    fun `erster Abgleich nach dem Wechsel laedt den lokalen Bestand hoch`() = runBlocking {
+        val dao = FakeMovieDao()
+        // Zwei ohne Shelf angelegte Filme: keine Server-ID, nie uebertragen.
+        dao.rows += movie(localId = 1, remoteId = null, title = "Ohne Shelf angelegt")
+            .copy(updatedAt = "2026-08-10T12:00:00Z", syncedAt = null)
+        dao.rows += movie(localId = 2, remoteId = null, title = "Auch ohne Shelf")
+            .copy(updatedAt = "2026-08-10T12:00:00Z", syncedAt = null)
+
+        // Die Shelf kennt noch nichts davon.
+        val api = FakeSyncApi(
+            export = ExportResponse(exportedAt = "2026-08-10T13:00:00Z", movies = emptyList()),
+            created = serverMovie(id = 50, title = "Ohne Shelf angelegt")
+        )
+
+        val result = engine(dao, FakeSettingDao(), api).runFullSync()
+
+        assertEquals(2, result.push.created)
+        // Entscheidend: der leere Serverstand darf den lokalen Bestand nicht
+        // ausloeschen. Er wird hochgeladen, nicht ueberschrieben.
+        assertEquals(2, dao.rows.size)
+        assertEquals(0, result.pull.deleted)
+    }
+
+    @Test
+    fun `Pull entfernt keine Zeilen, die der Server nie gesehen hat`() = runBlocking {
+        val dao = FakeMovieDao()
+        dao.rows += movie(localId = 1, remoteId = null, title = "Nur lokal")
+            .copy(updatedAt = "2026-08-10T12:00:00Z", syncedAt = null)
+
+        val engine = engine(
+            dao,
+            FakeSettingDao(),
+            FakeSyncApi(export = ExportResponse(exportedAt = "t", movies = listOf(
+                serverMovie(id = 10, title = "Vom Server")
+            )))
+        )
+
+        engine.pull()
+
+        assertEquals(2, dao.rows.size)
+        assertTrue(dao.rows.any { it.title == "Nur lokal" })
+    }
+
     // ── Reihenfolge ──────────────────────────────────────────────────────────
 
     @Test
