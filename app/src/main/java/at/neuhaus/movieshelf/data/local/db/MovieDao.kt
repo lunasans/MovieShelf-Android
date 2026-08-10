@@ -82,6 +82,12 @@ interface MovieDao {
     @Query("UPDATE movies SET isWatched = :isWatched, updatedAt = :now WHERE localId = :localId")
     suspend fun updateWatched(localId: Long, isWatched: Boolean, now: String)
 
+    @Query("UPDATE movies SET coverUrl = :url, updatedAt = :now WHERE localId = :localId")
+    suspend fun updateCoverUrl(localId: Long, url: String?, now: String)
+
+    @Query("UPDATE movies SET backdropUrl = :url, updatedAt = :now WHERE localId = :localId")
+    suspend fun updateBackdropUrl(localId: Long, url: String?, now: String)
+
     /** Zeile als übertragen stempeln — nach erfolgreichem Push oder Direktaufruf. */
     @Query("UPDATE movies SET syncedAt = :syncedAt, remoteId = COALESCE(:remoteId, remoteId) WHERE localId = :localId")
     suspend fun markSynced(localId: Long, syncedAt: String, remoteId: Int? = null)

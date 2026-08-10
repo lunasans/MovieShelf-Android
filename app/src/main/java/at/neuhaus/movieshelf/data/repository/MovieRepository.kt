@@ -3,14 +3,22 @@ package at.neuhaus.movieshelf.data.repository
 import at.neuhaus.movieshelf.data.api.MovieShelfApi
 import at.neuhaus.movieshelf.data.local.db.MovieDao
 import at.neuhaus.movieshelf.data.local.db.MovieEntity
+import at.neuhaus.movieshelf.data.local.MediaStore
+import at.neuhaus.movieshelf.data.local.db.PendingUploadDao
+import at.neuhaus.movieshelf.data.local.db.PendingUploadEntity
 import at.neuhaus.movieshelf.data.local.db.SyncClock
+import at.neuhaus.movieshelf.data.local.db.UploadKind
 import at.neuhaus.movieshelf.data.model.Movie
 import at.neuhaus.movieshelf.data.model.MovieUpdateRequest
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
+import okhttp3.RequestBody.Companion.toRequestBody
 
 private const val CACHE_MAX_AGE_MS = 30 * 60 * 1000L // 30 Minuten
 
 class MovieRepository(
     private val movieDao: MovieDao,
+    private val pendingUploadDao: PendingUploadDao,
+    private val mediaStore: MediaStore,
     // Provider statt fester Instanz: so wird nach einem Server-Wechsel
     // (RetrofitClient.initialize) immer die aktuelle API benutzt.
     private val apiProvider: () -> MovieShelfApi
@@ -238,14 +246,92 @@ class MovieRepository(
     }
 
     /**
-     * Bild-Uploads über die lokale ID. Fehlt die Server-ID, existiert der Film
-     * nur lokal — der Upload wird dann übersprungen und ab Phase 3 vorgemerkt.
+     * Bild setzen.
+     *
+     * Die Datei wird zuerst lokal abgelegt und sofort als Bildquelle des Films
+     * eingetragen — so ist die Auswahl unmittelbar sichtbar, auch ohne Netz.
+     * Erst danach wird der Upload versucht; gelingt er nicht, bleibt er als
+     * [PendingUploadEntity] vorgemerkt und geht beim nächsten Abgleich raus.
+     *
+     * @return sichtbare Bildquelle: die Server-URL nach erfolgreichem Upload,
+     *   sonst der lokale Dateipfad.
      */
-    suspend fun uploadCoverByLocalId(localId: Long, part: okhttp3.MultipartBody.Part): String? =
-        movieDao.getByLocalId(localId)?.remoteId?.let { uploadCover(it, part) }
+    suspend fun setMovieImage(
+        localId: Long,
+        bytes: ByteArray,
+        mimeType: String,
+        kind: String
+    ): String? {
+        val movie = movieDao.getByLocalId(localId) ?: return null
+        val now = SyncClock.now()
 
-    suspend fun uploadBackdropByLocalId(localId: Long, part: okhttp3.MultipartBody.Part): String? =
-        movieDao.getByLocalId(localId)?.remoteId?.let { uploadBackdrop(it, part) }
+        val file = mediaStore.savePending(localId, kind, bytes, mimeType)
+        val isCover = kind == UploadKind.COVER
+        if (isCover) movieDao.updateCoverUrl(localId, file.absolutePath, now)
+        else movieDao.updateBackdropUrl(localId, file.absolutePath, now)
+
+        pendingUploadDao.put(
+            PendingUploadEntity(
+                movieLocalId = localId,
+                kind = kind,
+                filePath = file.absolutePath,
+                mimeType = mimeType,
+                createdAt = now
+            )
+        )
+
+        val remoteId = movie.remoteId ?: return file.absolutePath
+        return try {
+            val part = imagePart(bytes, mimeType, kind)
+            val url = if (isCover) uploadCover(remoteId, part) else uploadBackdrop(remoteId, part)
+            if (url != null) {
+                if (isCover) movieDao.updateCoverUrl(localId, url, now)
+                else movieDao.updateBackdropUrl(localId, url, now)
+                movieDao.markSynced(localId, now)
+            }
+            pendingUploadDao.remove(localId, kind)
+            mediaStore.delete(file.absolutePath)
+            isOffline = false
+            url ?: file.absolutePath
+        } catch (e: Exception) {
+            isOffline = true
+            file.absolutePath
+        }
+    }
+
+    /** Vorgemerkte Bilder nachreichen. Wird ab Phase 4 vom Abgleich aufgerufen. */
+    suspend fun flushPendingUploads() {
+        for (pending in pendingUploadDao.getAll()) {
+            val remoteId = movieDao.getByLocalId(pending.movieLocalId)?.remoteId ?: continue
+            val file = java.io.File(pending.filePath)
+            if (!file.exists()) {
+                pendingUploadDao.remove(pending.movieLocalId, pending.kind)
+                continue
+            }
+            try {
+                val part = imagePart(file.readBytes(), pending.mimeType, pending.kind)
+                val url = if (pending.kind == UploadKind.COVER) uploadCover(remoteId, part)
+                else uploadBackdrop(remoteId, part)
+                if (url != null) {
+                    val now = SyncClock.now()
+                    if (pending.kind == UploadKind.COVER) movieDao.updateCoverUrl(pending.movieLocalId, url, now)
+                    else movieDao.updateBackdropUrl(pending.movieLocalId, url, now)
+                    movieDao.markSynced(pending.movieLocalId, now)
+                }
+                pendingUploadDao.remove(pending.movieLocalId, pending.kind)
+                mediaStore.delete(pending.filePath)
+            } catch (e: Exception) {
+                // Bleibt vorgemerkt; der nächste Anlauf versucht es erneut.
+                isOffline = true
+            }
+        }
+    }
+
+    private fun imagePart(bytes: ByteArray, mimeType: String, kind: String): okhttp3.MultipartBody.Part {
+        val body = bytes.toRequestBody(mimeType.toMediaTypeOrNull())
+        val extension = if (mimeType.contains("png")) "png" else "jpg"
+        return okhttp3.MultipartBody.Part.createFormData(kind, "$kind.$extension", body)
+    }
 
     /** Cover hochladen (Admin). Gibt die neue Cover-URL zurück. */
     suspend fun uploadCover(id: Int, part: okhttp3.MultipartBody.Part): String? =

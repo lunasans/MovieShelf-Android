@@ -28,9 +28,10 @@ import androidx.room.RoomDatabase
         SeasonEntity::class,
         EpisodeEntity::class,
         ExternalMovieEntity::class,
-        SettingEntity::class
+        SettingEntity::class,
+        PendingUploadEntity::class
     ],
-    version = 7,
+    version = 8,
     exportSchema = false
 )
 abstract class MovieShelfDatabase : RoomDatabase() {
@@ -41,6 +42,7 @@ abstract class MovieShelfDatabase : RoomDatabase() {
     abstract fun seriesDao(): SeriesDao
     abstract fun externalMovieDao(): ExternalMovieDao
     abstract fun settingDao(): SettingDao
+    abstract fun pendingUploadDao(): PendingUploadDao
 
     companion object {
         @Volatile

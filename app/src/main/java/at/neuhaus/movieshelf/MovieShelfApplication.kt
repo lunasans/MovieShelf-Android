@@ -2,6 +2,7 @@ package at.neuhaus.movieshelf
 
 import android.app.Application
 import at.neuhaus.movieshelf.data.api.RetrofitClient
+import at.neuhaus.movieshelf.data.local.MediaStore
 import at.neuhaus.movieshelf.data.local.db.MovieShelfDatabase
 import at.neuhaus.movieshelf.data.repository.ActorRepository
 import at.neuhaus.movieshelf.data.repository.ListRepository
@@ -16,8 +17,14 @@ class MovieShelfApplication : Application(), ImageLoaderFactory {
 
     val database by lazy { MovieShelfDatabase.getInstance(this) }
 
+    val mediaStore by lazy { MediaStore(filesDir) }
+
     val movieRepository by lazy {
-        MovieRepository(database.movieDao()) { RetrofitClient.api }
+        MovieRepository(
+            movieDao = database.movieDao(),
+            pendingUploadDao = database.pendingUploadDao(),
+            mediaStore = mediaStore
+        ) { RetrofitClient.api }
     }
 
     val listRepository by lazy {

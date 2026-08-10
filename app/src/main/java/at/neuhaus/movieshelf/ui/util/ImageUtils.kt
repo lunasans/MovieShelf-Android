@@ -9,6 +9,7 @@ import at.neuhaus.movieshelf.data.api.RetrofitClient
  * Unterstützt:
  *   - "res:<name>" → android.resource:// URI (kompatibel mit allen API-Levels)
  *   - "http(s)://..." → direkte URL
+ *   - absoluter Dateipfad → noch nicht hochgeladenes Bild aus dem App-Speicher
  *   - relativer Pfad → wird an baseUrl angehängt
  */
 fun resolveImageUrl(context: Context, url: String): Any? {
@@ -20,6 +21,9 @@ fun resolveImageUrl(context: Context, url: String): Any? {
             if (resId != 0) Uri.parse("android.resource://${context.packageName}/$resId") else null
         }
         trimmed.startsWith("http") -> trimmed
+        // Vorgemerkter Upload: die Datei liegt lokal, damit das gewaehlte Bild
+        // sofort sichtbar ist und nicht erst nach dem naechsten Abgleich.
+        trimmed.startsWith("/") -> java.io.File(trimmed)
         else -> RetrofitClient.baseUrl.removeSuffix("/") + "/" + trimmed.removePrefix("/")
     }
 }
