@@ -20,3 +20,6 @@ build/
 *.hprof
 
 native-debug-symbols.zip
+
+# Fehlerprotokolle des Kotlin-Compilers, rein lokal
+.kotlin/
