@@ -46,8 +46,15 @@ class SyncEngine(
      * Serien-Tabelle haengt.
      */
     private val upsertSeries: suspend (Long, List<SeasonWithEpisodes>) -> Unit = { _, _ -> },
+    /**
+     * Staffeln entfernen, die der Server nicht mehr kennt — gerichtetes
+     * Spiegeln: beim Pull bestimmt die Shelf.
+     */
+    private val pruneSeasons: suspend (Long, List<Int>) -> Unit = { _, _ -> },
     /** Lokal vorhandene Staffelnummern einer Serie — fuer den TMDb-Import. */
     private val localSeasonNumbers: suspend (Long) -> List<Int> = { emptyList() },
+    /** Besetzung eines Films aus der Server-Antwort uebernehmen. */
+    private val upsertCast: suspend (Long, List<at.neuhaus.movieshelf.data.model.Actor>) -> Unit = { _, _ -> },
     /** Fehlende Bilder holen — laeuft in der Medien-Phase. */
     private val downloadMissingArtwork: suspend () -> Int = { 0 },
     /** Bilddateien ohne zugehoerige Zeile entfernen. */
@@ -60,6 +67,8 @@ class SyncEngine(
     private val queueArtworkUpload: suspend (Long) -> Unit = {}
 ) {
     private val api: SyncApi get() = apiProvider()
+
+    private suspend fun remoteSeasonNumbers(remoteId: Int): List<Int> = api.remoteSeasonNumbers(remoteId)
 
     private val _progress = MutableStateFlow<SyncProgress?>(null)
 
@@ -186,6 +195,9 @@ class SyncEngine(
                     else -> {
                         api.updateMovie(entity.remoteId, entity.toUpdateRequest())
                         movieDao.markSynced(entity.localId, now)
+                        if (entity.collectionType == "Serie") {
+                            pushSeasons(entity.localId, entity.remoteId)
+                        }
                         updated++
                     }
                 }
@@ -193,6 +205,17 @@ class SyncEngine(
                 errors += SyncError(entity.title ?: "Film ${entity.localId}", e.message ?: "Unbekannter Fehler")
             }
         }
+        // Staffel-Abgleich fuer alle synchronisierten Serien, nicht nur fuer
+        // geaenderte — siehe pushSeasons().
+        for (serie in movieDao.getSyncedSeries()) {
+            val remoteId = serie.remoteId ?: continue
+            try {
+                pushSeasons(serie.localId, remoteId)
+            } catch (e: Exception) {
+                errors += SyncError(serie.title ?: "Serie ${serie.localId}", e.message ?: "Unbekannter Fehler")
+            }
+        }
+
         return PushResult(created, updated, deleted, errors)
     }
 
@@ -216,6 +239,25 @@ class SyncEngine(
             // alles, was TMDb kennt.
             seasons = if (isSeries) localSeasonNumbers(entity.localId) else null
         ).data
+    }
+
+    /**
+     * Staffeln der Shelf an den lokalen Stand angleichen.
+     *
+     * Gegenstueck zum Zurueckschneiden im Pull: beim Push bestimmt die App.
+     * Die Desktop-App macht das fuer **alle** synchronisierten Serien, nicht
+     * nur fuer geaenderte — eine Serie ohne Metadaten-Aenderung wuerde sonst
+     * nie auf Staffel-Abweichungen geprueft, und genau dafuer ist der Schritt
+     * da.
+     */
+    private suspend fun pushSeasons(localId: Long, remoteId: Int) {
+        val local = localSeasonNumbers(localId).toSet()
+        val remote = remoteSeasonNumbers(remoteId).toSet()
+
+        val missing = (local - remote).sorted()
+        val extra = (remote - local).sorted()
+        if (missing.isNotEmpty()) api.importSeasons(remoteId, missing)
+        if (extra.isNotEmpty()) api.removeSeasons(remoteId, extra)
     }
 
     /** Loeschen, bei dem ein bereits geloeschter Film kein Fehler ist. */
@@ -269,12 +311,17 @@ class SyncEngine(
                 )
                 applied++
 
-                // Staffeln haengen an der lokalen ID, die erst nach dem
-                // Einspielen feststeht.
-                val seasons = movie.seasons
-                if (!seasons.isNullOrEmpty()) {
-                    val localId = movieDao.findLocalIdByRemoteId(movie.id)
-                    if (localId != null) upsertSeries(localId, seasons.toEntities())
+                // Besetzung und Staffeln haengen an der lokalen ID, die erst
+                // nach dem Einspielen feststeht.
+                val localId = movieDao.findLocalIdByRemoteId(movie.id)
+                if (localId != null) {
+                    movie.actors?.takeIf { it.isNotEmpty() }?.let { upsertCast(localId, it) }
+                    movie.seasons?.let { seasons ->
+                        if (seasons.isNotEmpty()) upsertSeries(localId, seasons.toEntities())
+                        // Auch bei leerer Liste: die Shelf kennt dann keine
+                        // Staffeln mehr, also duerfen lokal auch keine bleiben.
+                        pruneSeasons(localId, seasons.map { it.seasonNumber })
+                    }
                 }
             } catch (e: Exception) {
                 errors += SyncError(movie.title ?: "Film ${movie.id}", e.message ?: "Unbekannter Fehler")
@@ -364,6 +411,12 @@ interface SyncApi {
         inCollection: Boolean,
         seasons: List<Int>?
     ): SingleMovieResponse
+
+    /** Staffelnummern, die die Shelf zu dieser Serie kennt. */
+    suspend fun remoteSeasonNumbers(remoteId: Int): List<Int>
+
+    suspend fun importSeasons(remoteId: Int, seasons: List<Int>)
+    suspend fun removeSeasons(remoteId: Int, seasons: List<Int>)
 }
 
 enum class SyncPhase { PUSH, PULL, MEDIA, DONE }

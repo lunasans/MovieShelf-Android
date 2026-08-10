@@ -65,6 +65,8 @@ open class FakeMovieDao : MovieDao {
     override suspend fun getAllForStats(): List<MovieEntity> = unused()
     override suspend fun getNewest(limit: Int): List<MovieEntity> = unused()
     override suspend fun getAllLocalIds(): List<Long> = unused()
+    override suspend fun getSyncedSeries(): List<MovieEntity> =
+        rows.filter { it.collectionType == "Serie" && it.remoteId != null && !it.isDeleted }
     override suspend fun searchMovies(query: String): List<MovieEntity> = unused()
     override suspend fun update(movie: MovieEntity) = unused()
     override suspend fun updateWatched(localId: Long, isWatched: Boolean, now: String) = unused()
@@ -142,5 +144,21 @@ open class FakeSyncApi(
     ): SingleMovieResponse {
         tmdbImports += Triple(tmdbId, type, seasons)
         return SingleMovieResponse(data = created)
+    }
+
+    /** Staffeln, die die Shelf angeblich kennt — je Serie setzbar. */
+    var remoteSeasons: Map<Int, List<Int>> = emptyMap()
+    val importedSeasons = mutableListOf<Pair<Int, List<Int>>>()
+    val removedSeasons = mutableListOf<Pair<Int, List<Int>>>()
+
+    override suspend fun remoteSeasonNumbers(remoteId: Int): List<Int> =
+        remoteSeasons[remoteId] ?: emptyList()
+
+    override suspend fun importSeasons(remoteId: Int, seasons: List<Int>) {
+        importedSeasons += remoteId to seasons
+    }
+
+    override suspend fun removeSeasons(remoteId: Int, seasons: List<Int>) {
+        removedSeasons += remoteId to seasons
     }
 }

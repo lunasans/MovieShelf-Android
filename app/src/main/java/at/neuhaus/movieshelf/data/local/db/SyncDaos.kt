@@ -42,6 +42,13 @@ interface ActorDao {
     @Query("SELECT localId FROM actors")
     suspend fun getAllLocalIds(): List<Long>
 
+    /** Darsteller, deren Bild noch eine Adresse statt einer Datei ist. */
+    @Query("SELECT * FROM actors WHERE imagePath LIKE 'http%'")
+    suspend fun getActorsMissingArtwork(): List<ActorEntity>
+
+    @Query("UPDATE actors SET imagePath = :path WHERE localId = :localId")
+    suspend fun updateImagePath(localId: Long, path: String?)
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun setCast(refs: List<FilmActorCrossRef>)
 
@@ -158,6 +165,16 @@ interface SeriesDao {
 
     @Query("DELETE FROM seasons WHERE movieLocalId = :movieLocalId")
     suspend fun deleteSeasonsOf(movieLocalId: Long)
+
+    /**
+     * Staffeln entfernen, die der Server nicht mehr kennt.
+     *
+     * Gerichtetes Spiegeln wie in der Desktop-App: beim Pull bestimmt die
+     * Shelf, welche Staffeln es gibt. Ohne diesen Schritt bliebe eine dort
+     * entfernte Staffel lokal fuer immer stehen.
+     */
+    @Query("DELETE FROM seasons WHERE movieLocalId = :movieLocalId AND seasonNumber NOT IN (:keep)")
+    suspend fun pruneSeasons(movieLocalId: Long, keep: List<Int>)
 
     /**
      * Staffeln und Episoden einer Serie einspielen. Vorhandene Nummern werden

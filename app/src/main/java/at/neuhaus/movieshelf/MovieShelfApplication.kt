@@ -16,6 +16,7 @@ import at.neuhaus.movieshelf.data.api.TmdbApi
 import at.neuhaus.movieshelf.data.local.DataStoreManager
 import at.neuhaus.movieshelf.data.model.ListItemRef
 import at.neuhaus.movieshelf.data.model.MovieUpdateRequest
+import at.neuhaus.movieshelf.data.model.SeasonImportRequest
 import at.neuhaus.movieshelf.data.model.TmdbImportRequest
 import at.neuhaus.movieshelf.data.sync.ListSyncApi
 import at.neuhaus.movieshelf.data.sync.ListSyncEngine
@@ -110,6 +111,8 @@ class MovieShelfApplication : Application(), ImageLoaderFactory {
             localSeasonNumbers = { localId ->
                 database.seriesDao().getSeasons(localId).map { it.seasonNumber }
             },
+            upsertCast = { localId, actors -> movieRepository.saveServerCast(localId, actors) },
+            pruneSeasons = { localId, keep -> database.seriesDao().pruneSeasons(localId, keep) },
             downloadMissingArtwork = { movieRepository.downloadMissingArtwork() },
             cleanupOrphanedArtwork = { movieRepository.cleanupOrphanedArtwork() },
             queueArtworkUpload = { movieRepository.queueArtworkUpload(it) }
@@ -145,6 +148,17 @@ class MovieShelfApplication : Application(), ImageLoaderFactory {
             inCollection: Boolean,
             seasons: List<Int>?
         ) = api.importFromTmdb(TmdbImportRequest(tmdbId, type, inCollection, seasons))
+
+        override suspend fun remoteSeasonNumbers(remoteId: Int): List<Int> =
+            api.getMovie(remoteId).data?.seasons?.map { it.seasonNumber } ?: emptyList()
+
+        override suspend fun importSeasons(remoteId: Int, seasons: List<Int>) {
+            api.importSeasons(SeasonImportRequest(remoteId, seasons))
+        }
+
+        override suspend fun removeSeasons(remoteId: Int, seasons: List<Int>) {
+            api.removeSeasons(SeasonImportRequest(remoteId, seasons))
+        }
     }
 
     override fun newImageLoader(): ImageLoader {

@@ -113,6 +113,48 @@ class MovieRepository(
         )
     }
 
+    /**
+     * Besetzung aus der Server-Antwort uebernehmen.
+     *
+     * Darsteller werden ueber ihre Server-ID zusammengefuehrt, ersatzweise
+     * ueber den Namen — sonst entstuende dieselbe Person bei jedem Abgleich
+     * erneut. Die Bild-Adresse landet zunaechst als Adresse in der Zeile und
+     * wird beim Medien-Durchgang durch die heruntergeladene Datei ersetzt.
+     */
+    suspend fun saveServerCast(movieLocalId: Long, actors: List<at.neuhaus.movieshelf.data.model.Actor>) {
+        val now = SyncClock.now()
+        val refs = actors.mapIndexedNotNull { index, actor ->
+            val name = actor.name?.takeIf { it.isNotBlank() } ?: return@mapIndexedNotNull null
+            val existing = actor.id?.let { actorDao.findLocalIdByRemoteId(it) }
+                ?: actorDao.findLocalIdByName(name)
+            val entity = ActorEntity(
+                localId = existing ?: 0,
+                remoteId = actor.id,
+                name = name,
+                bio = actor.biography,
+                birthday = actor.birthDate,
+                placeOfBirth = actor.placeOfBirth,
+                // Einen bereits heruntergeladenen Pfad nicht durch die Adresse
+                // ersetzen, sonst laedt jeder Abgleich das Bild erneut.
+                imagePath = existing
+                    ?.let { actorDao.getByLocalId(it)?.imagePath }
+                    ?.takeIf { mediaStore.isLocalPath(it) }
+                    ?: actor.imageUrl,
+                updatedAt = now,
+                syncedAt = now
+            )
+            val actorLocalId = actorDao.insert(entity).let { if (existing != null) existing else it }
+            FilmActorCrossRef(
+                movieLocalId = movieLocalId,
+                actorLocalId = actorLocalId,
+                role = actor.role,
+                isMainRole = actor.isMainRole ?: (index < 3),
+                sortOrder = index
+            )
+        }
+        actorDao.replaceCast(movieLocalId, refs)
+    }
+
     /** Besetzung eines lokal angelegten Films setzen. */
     suspend fun setCast(localId: Long, cast: List<LocalCastMember>) {
         val now = SyncClock.now()
@@ -395,6 +437,11 @@ class MovieRepository(
             if (fetchArtwork(entity.localId, entity.coverUrl, ArtworkKind.COVER, shelfUrl)) stored++
             if (fetchArtwork(entity.localId, entity.backdropUrl, ArtworkKind.BACKDROP, shelfUrl)) stored++
         }
+
+        // Darstellerbilder ebenso — die Desktop-App laedt sie mit.
+        for (actor in actorDao.getActorsMissingArtwork()) {
+            if (fetchArtwork(actor.localId, actor.imagePath, ArtworkKind.ACTOR, shelfUrl)) stored++
+        }
         return stored
     }
 
@@ -416,8 +463,11 @@ class MovieRepository(
         // Die Adresse wird durch den Dateipfad ersetzt, wie `cover_path` in der
         // Desktop-App. Damit kann sie nicht zum Rueckfall werden.
         val now = SyncClock.now()
-        if (kind == ArtworkKind.COVER) movieDao.updateCoverUrl(localId, file.absolutePath, now)
-        else movieDao.updateBackdropUrl(localId, file.absolutePath, now)
+        when (kind) {
+            ArtworkKind.COVER -> movieDao.updateCoverUrl(localId, file.absolutePath, now)
+            ArtworkKind.BACKDROP -> movieDao.updateBackdropUrl(localId, file.absolutePath, now)
+            ArtworkKind.ACTOR -> actorDao.updateImagePath(localId, file.absolutePath)
+        }
         return true
     }
 

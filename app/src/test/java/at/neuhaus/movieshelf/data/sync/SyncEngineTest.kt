@@ -252,6 +252,54 @@ class SyncEngineTest {
         assertTrue(dao.rows.isEmpty())
     }
 
+    // ── Staffeln: gerichtetes Spiegeln ───────────────────────────────────────
+
+    @Test
+    fun `push gleicht die Staffeln aller synchronisierten Serien ab`() = runBlocking {
+        val dao = FakeMovieDao()
+        // Nicht abweichend - trotzdem muss der Staffel-Abgleich laufen, sonst
+        // wuerde eine Serie ohne Metadaten-Aenderung nie geprueft.
+        dao.rows += movie(localId = 1, remoteId = 10, title = "Severance")
+            .copy(collectionType = "Serie", updatedAt = "t", syncedAt = "t")
+
+        val api = FakeSyncApi().apply { remoteSeasons = mapOf(10 to listOf(1, 3)) }
+        val result = SyncEngine(
+            dao, FakeSettingDao(), { api },
+            localSeasonNumbers = { listOf(1, 2) }
+        ).push()
+
+        assertEquals(0, result.errors.size)
+        // Lokal 1+2, Shelf 1+3: Staffel 2 fehlt dort, Staffel 3 ist ueberzaehlig.
+        assertEquals(listOf(10 to listOf(2)), api.importedSeasons)
+        assertEquals(listOf(10 to listOf(3)), api.removedSeasons)
+    }
+
+    @Test
+    fun `pull schneidet lokale Staffeln auf den Serverstand zurueck`() = runBlocking {
+        val dao = FakeMovieDao()
+        dao.rows += movie(localId = 1, remoteId = 10, title = "Serie")
+            .copy(collectionType = "Serie", updatedAt = "t", syncedAt = "t")
+
+        val pruned = mutableListOf<Pair<Long, List<Int>>>()
+        val engine = SyncEngine(
+            dao,
+            FakeSettingDao(),
+            {
+                FakeSyncApi(export = ExportResponse(exportedAt = "t2", movies = listOf(
+                    serverMovie(id = 10, title = "Serie").copy(
+                        seasons = listOf(at.neuhaus.movieshelf.data.model.ApiSeason(id = 5, seasonNumber = 1))
+                    )
+                )))
+            },
+            pruneSeasons = { localId, keep -> pruned += localId to keep }
+        )
+
+        engine.pull()
+
+        // Die Shelf kennt nur Staffel 1 - alles andere muss lokal weg.
+        assertEquals(listOf(1L to listOf(1)), pruned)
+    }
+
     // ── Wechsel vom eigenstaendigen Betrieb zur Shelf ────────────────────────
 
     @Test

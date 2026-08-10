@@ -55,6 +55,10 @@ interface MovieDao {
     @Query("SELECT * FROM movies WHERE isDeleted = 0")
     suspend fun getAllForStats(): List<MovieEntity>
 
+    /** Alle Serien, die die Shelf kennt — Grundlage des Staffel-Abgleichs. */
+    @Query("SELECT * FROM movies WHERE isDeleted = 0 AND collectionType = 'Serie' AND remoteId IS NOT NULL")
+    suspend fun getSyncedSeries(): List<MovieEntity>
+
     /** Nur die IDs — Grundlage fuer das Aufraeumen der Bildablage. */
     @Query("SELECT localId FROM movies")
     suspend fun getAllLocalIds(): List<Long>
