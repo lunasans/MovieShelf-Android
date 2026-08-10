@@ -488,10 +488,13 @@ class MovieRepository(
         val file = mediaStore.saveArtwork(localId, kind, bytes, mimeType) ?: return false
         // Die Adresse wird durch den Dateipfad ersetzt, wie `cover_path` in der
         // Desktop-App. Damit kann sie nicht zum Rueckfall werden.
-        val now = SyncClock.now()
+        //
+        // Bewusst ohne updatedAt: das Bild liegt jetzt lokal, inhaltlich hat
+        // sich nichts geaendert. Wuerde die Zeile dadurch als abweichend
+        // gelten, schoebe der naechste Lauf die ganze Sammlung zurueck.
         when (kind) {
-            ArtworkKind.COVER -> movieDao.updateCoverUrl(localId, file.absolutePath, now)
-            ArtworkKind.BACKDROP -> movieDao.updateBackdropUrl(localId, file.absolutePath, now)
+            ArtworkKind.COVER -> movieDao.setCoverPath(localId, file.absolutePath)
+            ArtworkKind.BACKDROP -> movieDao.setBackdropPath(localId, file.absolutePath)
             ArtworkKind.ACTOR -> actorDao.updateImagePath(localId, file.absolutePath)
         }
         return true

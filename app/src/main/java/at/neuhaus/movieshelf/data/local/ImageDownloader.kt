@@ -20,7 +20,7 @@ import java.util.concurrent.TimeUnit
  * Die Größenbegrenzung stammt aus der Desktop-App (`MAX_IMAGE_BYTES`) und
  * schützt davor, dass ein einzelnes Bild den Speicher volllaufen lässt.
  */
-class ImageDownloader(
+open class ImageDownloader(
     /** Client der Shelf — bringt Token und Zertifikatseinstellungen mit. */
     private val shelfClientProvider: () -> OkHttpClient,
     private val publicClient: OkHttpClient = OkHttpClient.Builder()
@@ -44,7 +44,7 @@ class ImageDownloader(
      *   fehlgeschlagener Download bricht nichts ab — der Film ist auch ohne
      *   Bild angelegt, und der nächste Anlauf holt es nach.
      */
-    suspend fun download(url: String, authenticated: Boolean): Pair<ByteArray, String>? =
+    open suspend fun download(url: String, authenticated: Boolean): Pair<ByteArray, String>? =
         withContext(Dispatchers.IO) {
             val client = if (authenticated) shelfClientProvider() else publicClient
             runCatching {

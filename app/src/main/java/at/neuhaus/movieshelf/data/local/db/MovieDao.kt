@@ -112,6 +112,21 @@ interface MovieDao {
     suspend fun updateBackdropUrl(localId: Long, url: String?, now: String)
 
     /**
+     * Bildpfad eintragen, **ohne** [MovieEntity.updatedAt] anzufassen.
+     *
+     * Fuer heruntergeladene Bilder: dort ersetzt der Abgleich nur die Adresse
+     * durch die lokale Datei. Wuerde dabei updatedAt gesetzt, galte jede Zeile
+     * anschliessend als lokal geaendert - und der naechste Lauf schoebe die
+     * ganze Sammlung zur Shelf zurueck, obwohl sich inhaltlich nichts geaendert
+     * hat.
+     */
+    @Query("UPDATE movies SET coverUrl = :path WHERE localId = :localId")
+    suspend fun setCoverPath(localId: Long, path: String)
+
+    @Query("UPDATE movies SET backdropUrl = :path WHERE localId = :localId")
+    suspend fun setBackdropPath(localId: Long, path: String)
+
+    /**
      * Zeilen, deren Bilder noch nicht heruntergeladen sind.
      *
      * Nur echte Adressen zaehlen — ein Film ohne Cover braucht keinen Anlauf.

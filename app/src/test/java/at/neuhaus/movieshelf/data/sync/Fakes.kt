@@ -72,6 +72,8 @@ open class FakeMovieDao : MovieDao {
     override suspend fun updateWatched(localId: Long, isWatched: Boolean, now: String) = unused()
     override suspend fun updateCoverUrl(localId: Long, url: String?, now: String) = unused()
     override suspend fun updateBackdropUrl(localId: Long, url: String?, now: String) = unused()
+    override suspend fun setCoverPath(localId: Long, path: String): Unit = unused()
+    override suspend fun setBackdropPath(localId: Long, path: String): Unit = unused()
     override suspend fun getMoviesMissingArtwork(): List<MovieEntity> = unused()
     override suspend fun markDeleted(localId: Long, now: String) = unused()
     override suspend fun deleteAll() = unused()
