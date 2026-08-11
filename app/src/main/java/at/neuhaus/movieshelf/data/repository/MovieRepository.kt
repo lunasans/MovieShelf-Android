@@ -32,6 +32,12 @@ data class LocalCastMember(
     val tmdbId: Int? = null
 )
 
+/** Groesse der Sammlung nach Kennzahl-Regel — siehe [MovieRepository.getCollectionCounts]. */
+data class CollectionCounts(
+    val films: Int,
+    val series: Int
+)
+
 private const val CACHE_MAX_AGE_MS = 30 * 60 * 1000L // 30 Minuten
 
 class MovieRepository(
@@ -135,6 +141,19 @@ class MovieRepository(
 
         if (movie.collectionType == "Serie") {
             movie = movie.copy(seasons = localSeasons(entity.localId))
+        }
+
+        // Die Teile eines Boxsets stehen laengst als eigene Zeilen in der
+        // Datenbank — verknuepft ueber boxsetParentLocalId. Sie von dort zu
+        // lesen ist nicht nur billiger als der Umweg ueber das mitgelieferte
+        // JSON, es ist der einzige Weg, der ueberhaupt etwas liefert: der
+        // Export laedt `boxsetChildren` nicht mit, also bleibt
+        // `boxset_children` in der Antwort leer und das JSON damit null.
+        if (movie.isBoxset == true) {
+            val children = movieDao.getBoxsetChildren(entity.localId)
+            if (children.isNotEmpty()) {
+                movie = movie.copy(boxsetChildren = children.map { it.toMovie() })
+            }
         }
         return movie
     }
@@ -264,6 +283,9 @@ class MovieRepository(
      * neuen Stand zurueck. Der wird uebernommen: hat jemand an einem anderen
      * Geraet zwischendurch dasselbe getan, steht danach der Stand des Servers
      * in der Zeile, statt dass beide Seiten gegeneinander schalten.
+     *
+     * Scheitern Aufrufe, wird das nach dem Durchgang gemeldet — der Abgleich
+     * traegt es als Fehler in sein Ergebnis ein.
      */
     suspend fun pushWatchedChanges(
         onProgress: (Int, Int, String?) -> Unit = { _, _, _ -> }
@@ -272,6 +294,8 @@ class MovieRepository(
         val pending = movieDao.getPendingWatched()
         var pushed = 0
         var done = 0
+        var failed = 0
+        var firstError: String? = null
         for (entity in pending) {
             onProgress(++done, pending.size, entity.title)
             val remoteId = entity.remoteId ?: continue
@@ -288,7 +312,18 @@ class MovieRepository(
                 isOffline = false
             } catch (e: Exception) {
                 isOffline = true
+                failed++
+                if (firstError == null) firstError = e.message ?: e::class.java.simpleName
             }
+        }
+        // Fehler nicht verschlucken: eine Markierung, die niemand loswird,
+        // sah bisher genauso aus wie ein erfolgreicher Abgleich. Erst nach der
+        // Schleife melden, damit ein einzelner Fehlschlag die uebrigen nicht
+        // aufhaelt.
+        if (failed > 0) {
+            throw IllegalStateException(
+                "$failed von ${pending.size} Markierungen nicht uebertragen: $firstError"
+            )
         }
         return pushed
     }
@@ -707,5 +742,15 @@ class MovieRepository(
 
     suspend fun isCacheAvailable(): Boolean =
         movieDao.getMovieCount() > 0
+
+    /**
+     * Groesse der Sammlung, getrennt nach Filmen und Serien — fuer die Zahlen
+     * neben den Ueberschriften. Gezaehlt wird wie in der Statistik: die Teile
+     * eines Boxsets, nicht seine Huelle.
+     */
+    suspend fun getCollectionCounts(): CollectionCounts = CollectionCounts(
+        films = movieDao.countFilmsInCollection(),
+        series = movieDao.countSeriesInCollection()
+    )
 
 }

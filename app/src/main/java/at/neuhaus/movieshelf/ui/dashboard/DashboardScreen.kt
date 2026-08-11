@@ -248,7 +248,8 @@ fun DashboardScreen(
                                 onClick = { movie ->
                                     onMovieClick(movie, viewModel.filmeShelf.map { it.localId })
                                 },
-                                onShowAll = { viewModel.onShelfSelected(ShelfCategory.FILME) }
+                                onShowAll = { viewModel.onShelfSelected(ShelfCategory.FILME) },
+                                count = viewModel.collectionCounts?.films
                             )
                         }
                         if (viewModel.seriesShelf.isNotEmpty()) {
@@ -258,7 +259,8 @@ fun DashboardScreen(
                                 onClick = { movie ->
                                     onMovieClick(movie, viewModel.seriesShelf.map { it.localId })
                                 },
-                                onShowAll = { viewModel.onShelfSelected(ShelfCategory.SERIEN) }
+                                onShowAll = { viewModel.onShelfSelected(ShelfCategory.SERIEN) },
+                                count = viewModel.collectionCounts?.series
                             )
                         }
                     }
@@ -559,7 +561,14 @@ fun MovieShelfRow(
     title: String,
     movies: List<Movie>,
     onClick: (Movie) -> Unit,
-    onShowAll: (() -> Unit)? = null
+    onShowAll: (() -> Unit)? = null,
+    /**
+     * Zahl neben dem Titel. Ohne Angabe die Laenge der Reihe — fuer eine
+     * Auswahl wie "Neue Filme" ist das die richtige Antwort. Die Kategorien
+     * geben stattdessen die Groesse der Sammlung mit: dort steht ein Boxset
+     * als ein Eintrag in der Reihe, gemeint sind aber die Filme darin.
+     */
+    count: Int? = null
 ) {
     val context = LocalContext.current
     Column(modifier = Modifier.padding(top = 8.dp, bottom = 4.dp)) {
@@ -587,7 +596,7 @@ fun MovieShelfRow(
                 if (movies.isNotEmpty()) {
                     Spacer(Modifier.width(8.dp))
                     Text(
-                        text = movies.size.toString(),
+                        text = (count ?: movies.size).toString(),
                         style = MaterialTheme.typography.labelLarge,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onSurfaceVariant

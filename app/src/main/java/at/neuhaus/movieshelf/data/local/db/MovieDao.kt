@@ -9,13 +9,30 @@ interface MovieDao {
     // Gelöschte Zeilen bleiben bis zum nächsten Push als Grabstein liegen und
     // sind deshalb überall auszufiltern.
     //
-    // Von einem Boxset zählen die Teile, nicht die Hülle: sie sind die Filme,
-    // die man tatsächlich besitzt. Damit stimmen die Zahlen an den Kategorien
-    // mit der Gesamtzahl der Statistik überein, die genauso zählt.
+    // Boxsets: **Listen zeigen die Hülle, Kennzahlen zählen die Teile.** Zwei
+    // verschiedene Regeln, und sie nicht zu verwechseln ist der ganze Punkt.
+    // Die Web-Oberfläche macht es genauso: die Filmliste filtert
+    // `whereNull('boxset_parent')` — ein Boxset steht dort als ein Eintrag,
+    // seine Teile stecken darin. Die Statistik dagegen wirft mit
+    // `whereDoesntHave('boxsetChildren')` die Hülle raus und zählt die Teile,
+    // denn das sind die Filme, die man tatsächlich besitzt (siehe [LocalStats]).
+    //
+    // Gelöschte Zeilen bleiben bis zum nächsten Push als Grabstein liegen und
+    // sind deshalb überall auszufiltern.
 
+    /**
+     * Die Filmliste. Boxset-Teile bleiben draussen — sie sind über ihre Hülle
+     * erreichbar, und ohne diesen Filter stünde jede Sammlung doppelt in der
+     * Liste: einmal als Boxset, einmal in ihre Einzelteile zerlegt.
+     *
+     * Geprüft werden beide Elternspalten: die lokale ID steht erst, wenn der
+     * Pull sie auflösen konnte, und ein selbst angelegtes Boxset hat gar keine
+     * Server-ID.
+     */
     @Query("""
         SELECT * FROM movies
-        WHERE isDeleted = 0 AND (isBoxset = 0 OR isBoxset IS NULL)
+        WHERE isDeleted = 0
+          AND boxsetParentLocalId IS NULL AND boxsetParentRemoteId IS NULL
           AND (inCollection = 1 OR inCollection IS NULL)
     """)
     suspend fun getAllMovies(): List<MovieEntity>
@@ -29,7 +46,8 @@ interface MovieDao {
      */
     @Query("""
         SELECT * FROM movies
-        WHERE isDeleted = 0 AND (isBoxset = 0 OR isBoxset IS NULL)
+        WHERE isDeleted = 0
+          AND boxsetParentLocalId IS NULL AND boxsetParentRemoteId IS NULL
           AND (inCollection = 1 OR inCollection IS NULL)
         ORDER BY COALESCE(createdAt, '') DESC, localId DESC
         LIMIT :limit
@@ -46,7 +64,8 @@ interface MovieDao {
      */
     @Query("""
         SELECT * FROM movies
-        WHERE isDeleted = 0 AND (isBoxset = 0 OR isBoxset IS NULL)
+        WHERE isDeleted = 0
+          AND boxsetParentLocalId IS NULL AND boxsetParentRemoteId IS NULL
           AND (inCollection = 1 OR inCollection IS NULL)
           AND backdropUrl IS NOT NULL AND backdropUrl != ''
         ORDER BY RANDOM()
@@ -61,11 +80,13 @@ interface MovieDao {
     suspend fun findLocalIdByRemoteId(remoteId: Int): Long?
 
     /**
-     * Suche über die ganze Sammlung — anders als die Listen **mit** Boxsets.
+     * Suche über die ganze Sammlung — anders als die Listen **mit** den
+     * Boxset-Teilen.
      *
-     * Ein Boxset taucht in den Kategorien nicht auf, weil dort seine Teile
-     * stehen. Über die Suche bleibt es erreichbar; genauso hebt die
-     * Desktop-App bei einer Suche ihren Boxset-Filter auf.
+     * Ein einzelner Film aus einem Boxset steht in der Liste nicht, weil dort
+     * die Hülle steht. Über die Suche bleibt er trotzdem auffindbar; genauso
+     * hebt die Web-Oberfläche ihren Boxset-Filter auf, sobald gefiltert oder
+     * gesucht wird (`if (! $hasFilters) whereNull('boxset_parent')`).
      */
     @Query("""
         SELECT * FROM movies
@@ -78,8 +99,9 @@ interface MovieDao {
     suspend fun searchMovies(query: String): List<MovieEntity>
 
     /**
-     * Alle Zeilen fuer die Statistik — anders als [getAllMovies] ohne den
-     * Boxset-Filter, weil ein Film in einem Boxset trotzdem zur Sammlung zaehlt.
+     * Alle Zeilen fuer die Statistik — ungefiltert, weil dort die umgekehrte
+     * Regel gilt: [LocalStats] wirft die Huellen weg und zaehlt die Teile.
+     * Ein Film in einem Boxset zaehlt zur Sammlung, das Boxset selbst nicht.
      */
     @Query("SELECT * FROM movies WHERE isDeleted = 0")
     suspend fun getAllForStats(): List<MovieEntity>
@@ -222,7 +244,16 @@ interface MovieDao {
     """)
     suspend fun resolveBoxsetParents()
 
-    @Query("SELECT * FROM movies WHERE isDeleted = 0 AND boxsetParentLocalId = :boxsetLocalId")
+    /**
+     * Die Teile eines Boxsets — Reihenfolge und Filter wie in der Relation
+     * `Movie::boxsetChildren()` der Shelf: nach Jahr, dann nach Titel.
+     */
+    @Query("""
+        SELECT * FROM movies
+        WHERE isDeleted = 0 AND boxsetParentLocalId = :boxsetLocalId
+          AND (inCollection = 1 OR inCollection IS NULL)
+        ORDER BY COALESCE(year, 0), title
+    """)
     suspend fun getBoxsetChildren(boxsetLocalId: Long): List<MovieEntity>
 
     // ── Kennzahlen ───────────────────────────────────────────────────────────
@@ -233,6 +264,32 @@ interface MovieDao {
           AND (inCollection = 1 OR inCollection IS NULL)
     """)
     suspend fun getMovieCount(): Int
+
+    /**
+     * Wie viele Filme die Sammlung enthaelt — die Zahl neben der Ueberschrift.
+     *
+     * Gezaehlt wird nach der Kennzahl-Regel, nicht nach der Listen-Regel: ein
+     * Boxset ist kein Film, seine Teile sind welche. Die Zahl liegt deshalb
+     * ueber der Anzahl der Kacheln darunter, wo das Boxset als ein Eintrag
+     * steht — sie beantwortet "wie viele Filme habe ich", nicht "wie viele
+     * Zeilen zeigt die Liste", und stimmt so mit der Statistik ueberein.
+     */
+    @Query("""
+        SELECT COUNT(*) FROM movies
+        WHERE isDeleted = 0 AND (isBoxset = 0 OR isBoxset IS NULL)
+          AND (inCollection = 1 OR inCollection IS NULL)
+          AND (collectionType IS NULL OR collectionType <> 'Serie')
+    """)
+    suspend fun countFilmsInCollection(): Int
+
+    /** Dasselbe fuer Serien. Boxsets gibt es dort nicht, der Filter schadet aber nicht. */
+    @Query("""
+        SELECT COUNT(*) FROM movies
+        WHERE isDeleted = 0 AND (isBoxset = 0 OR isBoxset IS NULL)
+          AND (inCollection = 1 OR inCollection IS NULL)
+          AND collectionType = 'Serie'
+    """)
+    suspend fun countSeriesInCollection(): Int
 
     @Query("SELECT MAX(cachedAt) FROM movies")
     suspend fun getLastCacheTime(): Long?

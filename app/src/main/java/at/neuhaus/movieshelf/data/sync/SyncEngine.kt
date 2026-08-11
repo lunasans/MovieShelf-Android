@@ -403,10 +403,21 @@ class SyncEngine(
                     continue
                 }
 
-                val entity = MovieEntity.fromServerMovie(movie)
-                movieDao.upsertFromServer(
-                    listOf(if (existing != null) entity.copy(localId = existing.localId) else entity)
-                )
+                val fromServer = MovieEntity.fromServerMovie(movie)
+                val entity = when {
+                    existing == null -> fromServer
+                    // Die offene "gesehen"-Markierung ueberlebt den Pull. Sie
+                    // haengt nicht an updatedAt/syncedAt, also gilt die Zeile
+                    // nach dem Film-Push als sauber, obwohl sie es nicht ist —
+                    // ohne diese Ausnahme waere die Markierung hier still weg.
+                    existing.hasPendingWatched -> fromServer.copy(
+                        localId = existing.localId,
+                        isWatched = existing.isWatched,
+                        syncedWatched = existing.syncedWatched
+                    )
+                    else -> fromServer.copy(localId = existing.localId)
+                }
+                movieDao.upsertFromServer(listOf(entity))
                 applied++
 
                 // Besetzung und Staffeln haengen an der lokalen ID, die erst

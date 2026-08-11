@@ -7,6 +7,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import at.neuhaus.movieshelf.data.model.Movie
+import at.neuhaus.movieshelf.data.repository.CollectionCounts
 import at.neuhaus.movieshelf.data.repository.MovieRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -50,6 +51,16 @@ class DashboardViewModel(private val repository: MovieRepository) : ViewModel() 
     var seriesShelf by mutableStateOf<List<Movie>>(emptyList())
         private set
 
+    /**
+     * Groesse der Sammlung fuer die Zahlen neben den Ueberschriften.
+     *
+     * Bewusst nicht aus den geladenen Reihen abgeleitet: dort steht ein Boxset
+     * als ein Eintrag, waehrend die Zahl die enthaltenen Filme meinen soll —
+     * so wie die Statistik zaehlt. Kommt aus der Datenbank, nicht aus dem Netz.
+     */
+    var collectionCounts by mutableStateOf<CollectionCounts?>(null)
+        private set
+
     // "Alle anzeigen" einer Shelf-Reihe: zeigt die Kategorie als Raster
     var selectedShelf by mutableStateOf<ShelfCategory?>(null)
         private set
@@ -64,6 +75,18 @@ class DashboardViewModel(private val repository: MovieRepository) : ViewModel() 
         loadMovies()
         loadNewMoviesShelf()
         loadHero()
+        loadCollectionCounts()
+    }
+
+    /** Die Zahlen neben den Ueberschriften — ein Zaehlen in der Datenbank. */
+    private fun loadCollectionCounts() {
+        viewModelScope.launch {
+            try {
+                collectionCounts = repository.getCollectionCounts()
+            } catch (_: Exception) {
+                // Ohne Zahl bleibt die Ueberschrift fuer sich stehen.
+            }
+        }
     }
 
     /** Zufaellige Auswahl fuer den Hero-Bereich, einmal je Sitzung gezogen. */
@@ -90,6 +113,8 @@ class DashboardViewModel(private val repository: MovieRepository) : ViewModel() 
             try {
                 val result = repository.getMovies(page = 1, perPage = pageSize, tag = null)
                 isOffline = repository.isOffline
+                // Nach einem Abgleich stehen andere Zahlen in der Datenbank.
+                loadCollectionCounts()
                 allLoadedMovies = result
                 currentPage = 1
                 hasMore = result.size >= pageSize && !isOffline

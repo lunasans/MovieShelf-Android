@@ -101,6 +101,17 @@ data class MovieEntity(
         get() = syncedAt == null || (updatedAt != null && updatedAt > syncedAt)
 
     /**
+     * "Gesehen" ist lokal gesetzt, der Server weiß noch nichts davon.
+     *
+     * Eigenes Merkmal neben [isDirty], weil die Markierung einen eigenen
+     * Endpunkt hat: der Film-Push setzt [syncedAt] und macht die Zeile damit
+     * sauber, während die Markierung noch aussteht. Ohne diese Unterscheidung
+     * überschriebe der nächste Pull genau die Markierung, die noch hochsollte.
+     */
+    val hasPendingWatched: Boolean
+        get() = (isWatched == true) != (syncedWatched == true)
+
+    /**
      * In das Modell der Oberfläche übersetzen. [Movie.id] bleibt die Server-ID
      * für Netzaufrufe, [Movie.localId] trägt die lokale Identität — darüber
      * navigiert die Oberfläche.

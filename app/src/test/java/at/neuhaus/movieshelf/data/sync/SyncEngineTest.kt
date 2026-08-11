@@ -119,6 +119,34 @@ class SyncEngineTest {
         assertNull(api.lastSince)
     }
 
+    @Test
+    fun `pull loescht eine noch nicht uebertragene Gesehen-Markierung nicht`() = runBlocking {
+        val dao = FakeMovieDao()
+        // Sauber im Sinne von updatedAt/syncedAt — der Film-Push war schon da.
+        // Offen ist nur noch die Markierung, die ueber ihren eigenen Endpunkt geht.
+        dao.rows += movie(localId = 1, remoteId = 10, title = "Arrival").copy(
+            isWatched = true,
+            syncedWatched = false,
+            updatedAt = "2026-08-01T00:00:00Z",
+            syncedAt = "2026-08-10T12:00:00Z"
+        )
+
+        val engine = engine(
+            dao,
+            FakeSettingDao(),
+            FakeSyncApi(export = ExportResponse(exportedAt = "2026-08-10T13:00:00Z", movies = listOf(
+                serverMovie(id = 10, title = "Arrival").copy(isWatched = false)
+            )))
+        )
+
+        engine.pull()
+
+        val row = dao.rows.single()
+        assertEquals(true, row.isWatched)
+        // Und sie steht weiterhin zur Uebertragung an.
+        assertEquals(true, row.hasPendingWatched)
+    }
+
     // ── Löschungen ───────────────────────────────────────────────────────────
 
     @Test

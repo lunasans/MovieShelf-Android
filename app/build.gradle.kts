@@ -15,8 +15,8 @@ android {
         applicationId = "at.neuhaus.movieshelf"
         minSdk = 24
         targetSdk = 36
-        versionCode = 26
-        versionName = "2.0.0"
+        versionCode = 27
+        versionName = "2.0.1"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }

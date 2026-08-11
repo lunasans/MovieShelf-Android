@@ -52,6 +52,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import at.neuhaus.movieshelf.data.model.Actor
 import at.neuhaus.movieshelf.data.model.Movie
 import at.neuhaus.movieshelf.ui.components.ShelfFormSection
+import at.neuhaus.movieshelf.ui.components.formatRating
 import at.neuhaus.movieshelf.ui.theme.NavAccentRed
 import at.neuhaus.movieshelf.ui.util.resolveImageUrl
 import coil.compose.AsyncImage
@@ -683,7 +684,11 @@ private fun MovieHeader(
         movie.year?.let { MetadataItem(icon = Icons.Default.CalendarToday, text = it.toString()) }
         movie.runtime?.let { MetadataItem(icon = Icons.Default.AccessTime, text = "$it Min.") }
         if (!movie.rating.isNullOrBlank()) {
-            MetadataItem(icon = Icons.Default.Star, text = "${movie.rating}/10", iconColor = Color(0xFFFFC107))
+            MetadataItem(
+                icon = Icons.Default.Star,
+                text = "${formatRating(movie.rating)}/10",
+                iconColor = Color(0xFFFFC107)
+            )
         }
     }
 
