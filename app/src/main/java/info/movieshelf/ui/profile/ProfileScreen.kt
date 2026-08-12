@@ -65,6 +65,12 @@ fun ProfileScreen(
     onAboutClick: () -> Unit = {}
 ) {
     val viewModel: ProfileViewModel = viewModel()
+
+    // Nur mit Shelf: ohne Server gibt es kein Profil zu laden, und der Versuch
+    // endete jedes Mal in der Meldung "Profil konnte nicht geladen werden".
+    LaunchedEffect(isStandalone) {
+        if (!isStandalone) viewModel.loadProfile()
+    }
     val snackbarHostState = remember { SnackbarHostState() }
     val context = LocalContext.current
     val dataStoreManager = remember { DataStoreManager(context) }

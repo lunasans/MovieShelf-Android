@@ -32,7 +32,9 @@ class ProfileViewModel : ViewModel() {
             email = cachedUser.email ?: ""
             twoFactorEnabled = cachedUser.twoFactorEnabled == true || cachedUser.twoFactorConfirmedAt != null
         }
-        loadProfile()
+        // Bewusst kein Laden hier: im eigenstaendigen Betrieb gibt es keinen
+        // Server, den man nach einem Profil fragen koennte. Wer den Modus
+        // kennt, ist der Bildschirm — er stoesst das Laden an.
     }
 
     fun loadProfile() {
