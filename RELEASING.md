@@ -15,8 +15,9 @@ Zusätzlich entsteht ein **GitHub-Release als Versionsmarke** mit den
    siehe unten) — sie sind Pflicht, nicht Kür: fehlen sie, zeigt Play den Text
    der Vorversion
 2. Committen, Tag `vX.Y.Z` setzen und pushen
-3. CI: Unit-Tests → `bundleRelease` (signiert) → Upload in den Internal-Track
-   samt Versionshinweisen → GitHub-Release als Versionsmarke
+3. CI: Unit-Tests und unsignierter Release-Build (dieselbe Definition wie bei
+   jedem Pull Request, siehe `ci.yml`) → `bundleRelease` (signiert) → Upload in
+   den Internal-Track samt Versionshinweisen → GitHub-Release als Versionsmarke
 4. In der Play Console testen und manuell promoten
 
 Bewusst **kein APK**: Getestet wird über das Play-Testprogramm, und nur eine
