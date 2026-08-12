@@ -1,0 +1,8 @@
+Die App spricht jetzt Englisch und Deutsch – sie folgt der Sprache deines Geräts.
+
+Behoben:
+
+• Im Betrieb ohne Shelf erschien im Profil jedes Mal die Meldung, das Profil sei nicht ladbar. Ohne Server gibt es nichts zu laden – der Versuch entfällt.
+• Die Leiste am unteren Rand hebt sich deutlicher vom Hintergrund ab. Vor hellen Covern war die Beschriftung stellenweise nicht zu lesen.
+
+Neu: Wo es eine Shelf und den TMDb-Schlüssel gibt, steht jetzt direkt in der App.

@@ -5,22 +5,43 @@ Tag-Push `v*` (oder manuell über *Run workflow*) ein signiertes App Bundle und 
 in den **Internal-Track** der Play Console hoch. Die Promotion zu Beta/Produktion
 bleibt ein manueller Schritt in der Play Console.
 
-Zusätzlich entsteht ein **GitHub-Release mit einem signierten APK**. Ein App Bundle
-lässt sich nicht installieren; Tester können sich das APK also direkt herunterladen,
-ohne auf die Play-Freigabe zu warten.
+Zusätzlich entsteht ein **GitHub-Release als Versionsmarke** mit den
+Änderungsnotizen — ohne Artefakt, siehe unten.
 
 ## Ablauf pro Release
 
 1. `versionCode` erhöhen und `versionName` setzen in `app/build.gradle.kts`
+1. **Versionshinweise in beiden Sprachen** aktualisieren (`distribution/whatsnew/`,
+   siehe unten) — sie sind Pflicht, nicht Kür: fehlen sie, zeigt Play den Text
+   der Vorversion
 2. Committen, Tag `vX.Y.Z` setzen und pushen
-3. CI: Unit-Tests → `bundleRelease` (signiert) → Upload in den Internal-Track →
-   `assembleRelease` → GitHub-Release mit `MovieShelf-X.Y.Z.apk`
+3. CI: Unit-Tests → `bundleRelease` (signiert) → Upload in den Internal-Track
+   samt Versionshinweisen → GitHub-Release als Versionsmarke
 4. In der Play Console testen und manuell promoten
 
-Die Reihenfolge im Workflow ist kein Zufall: Bundle und APK schreiben beide nach
-`mapping/release/mapping.txt`, der letzte Lauf gewinnt. Deshalb wird erst das Bundle
-samt Mapping hochgeladen und danach das APK gebaut — sonst deobfuskiert Play
-Abstürze mit dem falschen Mapping.
+Bewusst **kein APK**: Getestet wird über das Play-Testprogramm, und nur eine
+Installation von dort zählt dafür. Ein direkt verteiltes APK trüge zudem den
+Upload-Key statt des von Google vergebenen App-Signing-Keys — wer es installiert
+hat, müsste vor dem Wechsel auf die Play-Fassung deinstallieren und verlöre dabei
+seine lokale Sammlung.
+
+## Versionshinweise ("Was ist neu")
+
+Die Texte je Sprache liegen unter `distribution/whatsnew/` — eine Datei pro
+Locale, ohne Endung:
+
+```
+distribution/whatsnew/whatsnew-de-DE
+distribution/whatsnew/whatsnew-en-US
+```
+
+Der Workflow reicht das Verzeichnis über `whatsNewDirectory` an die Play-API
+weiter; die Hinweise gehen also zusammen mit dem Bundle hoch und müssen nicht
+mehr von Hand in die Console getippt werden. **Vor jedem Release aktualisieren** —
+sonst erscheint der Text der Vorversion.
+
+Play begrenzt jeden Text auf 500 Zeichen. Der Dateiname muss exakt der Locale
+in der Console entsprechen (`de-DE`, `en-US`), sonst lehnt die API den Upload ab.
 
 ## Neue App in der Play Console (einmalig)
 
