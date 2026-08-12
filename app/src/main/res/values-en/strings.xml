@@ -313,7 +313,7 @@
     <string name="logout_body">Do you really want to sign out?</string>
     <string name="nav_add_movie">Add film</string>
     <string name="detail_no_overview">No description available.</string>
-    <string name="copyright">© %1$d René Neuhaus</string>
+    <string name="copyright">© %1$d MovieShelf</string>
 
     <!-- Forms, navigation, statistics -->
     <string name="section_mode">Mode</string>

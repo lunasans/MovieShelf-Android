@@ -316,7 +316,7 @@
     <string name="logout_body">Möchtest du dich wirklich abmelden?</string>
     <string name="nav_add_movie">Film hinzufügen</string>
     <string name="detail_no_overview">Keine Beschreibung verfügbar.</string>
-    <string name="copyright">© %1$d René Neuhaus</string>
+    <string name="copyright">© %1$d MovieShelf</string>
 
     <!-- Formulare, Navigation, Statistik -->
     <string name="section_mode">Betriebsart</string>
