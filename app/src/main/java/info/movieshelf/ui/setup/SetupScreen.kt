@@ -32,7 +32,6 @@ import info.movieshelf.ui.util.UiText
 import info.movieshelf.data.api.RetrofitClient
 import info.movieshelf.data.local.DataStoreManager
 import kotlinx.coroutines.launch
-import java.util.Calendar
 
 class SetupViewModel(private val dataStoreManager: DataStoreManager) : ViewModel() {
     var url by mutableStateOf("")
@@ -135,7 +134,6 @@ fun SetupScreen(
      */
     onChangeMode: () -> Unit = {}
 ) {
-    val currentYear = Calendar.getInstance().get(Calendar.YEAR)
     val viewModel: SetupViewModel = viewModel(factory = SetupViewModel.Factory(dataStoreManager))
     
     // Prüfen, ob bereits eine URL gespeichert ist, um den Zurück-Button anzuzeigen
@@ -286,12 +284,6 @@ fun SetupScreen(
                     Text(stringResource(R.string.login_change_mode))
                 }
 
-                Spacer(Modifier.height(32.dp))
-                Text(
-                    text = stringResource(R.string.copyright, currentYear),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.outline
-                )
             }
         }
     }
