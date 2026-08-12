@@ -58,12 +58,6 @@ jobs:
       # das Bundle hochladen (mit seinem Mapping), danach das APK bauen - sonst
       # bekommt Play das Mapping des APK und deobfuskiert Abstuerze falsch.
       - name: In Play Store hochladen (Internal-Track)
-        # Eine neu angelegte App nimmt ueber die API erst dann Uploads an, wenn
-        # ihre erste Version von Hand in der Console hochgeladen wurde. Damit
-        # der Erstlauf nicht am ganzen Workflow scheitert, bleibt dieser Schritt
-        # zunaechst folgenlos - nach dem ersten erfolgreichen Upload entfernen,
-        # sonst verdeckt er auch echte Fehler.
-        continue-on-error: true
         uses: r0adkll/upload-google-play@v1
         with:
           serviceAccountJsonPlainText: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
@@ -73,45 +67,28 @@ jobs:
           status: completed
           mappingFile: app/build/outputs/mapping/release/mapping.txt
 
-      # Ein AAB laesst sich nicht installieren. Fuer Tester, die nicht auf die
-      # Play-Freigabe warten sollen, kommt deshalb zusaetzlich ein APK ans
-      # GitHub-Release.
-      - name: Signiertes APK bauen (fuer Tester)
-        env:
-          ANDROID_KEYSTORE_FILE: ${{ runner.temp }}/upload.keystore
-          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
-          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
-          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
-        run: ./gradlew assembleRelease --console=plain
-
-      - name: APK versioniert benennen
-        id: apk
-        run: |
-          if [ "$GITHUB_REF_TYPE" = "tag" ]; then
-            VERSION="${GITHUB_REF_NAME#v}"
-          else
-            VERSION="dev-${GITHUB_SHA::7}"
-          fi
-          cp app/build/outputs/apk/release/app-release.apk "MovieShelf-$VERSION.apk"
-          echo "name=MovieShelf-$VERSION.apk" >> "$GITHUB_OUTPUT"
-          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
-
-      - name: GitHub-Release mit APK erstellen
+      # Bewusst kein APK: getestet wird ueber das Play-Testprogramm, und nur
+      # eine Installation von dort zaehlt dafuer. Ein direkt verteiltes APK
+      # traegt ausserdem eine andere Signatur (Upload-Key statt des von Google
+      # vergebenen App-Signing-Keys) - wer es installiert hat, muss vor dem
+      # Wechsel auf die Play-Fassung deinstallieren und verliert dabei seine
+      # lokale Sammlung. Dazu kommt, dass Google das Sideloading kuenftig an
+      # verifizierte Entwickler bindet.
+      - name: GitHub-Release als Versionsmarke
         # Nur bei einem Tag: ein Lauf ueber workflow_dispatch soll kein Release
         # ohne Version anlegen.
         if: github.ref_type == 'tag'
         uses: softprops/action-gh-release@v2
         with:
-          files: ${{ steps.apk.outputs.name }}
-          name: MovieShelf ${{ steps.apk.outputs.version }}
+          name: MovieShelf ${{ github.ref_name }}
           # Es gibt (noch) kein CHANGELOG.md im Repo; die Notizen entstehen aus
           # den Commits seit dem letzten Tag.
           generate_release_notes: true
 
-      - name: Bundle und APK als Workflow-Artefakt sichern
+      # Das Bundle bleibt als Artefakt erreichbar - fuer den ersten Upload einer
+      # neu angelegten App, den die Play-API nicht uebernehmen kann.
+      - name: App Bundle als Workflow-Artefakt sichern
         uses: actions/upload-artifact@v4
         with:
-          name: app-release
-          path: |
-            app/build/outputs/bundle/release/app-release.aab
-            ${{ steps.apk.outputs.name }}
+          name: app-release-aab
+          path: app/build/outputs/bundle/release/app-release.aab
