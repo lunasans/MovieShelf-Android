@@ -4,10 +4,10 @@
 -keepattributes AnnotationDefault
 
 # Keep Retrofit interface methods
--keep class at.neuhaus.movieshelf.data.api.** { *; }
+-keep class info.movieshelf.data.api.** { *; }
 
 # Keep Data Models from being obfuscated (required for GSON/Serialization)
--keep class at.neuhaus.movieshelf.data.model.** { *; }
+-keep class info.movieshelf.data.model.** { *; }
 
 # Gson specific rules
 -keep class com.google.gson.** { *; }

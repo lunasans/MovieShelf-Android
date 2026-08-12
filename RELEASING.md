@@ -31,7 +31,7 @@ Der Workflow braucht fünf Repository-Secrets (*Settings → Secrets and variabl
 2. Service-Account erstellen (*IAM & Verwaltung → Dienstkonten*), JSON-Key herunterladen
 3. In der [Play Console](https://play.google.com/console) unter
    *Nutzer und Berechtigungen → Nutzer einladen* die Service-Account-E-Mail einladen und
-   der App `at.neuhaus.movieshelf` die Berechtigung **Releases in Tests-Tracks verwalten**
+   der App `info.movieshelf` die Berechtigung **Releases in Tests-Tracks verwalten**
    (oder *Releases verwalten*) geben
 4. Kompletten JSON-Inhalt als Secret `PLAY_SERVICE_ACCOUNT_JSON` hinterlegen
 
