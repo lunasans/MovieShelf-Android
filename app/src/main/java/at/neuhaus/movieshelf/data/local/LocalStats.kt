@@ -21,14 +21,22 @@ import at.neuhaus.movieshelf.data.model.YearStats
 object LocalStats {
 
     fun from(movies: List<MovieEntity>): Stats {
-        // Gezählt wird wie in der Desktop-App (`is_deleted = 0 AND is_boxset = 0
-        // AND in_collection = 1`): die Teile eines Boxsets zählen einzeln, das
-        // Boxset selbst nicht. Sonst stünde die Hülle als eigener Titel in der
-        // Summe und die Gesamtzahl läge über der tatsächlichen Sammlung.
-        val relevant = movies.filter {
+        // Gezählt wird wie in Shelf und Desktop-App (`is_deleted = 0 AND
+        // is_boxset = 0 AND in_collection = 1`): die Teile eines Boxsets zählen
+        // einzeln, das Boxset selbst nicht. Sonst stünde die Hülle als eigener
+        // Titel in der Summe und die Gesamtzahl läge über der tatsächlichen
+        // Sammlung.
+        val inCollection = movies.filter {
             // isBoxset ist nullbar; `!!` wuerde bei Zeilen ohne Wert abstuerzen.
             !it.isDeleted && it.inCollection != false && it.isBoxset != true
         }
+
+        // Serien werden eigens gezählt und gehen nicht in die Film-Zahlen ein —
+        // genau wie in der Shelf (`moviesOnly()` samt separatem `$totalSeries`)
+        // und in der Desktop-App. Vorher zählte diese Statistik als einzige der
+        // drei Oberflächen Serien zu den Filmen und wies deshalb eine höhere
+        // Zahl aus als Web und Desktop, was wie ein Abgleich-Fehler aussah.
+        val (series, relevant) = inCollection.partition { it.collectionType == "Serie" }
         val total = relevant.size
 
         val runtimes = relevant.mapNotNull { it.runtime }.filter { it > 0 }
@@ -39,6 +47,7 @@ object LocalStats {
 
         return Stats(
             totalFilms = total,
+            totalSeries = series.size,
             totalRuntimeMinutes = totalRuntime,
             totalRuntimeHours = totalRuntime / 60.0,
             totalRuntimeDays = totalRuntime / 1440.0,

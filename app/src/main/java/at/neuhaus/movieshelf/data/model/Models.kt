@@ -217,6 +217,13 @@ data class Actor(
 
 data class Stats(
     @SerializedName("total_films") val totalFilms: Int,
+    /**
+     * Serien zaehlen eigens, nicht in [totalFilms] — wie in der Shelf
+     * (`StatsController`: `$totalSeries` neben `$totalFilms`) und in der
+     * Desktop-App. Ohne diese Trennung zaehlte die Statistik Serien als Filme
+     * mit und wies andere Zahlen aus als die beiden anderen Oberflaechen.
+     */
+    @SerializedName("total_series") val totalSeries: Int = 0,
     @SerializedName("total_runtime_minutes") val totalRuntimeMinutes: Long,
     @SerializedName("total_runtime_hours") val totalRuntimeHours: Double,
     @SerializedName("total_runtime_days") val totalRuntimeDays: Double,

@@ -1,5 +1,6 @@
 package at.neuhaus.movieshelf.data.sync
 
+import at.neuhaus.movieshelf.data.local.db.BoxsetWatchState
 import at.neuhaus.movieshelf.data.local.db.MovieDao
 import at.neuhaus.movieshelf.data.local.db.MovieEntity
 import at.neuhaus.movieshelf.data.local.db.SettingDao
@@ -71,7 +72,14 @@ open class FakeMovieDao : MovieDao {
     override suspend fun update(movie: MovieEntity) = unused()
     override suspend fun updateWatched(localId: Long, isWatched: Boolean, now: String) = unused()
     override suspend fun getFeatured(limit: Int): List<MovieEntity> = unused()
-    override suspend fun getPendingWatched(): List<MovieEntity> = unused()
+    /**
+     * Wie die echte Abfrage: eine Zeile steht an, wenn ihr Gesehen-Stand vom
+     * zuletzt bestaetigten abweicht. Nicht [unused], weil die Vorschau die
+     * offenen Markierungen als eigenen Posten ausweist.
+     */
+    override suspend fun getPendingWatched(): List<MovieEntity> = rows.filter {
+        !it.isDeleted && it.remoteId != null && (it.isWatched == true) != (it.syncedWatched == true)
+    }
     override suspend fun markWatchedSynced(localId: Long, isWatched: Boolean) = unused()
     override suspend fun updateCoverUrl(localId: Long, url: String?, now: String) = unused()
     override suspend fun updateBackdropUrl(localId: Long, url: String?, now: String) = unused()
@@ -81,6 +89,9 @@ open class FakeMovieDao : MovieDao {
     override suspend fun markDeleted(localId: Long, now: String) = unused()
     override suspend fun deleteAll() = unused()
     override suspend fun getBoxsetChildren(boxsetLocalId: Long): List<MovieEntity> = unused()
+    override suspend fun getBoxsetWatchStates(): List<BoxsetWatchState> = unused()
+    override suspend fun countFilmsInCollection(): Int = unused()
+    override suspend fun countSeriesInCollection(): Int = unused()
     override suspend fun getMovieCount(): Int = unused()
     override suspend fun getLastCacheTime(): Long? = unused()
 

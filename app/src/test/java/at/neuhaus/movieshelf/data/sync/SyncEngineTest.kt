@@ -306,6 +306,29 @@ class SyncEngineTest {
     }
 
     @Test
+    fun `Vorschau meldet eine geaenderte Gesehen-Markierung`() = runBlocking {
+        val dao = FakeMovieDao()
+        dao.rows += movie(localId = 1, remoteId = 10, title = "13 Geister")
+            .copy(isWatched = true, syncedWatched = true, updatedAt = "t", syncedAt = "t")
+
+        val engine = engine(
+            dao,
+            FakeSettingDao(),
+            FakeSyncApi(export = ExportResponse(exportedAt = "t2", movies = listOf(
+                serverMovie(id = 10, title = "13 Geister").copy(isWatched = false)
+            )))
+        )
+
+        val preview = engine.preview()
+
+        // Ohne diese Zeile blieb ein Film, an dem sich nur der Gesehen-Stand
+        // geaendert hat, in der Vorschau unsichtbar - obwohl der Abgleich ihn
+        // uebertraegt.
+        assertEquals(1, preview.incomingUpdated)
+        assertEquals(listOf("Gesehen"), preview.items.single { it.direction == SyncDirection.PULL }.changes)
+    }
+
+    @Test
     fun `Vorschau fuehrt beide Richtungen auf`() = runBlocking {
         val dao = FakeMovieDao()
         dao.rows += movie(localId = 1, remoteId = null, title = "Nur lokal")

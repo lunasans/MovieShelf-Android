@@ -95,6 +95,19 @@ fun StatsScreen(
                     )
                 }
 
+                // Serien stehen fuer sich: die Film-Zahlen oben schliessen sie
+                // nicht ein, sonst wichen sie von Shelf und Desktop-App ab.
+                if (stats.totalSeries > 0) {
+                    StatCard(
+                        modifier = Modifier.fillMaxWidth(),
+                        title = "Serien",
+                        value = stats.totalSeries.toString(),
+                        subtitle = if (stats.totalSeries == 1) "Serie in der Sammlung" else "Serien in der Sammlung",
+                        icon = Icons.Default.Tv,
+                        color = Color(0xFF7C4DFF)
+                    )
+                }
+
                 StatCard(
                     modifier = Modifier.fillMaxWidth(),
                     title = "Gesamte Laufzeit",

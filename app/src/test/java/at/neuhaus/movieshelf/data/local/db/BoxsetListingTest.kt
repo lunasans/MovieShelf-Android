@@ -46,7 +46,7 @@ class BoxsetListingTest {
 
         assertEquals(
             listOf("Alien Anthology", "Arrival"),
-            dao.getAllMovies().map { it.title }.sorted()
+            dao.getAllMovies().mapNotNull { it.title }.sorted()
         )
     }
 
@@ -69,7 +69,7 @@ class BoxsetListingTest {
 
         assertEquals(
             listOf("Alien", "Alien Anthology"),
-            dao.searchMovies("Alien").map { it.title }.sorted()
+            dao.searchMovies("Alien").mapNotNull { it.title }.sorted()
         )
     }
 
@@ -149,11 +149,31 @@ class BoxsetListingTest {
         // Gezaehlt werden aber drei Filme — die beiden Teile und "Arrival".
         assertEquals(3, dao.countFilmsInCollection())
         assertEquals(1, dao.countSeriesInCollection())
-        // Und der Zaehler stimmt mit der Statistik ueberein.
-        assertEquals(
-            LocalStats.from(dao.getAllForStats()).totalFilms,
-            dao.countFilmsInCollection() + dao.countSeriesInCollection()
-        )
+
+        // Und die Statistik zaehlt genau dasselbe — getrennt nach Filmen und
+        // Serien. Zaehlte sie beides zusammen, wies sie eine hoehere Zahl aus
+        // als Shelf und Desktop-App, was wie ein Abgleich-Fehler aussah.
+        val stats = LocalStats.from(dao.getAllForStats())
+        assertEquals(dao.countFilmsInCollection(), stats.totalFilms)
+        assertEquals(dao.countSeriesInCollection(), stats.totalSeries)
+    }
+
+    @Test
+    fun `die Statistik zaehlt Serien nicht zu den Filmen`() = runTest {
+        val dao = db.movieDao()
+        dao.insert(row(title = "Arrival").copy(remoteId = 1, isWatched = true))
+        dao.insert(row(title = "Dune").copy(remoteId = 2, isWatched = false))
+        dao.insert(row(title = "Fargo").copy(remoteId = 3, collectionType = "Serie", isWatched = true))
+        dao.insert(row(title = "Twin Peaks").copy(remoteId = 4, collectionType = "Serie", isWatched = true))
+
+        val stats = LocalStats.from(dao.getAllForStats())
+
+        assertEquals("Nur Filme", 2, stats.totalFilms)
+        assertEquals("Serien eigens", 2, stats.totalSeries)
+        // Der springende Punkt: die gesehenen Serien duerfen die Film-Quote
+        // nicht anheben, sonst weicht sie von der Shelf ab.
+        assertEquals(1, stats.watched?.count)
+        assertEquals(50.0, stats.watched?.percentage ?: 0.0, 0.01)
     }
 
     private fun row(title: String) = MovieEntity(

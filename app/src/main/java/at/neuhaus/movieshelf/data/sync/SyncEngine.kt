@@ -485,6 +485,15 @@ class SyncEngine(
         compare("Format", server.tag, local.tag)
         compare("Trailer", server.trailerUrl, local.trailerUrl)
 
+        // "Gesehen" nicht ueber compare(): der Vergleich dort laeuft ueber
+        // toString(), und `null` gegen `false` gaebe einen Unterschied, den es
+        // nicht gibt. Ohne diese Zeile blieb ein Film, an dem sich nur der
+        // Gesehen-Stand geaendert hat, in der Vorschau unsichtbar — der
+        // Abgleich uebertraegt ihn trotzdem.
+        if ((server.isWatched == true) != (local.isWatched == true)) {
+            changes += "Gesehen"
+        }
+
         if (server.collectionType == "Serie" && seasonsDiffer(local.localId, server.seasons)) {
             changes += "Staffeln"
         }
