@@ -1,0 +1,46 @@
+name: CI
+
+# Laeuft bei jedem Pull Request und auf main. Zusaetzlich per workflow_call,
+# damit der Release-Workflow dieselbe Definition wiederverwendet statt sie zu
+# kopieren — eine zweite Kopie waere die erste, die veraltet.
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_call:
+
+# Ein neuer Push auf denselben Zweig macht den vorherigen Lauf ueberfluessig.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Unit-Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - uses: gradle/actions/setup-gradle@v6
+
+      - name: Unit-Tests
+        run: ./gradlew testDebugUnitTest --console=plain
+
+      # Nur uebersetzen, nicht signieren: der Release-Build deckt Fehler auf,
+      # die im Debug-Build unsichtbar bleiben — R8 greift ausschliesslich dort,
+      # und eine ins Leere zeigende Keep-Regel faellt sonst erst dem Tester auf.
+      - name: Release-Build (unsigniert)
+        run: ./gradlew assembleRelease --console=plain
+
+      - name: Testberichte sichern
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-reports
+          path: app/build/reports/tests/
+          retention-days: 7

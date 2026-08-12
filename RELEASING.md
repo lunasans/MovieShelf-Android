@@ -2,11 +2,16 @@
 
 Der Workflow [`play-release.yml`](.github/workflows/play-release.yml) baut bei einem
 Tag-Push `v*` (oder manuell über *Run workflow*) ein signiertes App Bundle und lädt es
-in den **Internal-Track** der Play Console hoch. Die Promotion zu Beta/Produktion
+in den **geschlossenen Test (Alpha)** der Play Console hoch. Die Promotion zu Beta/Produktion
 bleibt ein manueller Schritt in der Play Console.
 
 Zusätzlich entsteht ein **GitHub-Release als Versionsmarke** mit den
 Änderungsnotizen — ohne Artefakt, siehe unten.
+
+Der Upload geht in den **geschlossenen Test (Alpha)**, weil dort die Tester
+sitzen. In der Play-API heißt diese Spur `alpha`; einen Track namens `closed`
+gibt es nicht. Anders als der interne Test durchläuft sie Googles Prüfung —
+ein Tag-Push zieht diese also nach sich und ist nicht binnen Minuten verfügbar.
 
 ## Ablauf pro Release
 
@@ -15,8 +20,9 @@ Zusätzlich entsteht ein **GitHub-Release als Versionsmarke** mit den
    siehe unten) — sie sind Pflicht, nicht Kür: fehlen sie, zeigt Play den Text
    der Vorversion
 2. Committen, Tag `vX.Y.Z` setzen und pushen
-3. CI: Unit-Tests → `bundleRelease` (signiert) → Upload in den Internal-Track
-   samt Versionshinweisen → GitHub-Release als Versionsmarke
+3. CI: Unit-Tests und unsignierter Release-Build (dieselbe Definition wie bei
+   jedem Pull Request, siehe `ci.yml`) → `bundleRelease` (signiert) → Upload in
+   den geschlossenen Test samt Versionshinweisen → GitHub-Release als Versionsmarke
 4. In der Play Console testen und manuell promoten
 
 Bewusst **kein APK**: Getestet wird über das Play-Testprogramm, und nur eine
@@ -49,7 +55,7 @@ Die Anwendungs-ID ist `info.movieshelf`. Weil eine geänderte ID für Google ein
 komplett neue App bedeutet, gilt vor dem ersten Tag-Push:
 
 1. App mit dem Package-Namen `info.movieshelf` anlegen
-2. **Erste AAB von Hand hochladen** (Internal Testing), falls die API die frisch
+2. **Erste AAB von Hand hochladen**, falls die API die frisch
    angelegte App noch nicht annimmt. Das Bundle liegt danach nicht mehr als
    Workflow-Artefakt bereit — in einem öffentlichen Repository könnte es sonst
    jeder herunterladen. Für einen Notfall lässt es sich lokal bauen
