@@ -136,7 +136,7 @@ fun CreateMovieScreen(
                     value = viewModel.genre,
                     onValueChange = { viewModel.genre = it },
                     label = stringResource(R.string.form_genre),
-                    placeholder = "Komma-getrennt",
+                    placeholder = stringResource(R.string.form_comma_separated),
                     modifier = Modifier.fillMaxWidth()
                 )
 
@@ -217,7 +217,7 @@ fun CreateMovieScreen(
                         value = viewModel.purchaseDate,
                         onValueChange = { viewModel.purchaseDate = it },
                         label = stringResource(R.string.form_purchase_date),
-                        placeholder = "JJJJ-MM-TT",
+                        placeholder = stringResource(R.string.form_date_format),
                         modifier = Modifier.weight(1f),
                         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next)
                     )
@@ -241,7 +241,7 @@ fun CreateMovieScreen(
                     Column(Modifier.weight(1f)) {
                         Text(stringResource(R.string.create_in_collection), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
                         Text(
-                            "Film ist Teil der Sammlung (nicht nur Wunschliste)",
+                            stringResource(R.string.form_in_collection_hint),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )

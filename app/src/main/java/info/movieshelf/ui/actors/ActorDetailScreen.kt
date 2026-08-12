@@ -50,7 +50,7 @@ fun ActorDetailScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(actor?.name ?: "Schauspieler") },
+                title = { Text(actor?.name ?: stringResource(R.string.actor_title)) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.common_back))
@@ -111,14 +111,19 @@ fun ActorDetailScreen(
                 Spacer(Modifier.height(16.dp))
 
                 Text(
-                    text = actor.name ?: "Unbekannt",
+                    text = actor.name ?: stringResource(R.string.common_unknown),
                     style = MaterialTheme.typography.headlineMedium,
                     fontWeight = FontWeight.Bold
                 )
 
                 if (!actor.birthDate.isNullOrBlank()) {
                     Text(
-                        text = "Geboren: ${actor.birthDate}${if (actor.placeOfBirth != null) " in ${actor.placeOfBirth}" else ""}",
+                        // Zwei Fassungen statt angehaengtem Zusatz: die
+                        // Wortstellung von Datum und Ort ist nicht in jeder
+                        // Sprache dieselbe.
+                        text = actor.placeOfBirth
+                            ?.let { stringResource(R.string.actor_born_in, actor.birthDate, it) }
+                            ?: stringResource(R.string.actor_born, actor.birthDate),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.outline
                     )
@@ -128,7 +133,7 @@ fun ActorDetailScreen(
 
                 if (!actor.biography.isNullOrBlank()) {
                     Text(
-                        text = "Biografie",
+                        text = stringResource(R.string.actor_biography),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         modifier = Modifier.fillMaxWidth()
@@ -189,7 +194,7 @@ fun MovieRowItem(movie: Movie, onClick: () -> Unit) {
                 verticalArrangement = Arrangement.Center
             ) {
                 Text(
-                    text = movie.title ?: "Unbekannt",
+                    text = movie.title ?: stringResource(R.string.common_unknown),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     maxLines = 1,

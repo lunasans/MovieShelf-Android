@@ -152,7 +152,7 @@ fun AboutScreen(onBack: () -> Unit) {
                     horizontalArrangement = Arrangement.Center
                 ) {
                     Text(
-                        text = "Powered by",
+                        text = stringResource(R.string.about_powered_by),
                         style = MaterialTheme.typography.labelLarge,
                         color = MaterialTheme.colorScheme.outline
                     )

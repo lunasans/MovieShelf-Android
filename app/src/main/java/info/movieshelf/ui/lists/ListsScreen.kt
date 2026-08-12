@@ -242,7 +242,7 @@ private fun EmptyState() {
             Spacer(Modifier.height(16.dp))
             Text(stringResource(R.string.lists_none), style = MaterialTheme.typography.titleMedium)
             Text(
-                "Listen (z. B. eine Wunschliste) legst du in der Web- oder Desktop-App an.",
+                stringResource(R.string.lists_none_hint),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )

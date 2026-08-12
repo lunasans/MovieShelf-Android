@@ -17,6 +17,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.res.stringResource
+import androidx.compose.material3.TextButton
+import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.foundation.layout.Spacer
 import info.movieshelf.R
 import info.movieshelf.data.local.db.AppMode
 import info.movieshelf.ui.theme.PillShape
@@ -31,6 +34,7 @@ import info.movieshelf.ui.theme.PillShape
 @Composable
 fun ModeChoiceScreen(onModeChosen: (AppMode) -> Unit) {
     Scaffold { padding ->
+        val uriHandler = LocalUriHandler.current
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -79,6 +83,24 @@ fun ModeChoiceScreen(onModeChosen: (AppMode) -> Unit) {
                 actionLabel = stringResource(R.string.mode_shelf_action),
                 onClick = { onModeChosen(AppMode.SHELF) }
             )
+
+            // Wer noch keine Shelf betreibt, steht hier sonst vor einer
+            // Sackgasse: die Betriebsart verlangt einen Server, den es erst
+            // anzulegen gilt.
+            Spacer(Modifier.height(20.dp))
+            Text(
+                text = stringResource(R.string.mode_shelf_no_account),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center
+            )
+            Spacer(Modifier.height(8.dp))
+            TextButton(onClick = { uriHandler.openUri("https://movieshelf.info") }) {
+                Text(
+                    text = stringResource(R.string.mode_shelf_signup_action),
+                    fontWeight = FontWeight.Bold
+                )
+            }
         }
     }
 }

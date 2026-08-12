@@ -109,7 +109,7 @@ fun ListDetailScreen(
         AlertDialog(
             onDismissRequest = { removeTarget = null },
             title = { Text(stringResource(R.string.list_remove_movie)) },
-            text = { Text("\"${movie.title ?: "Dieser Film"}\" aus der Liste entfernen?") },
+            text = { Text("\"${movie.title ?: stringResource(R.string.list_this_movie)}\" aus der Liste entfernen?") },
             confirmButton = {
                 TextButton(onClick = {
                     viewModel.removeMovie(movie.id)

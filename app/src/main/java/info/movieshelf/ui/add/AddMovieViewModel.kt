@@ -27,7 +27,7 @@ class AddMovieViewModel(
     var isLoading by mutableStateOf(false)
     var isImporting by mutableStateOf(false)
     var error by mutableStateOf<UiText?>(null)
-    var successMessage by mutableStateOf<String?>(null)
+    var successMessage by mutableStateOf<UiText?>(null)
     var importToCollection by mutableStateOf(true)
 
     /** Suche nach Serien statt nach Filmen. */
@@ -87,7 +87,7 @@ class AddMovieViewModel(
             error = null
             try {
                 repository.import(tmdbId, importToCollection, searchSeries)
-                successMessage = "Film erfolgreich importiert!"
+                successMessage = UiText.of(R.string.message_import_ok)
                 delay(1500)
                 onComplete()
             } catch (e: Exception) {

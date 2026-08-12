@@ -184,7 +184,7 @@ fun AddMovieScreen(
                         horizontalArrangement = Arrangement.End
                     ) {
                         Text(
-                            "In Sammlung aufnehmen",
+                            stringResource(R.string.add_include_in_collection),
                             style = MaterialTheme.typography.labelLarge,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -213,7 +213,7 @@ fun AddMovieScreen(
                 CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
             } else if (viewModel.searchResults.isEmpty() && viewModel.searchQuery.length >= 2) {
                 Text(
-                    "Keine Ergebnisse gefunden",
+                    stringResource(R.string.add_no_results),
                     modifier = Modifier.align(Alignment.Center),
                     style = MaterialTheme.typography.bodyLarge
                 )
@@ -262,7 +262,7 @@ fun AddMovieScreen(
                     Box(contentAlignment = Alignment.Center) {
                         Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)) {
                             Text(
-                                viewModel.successMessage!!,
+                                viewModel.successMessage!!.asString(),
                                 modifier = Modifier.padding(24.dp),
                                 color = MaterialTheme.colorScheme.onPrimaryContainer,
                                 fontWeight = FontWeight.Bold
@@ -277,7 +277,7 @@ fun AddMovieScreen(
 
 @Composable
 fun TmdbMovieItem(item: Map<String, Any>, onImport: () -> Unit) {
-    val title = item["title"] as? String ?: (item["name"] as? String) ?: "Unbekannt"
+    val title = item["title"] as? String ?: (item["name"] as? String) ?: stringResource(R.string.common_unknown)
     val overview = item["overview"] as? String ?: ""
     val releaseDate = item["release_date"] as? String ?: (item["first_air_date"] as? String) ?: ""
     val posterPath = item["poster_path"] as? String

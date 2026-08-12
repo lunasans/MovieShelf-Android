@@ -125,7 +125,7 @@ fun CameraScanner(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                val displayValue = if (detectedBarcode.isNotEmpty()) "Barcode: $detectedBarcode" else detectedText
+                val displayValue = if (detectedBarcode.isNotEmpty()) stringResource(R.string.scanner_barcode, detectedBarcode) else detectedText
                 
                 if (displayValue.isNotEmpty()) {
                     Card(
@@ -144,7 +144,7 @@ fun CameraScanner(
                         onClick = { onDetected(if (detectedBarcode.isNotEmpty()) detectedBarcode else detectedText) },
                         modifier = Modifier.fillMaxWidth().height(56.dp)
                     ) {
-                        Text(if (detectedBarcode.isNotEmpty()) "Barcode suchen" else stringResource(R.string.scanner_use_title))
+                        Text(if (detectedBarcode.isNotEmpty()) stringResource(R.string.scanner_search_barcode) else stringResource(R.string.scanner_use_title))
                     }
                 } else {
                     Surface(
@@ -152,7 +152,7 @@ fun CameraScanner(
                         shape = MaterialTheme.shapes.medium
                     ) {
                         Text(
-                            "Titel oder Barcode scannen",
+                            stringResource(R.string.scanner_hint),
                             color = Color.White,
                             style = MaterialTheme.typography.bodyLarge,
                             modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)

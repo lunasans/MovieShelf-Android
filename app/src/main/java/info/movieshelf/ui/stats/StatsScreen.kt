@@ -104,7 +104,7 @@ fun StatsScreen(
                         modifier = Modifier.fillMaxWidth(),
                         title = stringResource(R.string.stats_series),
                         value = stats.totalSeries.toString(),
-                        subtitle = if (stats.totalSeries == 1) "Serie in der Sammlung" else "Serien in der Sammlung",
+                        subtitle = stringResource(if (stats.totalSeries == 1) R.string.stats_series_one else R.string.stats_series_many),
                         icon = Icons.Default.Tv,
                         color = Color(0xFF7C4DFF)
                     )

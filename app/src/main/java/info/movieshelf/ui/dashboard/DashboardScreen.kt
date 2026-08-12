@@ -148,7 +148,7 @@ fun DashboardScreen(
                                 tint = MaterialTheme.colorScheme.onErrorContainer
                             )
                             Text(
-                                "Offline — zwischengespeicherte Daten",
+                                stringResource(R.string.dashboard_offline),
                                 style = MaterialTheme.typography.labelSmall,
                                 color = MaterialTheme.colorScheme.onErrorContainer
                             )
@@ -188,7 +188,7 @@ fun DashboardScreen(
                             Spacer(Modifier.height(8.dp))
                             Text(
                                 text = if (isShelfMode) {
-                                    "Deine Sammlung wird beim Synchronisieren von der Shelf geholt."
+                                    stringResource(R.string.dashboard_sync_hint)
                                 } else {
                                     stringResource(R.string.dashboard_add_first)
                                 },
@@ -315,7 +315,7 @@ fun DashboardScreen(
                         )
                     }
 
-                    // "Alle anzeigen"-Modus: Kategorie-Chip als Rückweg zu den Shelf-Reihen
+                    // stringResource(R.string.common_show_all)-Modus: Kategorie-Chip als Rückweg zu den Shelf-Reihen
                     viewModel.selectedShelf?.let { shelf ->
                         item(span = { GridItemSpan(maxLineSpan) }) {
                             Row(modifier = Modifier.padding(horizontal = 8.dp)) {
@@ -613,7 +613,7 @@ fun MovieShelfRow(
                     )
                 ) {
                     Text(
-                        "Alle anzeigen".uppercase(),
+                        stringResource(R.string.common_show_all).uppercase(),
                         style = MaterialTheme.typography.labelSmall.copy(letterSpacing = 1.sp),
                         fontWeight = FontWeight.Black
                     )
@@ -670,7 +670,7 @@ fun MovieItem(
             ) {
                 Icon(
                     imageVector = if (movie.isWatched == true) Icons.Default.Visibility else Icons.Default.VisibilityOff,
-                    contentDescription = if (movie.isWatched == true) "Als ungesehen markieren" else "Als gesehen markieren",
+                    contentDescription = stringResource(if (movie.isWatched == true) R.string.detail_mark_unwatched else R.string.detail_mark_watched),
                     tint = Color.White,
                     modifier = Modifier.size(18.dp)
                 )

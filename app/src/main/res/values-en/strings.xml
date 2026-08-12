@@ -356,4 +356,59 @@
     <string name="stats_total_runtime">Total runtime</string>
     <string name="stats_hours">%1$d hours</string>
     <string name="stats_decade">%1$ds</string>
+
+    <!-- Additions 3 -->
+    <string name="setup_welcome">Welcome!</string>
+    <string name="setup_intro">Enter the URL of your MovieShelf server to get started.</string>
+    <string name="actor_title">Actor</string>
+    <string name="actor_biography">Biography</string>
+    <string name="actor_born">Born: %1$s</string>
+    <string name="add_include_in_collection">Add to collection</string>
+    <string name="add_no_results">No results found</string>
+    <string name="message_import_ok">Film imported.</string>
+    <string name="scanner_search_barcode">Search barcode</string>
+    <string name="scanner_hint">Scan a title or barcode</string>
+    <string name="scanner_barcode">Barcode: %1$s</string>
+    <string name="form_comma_separated">Comma-separated</string>
+    <string name="form_date_format">YYYY-MM-DD</string>
+    <string name="form_in_collection_hint">This film is part of the collection (not just the wishlist)</string>
+    <string name="dashboard_offline">Offline — showing cached data</string>
+    <string name="dashboard_sync_hint">Your collection is fetched from the shelf when you sync.</string>
+    <string name="common_show_all">Show all</string>
+    <string name="detail_mark_unwatched">Mark as unwatched</string>
+    <string name="detail_plot">Plot</string>
+    <string name="detail_boxset_films">Films included</string>
+    <string name="detail_seasons">Seasons</string>
+    <string name="detail_no_seasons">No seasons imported yet.</string>
+    <string name="detail_season">Season %1$d</string>
+    <string name="detail_cast">Cast</string>
+    <string name="detail_will_be_removed">Will be removed</string>
+    <string name="detail_present">Present</string>
+    <string name="detail_trailer">Trailer</string>
+    <string name="detail_search_trailer">Search trailer</string>
+    <string name="detail_director">Directed by %1$s</string>
+    <string name="detail_shelf">Shelf</string>
+    <string name="detail_edition">Edition</string>
+    <string name="detail_region">Region</string>
+    <string name="detail_location">Location</string>
+    <string name="detail_condition">Condition</string>
+    <string name="detail_bought">Bought</string>
+    <string name="detail_price">Price</string>
+    <string name="error_image_unreadable">The image could not be read.</string>
+    <string name="list_this_movie">This film</string>
+    <string name="lists_none_hint">Create lists (a wishlist, for instance) in the web or desktop app.</string>
+    <string name="error_profile_not_loaded">Profile could not be loaded</string>
+    <string name="stats_series_one">series in the collection</string>
+    <string name="stats_series_many">series in the collection</string>
+    <string name="notification_channel">Sync</string>
+    <string name="notification_channel_desc">Progress while syncing with your shelf</string>
+    <string name="actor_search_error">Search failed</string>
+    <string name="actor_search_title">Actor “%1$s”</string>
+
+    <!-- Hints: account and TMDb key -->
+    <string name="mode_shelf_no_account">No shelf yet? You can create one for free at movieshelf.info.</string>
+    <string name="mode_shelf_signup_action">Create an account at movieshelf.info</string>
+    <string name="profile_tmdb_where">The key is free from themoviedb.org — create an account, then go to Settings → API.</string>
+    <string name="profile_tmdb_get_key">Get a key from TMDb</string>
+    <string name="actor_born_in">Born: %1$s in %2$s</string>
 </resources>

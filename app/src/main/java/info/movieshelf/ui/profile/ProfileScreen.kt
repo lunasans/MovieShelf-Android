@@ -36,6 +36,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.foundation.layout.PaddingValues
 import android.os.Build
 import info.movieshelf.R
 import info.movieshelf.data.local.DataStoreManager
@@ -67,7 +69,7 @@ fun ProfileScreen(
     val viewModel: ProfileViewModel = viewModel()
 
     // Nur mit Shelf: ohne Server gibt es kein Profil zu laden, und der Versuch
-    // endete jedes Mal in der Meldung "Profil konnte nicht geladen werden".
+    // endete jedes Mal in der Meldung stringResource(R.string.error_profile_not_loaded).
     LaunchedEffect(isStandalone) {
         if (!isStandalone) viewModel.loadProfile()
     }
@@ -308,6 +310,7 @@ private fun StandaloneSection(
     tmdbApiKey: String?,
     onSaveKey: (String?) -> Unit
 ) {
+    val uriHandler = LocalUriHandler.current
     SectionTitle(stringResource(R.string.section_mode))
     SettingsCard {
         Column(Modifier.padding(16.dp)) {
@@ -337,6 +340,23 @@ private fun StandaloneSection(
                 title = stringResource(R.string.profile_tmdb_key),
                 subtitle = stringResource(R.string.profile_tmdb_hint)
             )
+            Spacer(Modifier.height(8.dp))
+            // Ohne den Weg zum Schluessel bleibt der Hinweis oben folgenlos —
+            // TMDb versteckt ihn hinter Konto und Einstellungen.
+            Text(
+                text = stringResource(R.string.profile_tmdb_where),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            TextButton(
+                onClick = { uriHandler.openUri("https://www.themoviedb.org/settings/api") },
+                contentPadding = PaddingValues(horizontal = 0.dp, vertical = 4.dp)
+            ) {
+                Text(
+                    text = stringResource(R.string.profile_tmdb_get_key),
+                    fontWeight = FontWeight.Bold
+                )
+            }
             Spacer(Modifier.height(12.dp))
             var keyInput by remember(tmdbApiKey) { mutableStateOf(tmdbApiKey.orEmpty()) }
             OutlinedTextField(

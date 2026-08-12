@@ -359,4 +359,59 @@
     <string name="stats_total_runtime">Gesamte Laufzeit</string>
     <string name="stats_hours">%1$d Stunden</string>
     <string name="stats_decade">%1$der</string>
+
+    <!-- Nachtrag 3: Setup, Details, Scanner, Benachrichtigung -->
+    <string name="setup_welcome">Willkommen!</string>
+    <string name="setup_intro">Bitte gib die URL deines MovieShelf-Servers ein, um zu starten.</string>
+    <string name="actor_title">Schauspieler</string>
+    <string name="actor_biography">Biografie</string>
+    <string name="actor_born">Geboren: %1$s</string>
+    <string name="add_include_in_collection">In Sammlung aufnehmen</string>
+    <string name="add_no_results">Keine Ergebnisse gefunden</string>
+    <string name="message_import_ok">Film erfolgreich importiert!</string>
+    <string name="scanner_search_barcode">Barcode suchen</string>
+    <string name="scanner_hint">Titel oder Barcode scannen</string>
+    <string name="scanner_barcode">Barcode: %1$s</string>
+    <string name="form_comma_separated">Komma-getrennt</string>
+    <string name="form_date_format">JJJJ-MM-TT</string>
+    <string name="form_in_collection_hint">Film ist Teil der Sammlung (nicht nur Wunschliste)</string>
+    <string name="dashboard_offline">Offline — zwischengespeicherte Daten</string>
+    <string name="dashboard_sync_hint">Deine Sammlung wird beim Synchronisieren von der Shelf geholt.</string>
+    <string name="common_show_all">Alle anzeigen</string>
+    <string name="detail_mark_unwatched">Als ungesehen markieren</string>
+    <string name="detail_plot">Handlung</string>
+    <string name="detail_boxset_films">Enthaltene Filme</string>
+    <string name="detail_seasons">Staffeln</string>
+    <string name="detail_no_seasons">Noch keine Staffeln importiert.</string>
+    <string name="detail_season">Staffel %1$d</string>
+    <string name="detail_cast">Besetzung</string>
+    <string name="detail_will_be_removed">Wird entfernt</string>
+    <string name="detail_present">Vorhanden</string>
+    <string name="detail_trailer">Trailer</string>
+    <string name="detail_search_trailer">Trailer suchen</string>
+    <string name="detail_director">Regie: %1$s</string>
+    <string name="detail_shelf">Regalbrett</string>
+    <string name="detail_edition">Edition</string>
+    <string name="detail_region">Region</string>
+    <string name="detail_location">Standort</string>
+    <string name="detail_condition">Zustand</string>
+    <string name="detail_bought">Gekauft</string>
+    <string name="detail_price">Kaufpreis</string>
+    <string name="error_image_unreadable">Bild konnte nicht gelesen werden.</string>
+    <string name="list_this_movie">Dieser Film</string>
+    <string name="lists_none_hint">Listen (z. B. eine Wunschliste) legst du in der Web- oder Desktop-App an.</string>
+    <string name="error_profile_not_loaded">Profil konnte nicht geladen werden</string>
+    <string name="stats_series_one">Serie in der Sammlung</string>
+    <string name="stats_series_many">Serien in der Sammlung</string>
+    <string name="notification_channel">Abgleich</string>
+    <string name="notification_channel_desc">Fortschritt beim Abgleich mit der Shelf</string>
+    <string name="actor_search_error">Fehler bei der Suche</string>
+    <string name="actor_search_title">Schauspieler „%1$s“</string>
+
+    <!-- Hinweise: Konto und TMDb-Schluessel -->
+    <string name="mode_shelf_no_account">Noch keine Shelf? Auf movieshelf.info kannst du dir kostenlos eine anlegen.</string>
+    <string name="mode_shelf_signup_action">Konto auf movieshelf.info anlegen</string>
+    <string name="profile_tmdb_where">Den Schlüssel bekommst du kostenlos bei themoviedb.org — Konto anlegen, dann unter Einstellungen → API.</string>
+    <string name="profile_tmdb_get_key">Schlüssel bei TMDb holen</string>
+    <string name="actor_born_in">Geboren: %1$s in %2$s</string>
 </resources>

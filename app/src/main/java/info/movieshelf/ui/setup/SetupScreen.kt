@@ -187,13 +187,13 @@ fun SetupScreen(
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         Text(
-                            text = "Willkommen!",
+                            text = stringResource(R.string.setup_welcome),
                             style = MaterialTheme.typography.headlineSmall,
                             fontWeight = FontWeight.Bold
                         )
                         Spacer(Modifier.height(8.dp))
                         Text(
-                            text = "Bitte gib die URL deines MovieShelf-Servers ein, um zu starten.",
+                            text = stringResource(R.string.setup_intro),
                             style = MaterialTheme.typography.bodyMedium,
                             textAlign = TextAlign.Center,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
