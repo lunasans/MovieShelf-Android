@@ -27,6 +27,7 @@ import androidx.compose.ui.res.stringResource
 import info.movieshelf.R
 import info.movieshelf.MovieShelfApplication
 import info.movieshelf.data.model.MovieListSummary
+import info.movieshelf.ui.util.UiText
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -250,14 +251,14 @@ private fun EmptyState() {
 }
 
 @Composable
-private fun ErrorRetry(message: String, onRetry: () -> Unit) {
+private fun ErrorRetry(message: UiText, onRetry: () -> Unit) {
     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Icon(Icons.Default.CloudOff, null, Modifier.size(64.dp), tint = MaterialTheme.colorScheme.outline)
             Spacer(Modifier.height(16.dp))
-            Text(message, style = MaterialTheme.typography.titleMedium)
+            Text(message.asString(), style = MaterialTheme.typography.titleMedium)
             Spacer(Modifier.height(8.dp))
-            Button(onClick = onRetry) { Text("Erneut versuchen") }
+            Button(onClick = onRetry) { Text(stringResource(R.string.common_retry)) }
         }
     }
 }

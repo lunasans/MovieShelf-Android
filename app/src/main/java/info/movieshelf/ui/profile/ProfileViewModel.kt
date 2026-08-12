@@ -10,6 +10,8 @@ import info.movieshelf.data.SessionManager
 import info.movieshelf.data.api.RetrofitClient
 import info.movieshelf.data.model.User
 import kotlinx.coroutines.launch
+import info.movieshelf.R
+import info.movieshelf.ui.util.UiText
 
 class ProfileViewModel : ViewModel() {
     var user by mutableStateOf<User?>(null)
@@ -19,8 +21,8 @@ class ProfileViewModel : ViewModel() {
     
     var isLoading by mutableStateOf(false)
     var isSaving by mutableStateOf(false)
-    var error by mutableStateOf<String?>(null)
-    var successMessage by mutableStateOf<String?>(null)
+    var error by mutableStateOf<UiText?>(null)
+    var successMessage by mutableStateOf<UiText?>(null)
 
     init {
         // Zuerst Cache nutzen für sofortige Anzeige
@@ -48,7 +50,7 @@ class ProfileViewModel : ViewModel() {
             } catch (e: Exception) {
                 Log.e("ProfileViewModel", "Failed to load profile", e)
                 if (user == null) {
-                    error = "Profil konnte nicht geladen werden: ${e.message}"
+                    error = UiText.of(R.string.error_profile_load, e.message ?: "")
                 }
             } finally {
                 isLoading = false
@@ -74,10 +76,10 @@ class ProfileViewModel : ViewModel() {
                     user = it
                     SessionManager.user = it
                     twoFactorEnabled = it.twoFactorEnabled == true || it.twoFactorConfirmedAt != null
-                    successMessage = "Profil erfolgreich aktualisiert!"
+                    successMessage = UiText.of(R.string.message_profile_updated)
                 }
             } catch (e: Exception) {
-                error = "Fehler beim Speichern: ${e.message}"
+                error = UiText.of(R.string.error_save_failed, e.message ?: "")
             } finally {
                 isSaving = false
             }

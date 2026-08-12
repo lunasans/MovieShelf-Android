@@ -9,6 +9,8 @@ import androidx.lifecycle.viewModelScope
 import info.movieshelf.data.repository.ListRepository
 import info.movieshelf.data.model.MovieListSummary
 import kotlinx.coroutines.launch
+import info.movieshelf.R
+import info.movieshelf.ui.util.UiText
 
 class ListsViewModel(
     private val repository: ListRepository
@@ -18,7 +20,7 @@ class ListsViewModel(
         private set
     var isLoading by mutableStateOf(false)
         private set
-    var error by mutableStateOf<String?>(null)
+    var error by mutableStateOf<UiText?>(null)
         private set
 
     init {
@@ -32,7 +34,7 @@ class ListsViewModel(
             try {
                 lists = repository.getLists()
             } catch (e: Exception) {
-                error = "Listen konnten nicht geladen werden."
+                error = UiText.of(R.string.error_lists_load)
             } finally {
                 isLoading = false
             }
@@ -46,7 +48,7 @@ class ListsViewModel(
                 repository.createList(name)
                 load()
             } catch (e: Exception) {
-                error = "Liste konnte nicht angelegt werden."
+                error = UiText.of(R.string.error_list_create)
             }
         }
     }
@@ -58,7 +60,7 @@ class ListsViewModel(
                 repository.renameList(summary.id, newName, summary.items ?: emptyList())
                 load()
             } catch (e: Exception) {
-                error = "Liste konnte nicht umbenannt werden."
+                error = UiText.of(R.string.error_list_rename)
             }
         }
     }
@@ -70,7 +72,7 @@ class ListsViewModel(
                 repository.deleteList(id)
                 load()
             } catch (e: Exception) {
-                error = "Liste konnte nicht gelöscht werden."
+                error = UiText.of(R.string.error_list_delete_failed)
             }
         }
     }

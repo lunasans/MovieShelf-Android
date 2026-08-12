@@ -39,7 +39,7 @@ enum class MediaFormat(val label: String, val color: Color) {
     UHD_4K("4K", MediaFormat4k),
     STREAMING("STREAMING", MediaFormatStreaming),
     DIGITAL("DIGITAL", MediaFormatDigital),
-    RENTAL("LEIHE", MediaFormatRental);
+    RENTAL("RENTAL", MediaFormatRental);
 
     companion object {
         fun fromTag(tag: String): MediaFormat = when (tag.lowercase().trim()) {

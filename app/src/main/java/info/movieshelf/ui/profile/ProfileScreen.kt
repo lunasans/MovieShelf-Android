@@ -74,16 +74,18 @@ fun ProfileScreen(
     val tmdbApiKey by dataStoreManager.tmdbApiKey.collectAsState(initial = null)
     val supportsDynamic = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
 
+    val snackbarContext = LocalContext.current
+
     LaunchedEffect(viewModel.error) {
         viewModel.error?.let {
-            snackbarHostState.showSnackbar(it)
+            snackbarHostState.showSnackbar(it.asString(snackbarContext))
             viewModel.error = null
         }
     }
 
     LaunchedEffect(viewModel.successMessage) {
         viewModel.successMessage?.let {
-            snackbarHostState.showSnackbar(it)
+            snackbarHostState.showSnackbar(it.asString(snackbarContext))
             viewModel.successMessage = null
         }
     }
@@ -183,7 +185,7 @@ fun ProfileScreen(
                                     count = ThemeMode.entries.size
                                 )
                             ) {
-                                Text(mode.label)
+                                Text(stringResource(mode.labelRes))
                             }
                         }
                     }

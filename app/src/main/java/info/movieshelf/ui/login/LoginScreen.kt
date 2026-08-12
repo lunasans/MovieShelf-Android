@@ -170,7 +170,7 @@ fun LoginScreen(
 
                 if (oauthViewModel.error != null) {
                     Text(
-                        text = oauthViewModel.error!!,
+                        text = oauthViewModel.error!!.asString(),
                         color = MaterialTheme.colorScheme.error,
                         style = MaterialTheme.typography.bodySmall,
                         modifier = Modifier.padding(top = 8.dp)

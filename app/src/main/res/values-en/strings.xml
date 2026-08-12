@@ -240,4 +240,78 @@
     <string name="condition_good">Good</string>
     <string name="condition_acceptable">Acceptable</string>
     <string name="error_server_unreachable">Server not reachable: %1$s</string>
+
+    <!-- ViewModel messages -->
+    <string name="error_actor_load">Could not load the actor: %1$s</string>
+    <string name="error_actors_load">Could not load actors: %1$s</string>
+    <string name="error_search_failed">Search failed: %1$s</string>
+    <string name="error_tmdb_search">TMDb search failed: %1$s</string>
+    <string name="error_import_failed">Import failed: %1$s</string>
+    <string name="error_title_empty">The title must not be empty.</string>
+    <string name="error_rating_range">The rating must be between 0 and 100.</string>
+    <string name="error_movie_not_found">Film not found</string>
+    <string name="error_update_failed">Update failed: %1$s</string>
+    <string name="error_wishlist_failed">Wishlist error: %1$s</string>
+    <string name="message_trailer_found">Trailer found and saved.</string>
+    <string name="error_no_trailer">No trailer found.</string>
+    <string name="error_trailer_failed">Could not fetch the trailer: %1$s</string>
+    <string name="error_seasons_load">Could not load the seasons.</string>
+    <string name="error_list_load">Could not load the list.</string>
+    <string name="error_list_remove_movie">Could not remove the film from the list.</string>
+    <string name="error_lists_load">Could not load the lists.</string>
+    <string name="error_list_create">Could not create the list.</string>
+    <string name="error_list_rename">Could not rename the list.</string>
+    <string name="error_url_missing">Please enter the server URL first.</string>
+    <string name="error_access_denied">Access denied.</string>
+    <string name="error_oauth_security">OAuth security error — please try again.</string>
+    <string name="error_login_failed">Sign-in failed. Please try again.</string>
+    <string name="error_profile_load">Could not load your profile: %1$s</string>
+    <string name="error_save_failed">Saving failed: %1$s</string>
+    <string name="error_stats_load">Could not load the statistics: %1$s</string>
+    <string name="error_preview_failed">Preview not possible: %1$s</string>
+    <string name="error_sync_failed">Sync failed: %1$s</string>
+
+    <!-- Additions -->
+    <string name="error_no_permission_edit">Not allowed to edit.</string>
+    <string name="error_no_permission">Not allowed.</string>
+    <string name="message_cover_updated">Cover updated.</string>
+    <string name="message_backdrop_updated">Backdrop updated.</string>
+    <string name="error_no_connection">No connection to the server. Showing cached data.</string>
+
+    <!-- Additions 2 -->
+    <string name="error_save_failed_code">Saving failed (error %1$d).</string>
+    <string name="error_upload_failed_code">Upload failed (error %1$d).</string>
+    <string name="error_create_failed_code">Creating failed (error %1$d).</string>
+    <string name="error_no_permission_create">Not allowed to create.</string>
+    <string name="error_movie_not_found_dot">Film not found.</string>
+    <string name="message_seasons_updated">Seasons: %1$s.</string>
+    <string name="seasons_added">%1$d added</string>
+    <string name="seasons_removed">%1$d removed</string>
+    <string name="error_camera_permission">Camera permission required</string>
+    <string name="message_seasons_added">Seasons: %1$d added.</string>
+    <string name="message_seasons_removed">Seasons: %1$d removed.</string>
+    <string name="message_seasons_both">Seasons: %1$d added, %2$d removed.</string>
+    <string name="message_profile_updated">Profile updated.</string>
+    <string name="error_session_expired">Session expired. Please sign in again.</string>
+    <string name="error_content_not_found">Content not found.</string>
+    <string name="list_empty">This list is empty.</string>
+    <string name="error_generic_load">Could not be loaded.</string>
+
+    <!-- Enums and remainder -->
+    <string name="shelf_new_movies">New films</string>
+    <string name="shelf_movies">Films</string>
+    <string name="shelf_series">Series</string>
+    <string name="theme_dark">Dark</string>
+    <string name="theme_light">Light</string>
+    <string name="theme_system">System</string>
+    <string name="format_rental">RENTAL</string>
+    <string name="phase_push">Uploading changes</string>
+    <string name="phase_pull">Loading metadata</string>
+    <string name="phase_media">Downloading images</string>
+    <string name="phase_done">Done</string>
+    <string name="logout_question">Sign out?</string>
+    <string name="logout_body">Do you really want to sign out?</string>
+    <string name="nav_add_movie">Add film</string>
+    <string name="detail_no_overview">No description available.</string>
+    <string name="copyright">© %1$d René Neuhaus</string>
 </resources>

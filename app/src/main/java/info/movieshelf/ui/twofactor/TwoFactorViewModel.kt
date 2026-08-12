@@ -10,6 +10,8 @@ import info.movieshelf.data.SessionManager
 import info.movieshelf.data.api.RetrofitClient
 import kotlinx.coroutines.launch
 import retrofit2.HttpException
+import info.movieshelf.R
+import info.movieshelf.ui.util.UiText
 
 class TwoFactorViewModel : ViewModel() {
 
@@ -34,7 +36,7 @@ class TwoFactorViewModel : ViewModel() {
 
     var isLoading by mutableStateOf(false)
         private set
-    var error by mutableStateOf<String?>(null)
+    var error by mutableStateOf<UiText?>(null)
 
     fun clearError() {
         error = null
@@ -51,13 +53,13 @@ class TwoFactorViewModel : ViewModel() {
                 otpauthUrl = response.otpauthUrl
                 code = ""
                 if (secret == null) {
-                    error = "Server-Fehler: Kein Schlüssel erhalten."
+                    error = UiText.of(R.string.error_2fa_no_secret)
                 }
             } catch (e: HttpException) {
                 handleHttpError(e)
             } catch (e: Exception) {
                 Log.e("MovieShelf_2FA", "Fehler bei enable2fa", e)
-                error = "Verbindungsfehler: ${e.message}"
+                error = UiText.of(R.string.error_connection, e.message ?: "")
             } finally {
                 isLoading = false
             }
@@ -68,7 +70,7 @@ class TwoFactorViewModel : ViewModel() {
     fun confirm() {
         val trimmed = code.trim()
         if (trimmed.isBlank()) {
-            error = "Bitte gib den Code ein."
+            error = UiText.of(R.string.error_code_missing)
             return
         }
 
@@ -91,17 +93,17 @@ class TwoFactorViewModel : ViewModel() {
                         Log.w("MovieShelf_2FA", "Profil-Refresh fehlgeschlagen", e)
                     }
                 } else {
-                    error = "Ungültiger Code."
+                    error = UiText.of(R.string.error_2fa_invalid)
                 }
             } catch (e: HttpException) {
                 if (e.code() == 422) {
-                    error = "Ungültiger Code."
+                    error = UiText.of(R.string.error_2fa_invalid)
                 } else {
                     handleHttpError(e)
                 }
             } catch (e: Exception) {
                 Log.e("MovieShelf_2FA", "Fehler bei confirm2fa", e)
-                error = "Verbindungsfehler: ${e.message}"
+                error = UiText.of(R.string.error_connection, e.message ?: "")
             } finally {
                 isLoading = false
             }
@@ -130,7 +132,7 @@ class TwoFactorViewModel : ViewModel() {
                 handleHttpError(e)
             } catch (e: Exception) {
                 Log.e("MovieShelf_2FA", "Fehler bei disable2fa", e)
-                error = "Verbindungsfehler: ${e.message}"
+                error = UiText.of(R.string.error_connection, e.message ?: "")
             } finally {
                 isLoading = false
             }
@@ -140,8 +142,8 @@ class TwoFactorViewModel : ViewModel() {
     private fun handleHttpError(e: HttpException) {
         val errorBody = e.response()?.errorBody()?.string()
         error = when (e.code()) {
-            422 -> parseServerMessage(errorBody) ?: "Ungültiger Code."
-            else -> "Serverfehler: ${e.code()}"
+            422 -> parseServerMessage(errorBody)?.let { UiText.Raw(it) } ?: UiText.of(R.string.error_2fa_invalid)
+            else -> UiText.of(R.string.error_server_code, e.code())
         }
     }
 

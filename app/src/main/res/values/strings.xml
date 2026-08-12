@@ -243,4 +243,78 @@
     <string name="condition_good">Gut</string>
     <string name="condition_acceptable">Akzeptabel</string>
     <string name="error_server_unreachable">Server nicht erreichbar: %1$s</string>
+
+    <!-- Meldungen der ViewModels -->
+    <string name="error_actor_load">Fehler beim Laden des Schauspielers: %1$s</string>
+    <string name="error_actors_load">Fehler beim Laden der Schauspieler: %1$s</string>
+    <string name="error_search_failed">Suche fehlgeschlagen: %1$s</string>
+    <string name="error_tmdb_search">TMDb-Suche fehlgeschlagen: %1$s</string>
+    <string name="error_import_failed">Import fehlgeschlagen: %1$s</string>
+    <string name="error_title_empty">Titel darf nicht leer sein.</string>
+    <string name="error_rating_range">Bewertung muss zwischen 0 und 100 liegen.</string>
+    <string name="error_movie_not_found">Film nicht gefunden</string>
+    <string name="error_update_failed">Fehler beim Aktualisieren: %1$s</string>
+    <string name="error_wishlist_failed">Fehler bei der Wunschliste: %1$s</string>
+    <string name="message_trailer_found">Trailer gefunden und gespeichert.</string>
+    <string name="error_no_trailer">Kein Trailer gefunden.</string>
+    <string name="error_trailer_failed">Trailer konnte nicht geholt werden: %1$s</string>
+    <string name="error_seasons_load">Staffeln konnten nicht geladen werden.</string>
+    <string name="error_list_load">Liste konnte nicht geladen werden.</string>
+    <string name="error_list_remove_movie">Film konnte nicht aus der Liste entfernt werden.</string>
+    <string name="error_lists_load">Listen konnten nicht geladen werden.</string>
+    <string name="error_list_create">Liste konnte nicht angelegt werden.</string>
+    <string name="error_list_rename">Liste konnte nicht umbenannt werden.</string>
+    <string name="error_url_missing">Bitte zuerst die Server-URL eintragen.</string>
+    <string name="error_access_denied">Zugriff verweigert.</string>
+    <string name="error_oauth_security">OAuth-Sicherheitsfehler – bitte erneut versuchen.</string>
+    <string name="error_login_failed">Anmeldung fehlgeschlagen. Bitte erneut versuchen.</string>
+    <string name="error_profile_load">Profil konnte nicht geladen werden: %1$s</string>
+    <string name="error_save_failed">Fehler beim Speichern: %1$s</string>
+    <string name="error_stats_load">Fehler beim Laden der Statistik: %1$s</string>
+    <string name="error_preview_failed">Vorschau nicht möglich: %1$s</string>
+    <string name="error_sync_failed">Abgleich fehlgeschlagen: %1$s</string>
+
+    <!-- Nachtrag -->
+    <string name="error_no_permission_edit">Keine Berechtigung zum Bearbeiten.</string>
+    <string name="error_no_permission">Keine Berechtigung.</string>
+    <string name="message_cover_updated">Cover aktualisiert.</string>
+    <string name="message_backdrop_updated">Backdrop aktualisiert.</string>
+    <string name="error_no_connection">Keine Verbindung zum Server. Zeige zwischengespeicherte Daten.</string>
+
+    <!-- Nachtrag 2 -->
+    <string name="error_save_failed_code">Speichern fehlgeschlagen (Fehler %1$d).</string>
+    <string name="error_upload_failed_code">Upload fehlgeschlagen (Fehler %1$d).</string>
+    <string name="error_create_failed_code">Anlegen fehlgeschlagen (Fehler %1$d).</string>
+    <string name="error_no_permission_create">Keine Berechtigung zum Anlegen.</string>
+    <string name="error_movie_not_found_dot">Film nicht gefunden.</string>
+    <string name="message_seasons_updated">Staffeln: %1$s.</string>
+    <string name="seasons_added">%1$d nachgeladen</string>
+    <string name="seasons_removed">%1$d entfernt</string>
+    <string name="error_camera_permission">Kamera-Berechtigung erforderlich</string>
+    <string name="message_seasons_added">Staffeln: %1$d nachgeladen.</string>
+    <string name="message_seasons_removed">Staffeln: %1$d entfernt.</string>
+    <string name="message_seasons_both">Staffeln: %1$d nachgeladen, %2$d entfernt.</string>
+    <string name="message_profile_updated">Profil erfolgreich aktualisiert!</string>
+    <string name="error_session_expired">Sitzung abgelaufen. Bitte erneut anmelden.</string>
+    <string name="error_content_not_found">Inhalte nicht gefunden.</string>
+    <string name="list_empty">Diese Liste ist leer.</string>
+    <string name="error_generic_load">Konnte nicht geladen werden.</string>
+
+    <!-- Enums und Restliches -->
+    <string name="shelf_new_movies">Neue Filme</string>
+    <string name="shelf_movies">Filme</string>
+    <string name="shelf_series">Serien</string>
+    <string name="theme_dark">Dunkel</string>
+    <string name="theme_light">Hell</string>
+    <string name="theme_system">System</string>
+    <string name="format_rental">LEIHE</string>
+    <string name="phase_push">Änderungen hochladen</string>
+    <string name="phase_pull">Metadaten laden</string>
+    <string name="phase_media">Bilder herunterladen</string>
+    <string name="phase_done">Fertig</string>
+    <string name="logout_question">Abmelden?</string>
+    <string name="logout_body">Möchtest du dich wirklich abmelden?</string>
+    <string name="nav_add_movie">Film hinzufügen</string>
+    <string name="detail_no_overview">Keine Beschreibung verfügbar.</string>
+    <string name="copyright">© %1$d René Neuhaus</string>
 </resources>

@@ -1,5 +1,6 @@
 package info.movieshelf.ui.sync
 
+import androidx.annotation.StringRes
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.Context
@@ -78,7 +79,7 @@ class SyncNotifier(private val context: Context) {
     }
 
     private fun describe(progress: SyncProgress): String {
-        val phase = progress.phase.label
+        val phase = context.getString(progress.phase.labelRes)
         val subject = progress.subject?.takeIf { it.isNotBlank() }
         val counted = if (progress.total > 0) "$phase ${progress.current}/${progress.total}" else phase
         return if (subject == null) counted else "$counted · $subject"
@@ -96,10 +97,11 @@ class SyncNotifier(private val context: Context) {
  * Steht hier und nicht im Bildschirm, damit Anzeige und Meldung nicht
  * auseinanderlaufen.
  */
-val SyncPhase.label: String
+@get:StringRes
+val SyncPhase.labelRes: Int
     get() = when (this) {
-        SyncPhase.PUSH -> "Änderungen hochladen"
-        SyncPhase.PULL -> "Metadaten laden"
-        SyncPhase.MEDIA -> "Bilder herunterladen"
-        SyncPhase.DONE -> "Fertig"
+        SyncPhase.PUSH -> R.string.phase_push
+        SyncPhase.PULL -> R.string.phase_pull
+        SyncPhase.MEDIA -> R.string.phase_media
+        SyncPhase.DONE -> R.string.phase_done
     }

@@ -234,7 +234,7 @@ fun DashboardScreen(
 
                         if (viewModel.newMoviesShelf.isNotEmpty()) {
                             MovieShelfRow(
-                                title = "Neue Filme",
+                                title = stringResource(R.string.shelf_new_movies),
                                 movies = viewModel.newMoviesShelf,
                                 onClick = { movie ->
                                     onMovieClick(movie, viewModel.newMoviesShelf.map { it.localId })
@@ -244,7 +244,7 @@ fun DashboardScreen(
                         }
                         if (viewModel.filmeShelf.isNotEmpty()) {
                             MovieShelfRow(
-                                title = "Filme",
+                                title = stringResource(R.string.shelf_movies),
                                 movies = viewModel.filmeShelf,
                                 onClick = { movie ->
                                     onMovieClick(movie, viewModel.filmeShelf.map { it.localId })
@@ -255,7 +255,7 @@ fun DashboardScreen(
                         }
                         if (viewModel.seriesShelf.isNotEmpty()) {
                             MovieShelfRow(
-                                title = "Serien",
+                                title = stringResource(R.string.shelf_series),
                                 movies = viewModel.seriesShelf,
                                 onClick = { movie ->
                                     onMovieClick(movie, viewModel.seriesShelf.map { it.localId })
@@ -322,7 +322,7 @@ fun DashboardScreen(
                                 InputChip(
                                     selected = true,
                                     onClick = { viewModel.clearShelf() },
-                                    label = { Text("${shelf.label} · ${viewModel.movies.size}") },
+                                    label = { Text("${stringResource(shelf.labelRes)} · ${viewModel.movies.size}") },
                                     trailingIcon = { Icon(Icons.Default.Close, null, Modifier.size(14.dp)) }
                                 )
                             }

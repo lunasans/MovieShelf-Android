@@ -288,7 +288,7 @@ fun SetupScreen(
 
                 Spacer(Modifier.height(32.dp))
                 Text(
-                    text = "© $currentYear René Neuhaus",
+                    text = stringResource(R.string.copyright, currentYear),
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.outline
                 )

@@ -47,12 +47,14 @@ fun CreateMovieScreen(
 
     val snackbarHostState = remember { SnackbarHostState() }
 
+    val snackbarContext = LocalContext.current
+
     LaunchedEffect(viewModel.createdMovieId) {
         viewModel.createdMovieId?.let { onCreated(it) }
     }
     LaunchedEffect(viewModel.error) {
         viewModel.error?.let {
-            snackbarHostState.showSnackbar(it)
+            snackbarHostState.showSnackbar(it.asString(snackbarContext))
             viewModel.error = null
         }
     }

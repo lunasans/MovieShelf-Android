@@ -178,7 +178,7 @@ fun AboutScreen(onBack: () -> Unit) {
             Spacer(Modifier.height(56.dp))
             
             Text(
-                text = "© $currentYear René Neuhaus",
+                text = stringResource(R.string.copyright, currentYear),
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.outline
             )

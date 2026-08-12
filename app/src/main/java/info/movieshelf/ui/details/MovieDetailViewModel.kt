@@ -14,6 +14,8 @@ import info.movieshelf.data.model.TmdbSeasonOption
 import info.movieshelf.data.repository.ListRepository
 import info.movieshelf.data.repository.MovieRepository
 import kotlinx.coroutines.launch
+import info.movieshelf.R
+import info.movieshelf.ui.util.UiText
 
 /**
  * @param initialLocalId ID der lokalen Zeile — der Regelfall.
@@ -33,12 +35,12 @@ class MovieDetailViewModel(
     var localId by mutableStateOf(initialLocalId)
         private set
     var isLoading by mutableStateOf(false)
-    var error by mutableStateOf<String?>(null)
+    var error by mutableStateOf<UiText?>(null)
     var isFetchingTrailer by mutableStateOf(false)
         private set
     var availableLists by mutableStateOf<List<MovieListSummary>>(emptyList())
         private set
-    var listActionMessage by mutableStateOf<String?>(null)
+    var listActionMessage by mutableStateOf<UiText?>(null)
 
     init {
         reload()
@@ -50,12 +52,12 @@ class MovieDetailViewModel(
             error = null
             try {
                 movie = load()
-                if (movie == null) error = "Film nicht gefunden"
+                if (movie == null) error = UiText.of(R.string.error_movie_not_found)
                 // Kam der Film über die Server-ID herein, ist ab jetzt seine
                 // lokale ID bekannt — sonst liefe "Bearbeiten" gegen 0.
                 movie?.localId?.takeIf { it != 0L }?.let { localId = it }
             } catch (e: Exception) {
-                error = "Film konnte nicht geladen werden."
+                error = UiText.of(R.string.error_movie_not_loaded)
             } finally {
                 isLoading = false
             }
@@ -92,7 +94,7 @@ class MovieDetailViewModel(
             } catch (e: Exception) {
                 // Kein Rollback: die Änderung steht lokal und geht beim
                 // nächsten Abgleich raus.
-                error = "Fehler beim Aktualisieren: ${e.message}"
+                error = UiText.of(R.string.error_update_failed, e.message ?: "")
             }
         }
     }
@@ -110,7 +112,7 @@ class MovieDetailViewModel(
                 movie = movie?.copy(isWishlisted = wishlisted ?: newState)
             } catch (e: Exception) {
                 movie = currentMovie // Rollback bei Fehler
-                error = "Fehler bei der Wunschliste: ${e.message}"
+                error = UiText.of(R.string.error_wishlist_failed, e.message ?: "")
             }
         }
     }
@@ -125,12 +127,12 @@ class MovieDetailViewModel(
                 val trailerUrl = repository.fetchTrailer(current.id)
                 if (!trailerUrl.isNullOrBlank()) {
                     movie = current.copy(trailerUrl = trailerUrl)
-                    listActionMessage = "Trailer gefunden und gespeichert."
+                    listActionMessage = UiText.of(R.string.message_trailer_found)
                 } else {
-                    error = "Kein Trailer gefunden."
+                    error = UiText.of(R.string.error_no_trailer)
                 }
             } catch (e: Exception) {
-                error = "Trailer konnte nicht geholt werden: ${e.message}"
+                error = UiText.of(R.string.error_trailer_failed, e.message ?: "")
             } finally {
                 isFetchingTrailer = false
             }
@@ -176,7 +178,7 @@ class MovieDetailViewModel(
                 val details = repository.getTmdbTvDetails(tmdbId)
                 seasonOptions = (details.seasons ?: emptyList()).filter { it.seasonNumber > 0 }
             } catch (e: Exception) {
-                error = "Staffeln konnten nicht geladen werden."
+                error = UiText.of(R.string.error_seasons_load)
                 showSeasonDialog = false
             } finally {
                 seasonDialogLoading = false
@@ -206,15 +208,20 @@ class MovieDetailViewModel(
                 if (toRemove.isNotEmpty()) {
                     repository.removeSeasons(current.id, toRemove)
                 }
-                val parts = mutableListOf<String>()
-                if (toAdd.isNotEmpty()) parts.add("${toAdd.size} nachgeladen")
-                if (toRemove.isNotEmpty()) parts.add("${toRemove.size} entfernt")
-                listActionMessage = "Staffeln: ${parts.joinToString(", ")}."
+                // Drei Faelle statt zusammengesetzter Zeichenkette: eine
+                // Aufzaehlung aus Bruchstuecken laesst sich nicht uebersetzen,
+                // weil Wortstellung und Kommaregeln je Sprache anders sind.
+                listActionMessage = when {
+                    toAdd.isNotEmpty() && toRemove.isNotEmpty() ->
+                        UiText.of(R.string.message_seasons_both, toAdd.size, toRemove.size)
+                    toAdd.isNotEmpty() -> UiText.of(R.string.message_seasons_added, toAdd.size)
+                    else -> UiText.of(R.string.message_seasons_removed, toRemove.size)
+                }
                 showSeasonDialog = false
                 selectedSeasons = emptySet()
                 reload()
             } catch (e: Exception) {
-                error = "Staffel-Änderung fehlgeschlagen: ${e.message}"
+                error = UiText.of(R.string.error_season_change_failed, e.message ?: "")
             } finally {
                 seasonImporting = false
             }
@@ -238,9 +245,9 @@ class MovieDetailViewModel(
         viewModelScope.launch {
             try {
                 listRepository.addMovieToList(list, current)
-                listActionMessage = "Zu \"${list.name ?: "Liste"}\" hinzugefügt."
+                listActionMessage = UiText.of(R.string.message_added_to_list, list.name ?: "")
             } catch (e: Exception) {
-                error = "Konnte nicht zur Liste hinzufügen."
+                error = UiText.of(R.string.error_list_add_failed)
             }
         }
     }

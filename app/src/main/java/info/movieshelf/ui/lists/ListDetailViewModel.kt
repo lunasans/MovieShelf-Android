@@ -10,6 +10,8 @@ import info.movieshelf.data.model.ListItemRef
 import info.movieshelf.data.model.Movie
 import info.movieshelf.data.repository.ListRepository
 import kotlinx.coroutines.launch
+import info.movieshelf.R
+import info.movieshelf.ui.util.UiText
 
 class ListDetailViewModel(
     private val listId: Int,
@@ -22,7 +24,7 @@ class ListDetailViewModel(
         private set
     var isLoading by mutableStateOf(false)
         private set
-    var error by mutableStateOf<String?>(null)
+    var error by mutableStateOf<UiText?>(null)
         private set
 
     init {
@@ -38,7 +40,7 @@ class ListDetailViewModel(
                 name = response.name ?: ""
                 movies = response.items ?: emptyList()
             } catch (e: Exception) {
-                error = "Liste konnte nicht geladen werden."
+                error = UiText.of(R.string.error_list_load)
             } finally {
                 isLoading = false
             }
@@ -54,7 +56,7 @@ class ListDetailViewModel(
                 repository.setItems(listId, name, newItems)
                 load()
             } catch (e: Exception) {
-                error = "Film konnte nicht aus der Liste entfernt werden."
+                error = UiText.of(R.string.error_list_remove_movie)
             }
         }
     }

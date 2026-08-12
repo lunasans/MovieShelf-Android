@@ -108,7 +108,7 @@ fun SyncScreen(onBack: () -> Unit) {
             viewModel.progress?.let { progress ->
                 ShelfFormSection(title = stringResource(R.string.sync_running), icon = Icons.Default.Sync) {
                     Text(
-                        text = progress.phase.label,
+                        text = stringResource(progress.phase.labelRes),
                         style = MaterialTheme.typography.titleSmall,
                         fontWeight = FontWeight.Bold
                     )
@@ -137,7 +137,7 @@ fun SyncScreen(onBack: () -> Unit) {
 
             viewModel.error?.let { message ->
                 ShelfFormSection(title = stringResource(R.string.sync_errors), icon = Icons.Default.ErrorOutline) {
-                    Text(message, style = MaterialTheme.typography.bodyMedium)
+                    Text(message.asString(), style = MaterialTheme.typography.bodyMedium)
                 }
             }
 

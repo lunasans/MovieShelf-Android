@@ -1,5 +1,7 @@
 package info.movieshelf.data.local
 
+import androidx.annotation.StringRes
+import info.movieshelf.R
 import android.content.Context
 import android.content.SharedPreferences
 import androidx.datastore.core.DataStore
@@ -21,10 +23,10 @@ import kotlinx.coroutines.launch
 val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "settings")
 
 /** Vom Nutzer wählbare Theme-Einstellung. */
-enum class ThemeMode(val label: String) {
-    DARK("Dunkel"),
-    LIGHT("Hell"),
-    SYSTEM("System")
+enum class ThemeMode(@StringRes val labelRes: Int) {
+    DARK(R.string.theme_dark),
+    LIGHT(R.string.theme_light),
+    SYSTEM(R.string.theme_system)
 }
 
 class DataStoreManager(private val context: Context) {

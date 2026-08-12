@@ -74,7 +74,7 @@ fun ActorDetailScreen(
                     )
                     Spacer(Modifier.height(16.dp))
                     Text(
-                        viewModel.error ?: "Konnte nicht geladen werden.",
+                        viewModel.error?.asString() ?: stringResource(R.string.error_generic_load),
                         style = MaterialTheme.typography.titleMedium
                     )
                     Spacer(Modifier.height(8.dp))

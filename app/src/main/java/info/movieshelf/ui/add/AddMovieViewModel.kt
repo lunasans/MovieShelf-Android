@@ -11,6 +11,9 @@ import info.movieshelf.data.model.TmdbSearchItem
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import info.movieshelf.R
+import info.movieshelf.ui.util.UiText
+import info.movieshelf.data.repository.MissingTmdbKeyException
 
 class AddMovieViewModel(
     private val repository: TmdbRepository
@@ -23,7 +26,7 @@ class AddMovieViewModel(
     var searchResults by mutableStateOf<List<Map<String, Any>>>(emptyList())
     var isLoading by mutableStateOf(false)
     var isImporting by mutableStateOf(false)
-    var error by mutableStateOf<String?>(null)
+    var error by mutableStateOf<UiText?>(null)
     var successMessage by mutableStateOf<String?>(null)
     var importToCollection by mutableStateOf(true)
 
@@ -56,8 +59,12 @@ class AddMovieViewModel(
         try {
             val response = repository.search(query, searchSeries)
             searchResults = (response.results ?: emptyList()).map { it.toUiMap() }
+        } catch (e: MissingTmdbKeyException) {
+            // Kein Fehler der Suche, sondern eine fehlende Voraussetzung —
+            // dafuer gibt es einen eigenen, uebersetzten Hinweis.
+            error = UiText.of(R.string.add_no_tmdb_key)
         } catch (e: Exception) {
-            error = "TMDb-Suche fehlgeschlagen: ${e.message}"
+            error = UiText.of(R.string.error_tmdb_search, e.message ?: "")
         } finally {
             isLoading = false
         }
@@ -84,7 +91,7 @@ class AddMovieViewModel(
                 delay(1500)
                 onComplete()
             } catch (e: Exception) {
-                error = "Import fehlgeschlagen: ${e.message}"
+                error = UiText.of(R.string.error_import_failed, e.message ?: "")
             } finally {
                 isImporting = false
             }

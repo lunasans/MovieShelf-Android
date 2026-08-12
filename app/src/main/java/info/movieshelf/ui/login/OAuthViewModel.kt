@@ -18,6 +18,8 @@ import kotlinx.coroutines.launch
 import java.security.MessageDigest
 import java.security.SecureRandom
 import java.util.UUID
+import info.movieshelf.R
+import info.movieshelf.ui.util.UiText
 
 class OAuthViewModel : ViewModel() {
 
@@ -27,7 +29,7 @@ class OAuthViewModel : ViewModel() {
     }
 
     var isLoading    by mutableStateOf(false)
-    var error        by mutableStateOf<String?>(null)
+    var error        by mutableStateOf<UiText?>(null)
     var loginSuccess by mutableStateOf(false)
 
     private var pendingState:    String? = null
@@ -35,7 +37,7 @@ class OAuthViewModel : ViewModel() {
 
     fun startOAuth(context: Context, shelfUrl: String, dataStoreManager: DataStoreManager) {
         if (shelfUrl.isBlank()) {
-            error = "Bitte zuerst die Server-URL eintragen."
+            error = UiText.of(R.string.error_url_missing)
             return
         }
 
@@ -78,7 +80,7 @@ class OAuthViewModel : ViewModel() {
         isLoading = false
 
         if (oauthError != null) {
-            error = "Zugriff verweigert."
+            error = UiText.of(R.string.error_access_denied)
             return
         }
 
@@ -91,14 +93,14 @@ class OAuthViewModel : ViewModel() {
             }
 
             if (code == null || state == null || state != pendingState) {
-                error = "OAuth Sicherheitsfehler – bitte erneut versuchen."
+                error = UiText.of(R.string.error_oauth_security)
                 dataStoreManager.clearOAuthState()
                 return@launch
             }
 
             val verifier = pendingVerifier
             if (verifier == null) {
-                error = "OAuth Sicherheitsfehler – bitte erneut versuchen."
+                error = UiText.of(R.string.error_oauth_security)
                 dataStoreManager.clearOAuthState()
                 return@launch
             }
@@ -133,7 +135,7 @@ class OAuthViewModel : ViewModel() {
                 Log.i("MovieShelf_OAuth", "OAuth-Login erfolgreich")
             } catch (e: Exception) {
                 Log.e("MovieShelf_OAuth", "Token-Austausch fehlgeschlagen", e)
-                error = "Anmeldung fehlgeschlagen. Bitte erneut versuchen."
+                error = UiText.of(R.string.error_login_failed)
             } finally {
                 isLoading        = false
                 pendingState     = null

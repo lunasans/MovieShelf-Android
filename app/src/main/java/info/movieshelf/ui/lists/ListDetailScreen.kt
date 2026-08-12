@@ -29,6 +29,7 @@ import info.movieshelf.R
 import info.movieshelf.MovieShelfApplication
 import info.movieshelf.data.model.Movie
 import info.movieshelf.ui.dashboard.MovieItem
+import info.movieshelf.ui.util.UiText
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -66,7 +67,7 @@ fun ListDetailScreen(
                     StateMessage(Icons.Default.CloudOff, viewModel.error!!, onRetry = { viewModel.load() })
                 }
                 viewModel.movies.isEmpty() -> {
-                    StateMessage(Icons.Default.MovieFilter, "Diese Liste ist leer.")
+                    StateMessage(Icons.Default.MovieFilter, UiText.of(R.string.list_empty))
                 }
                 else -> {
                     LazyVerticalGrid(
@@ -125,14 +126,14 @@ fun ListDetailScreen(
 @Composable
 private fun StateMessage(
     icon: androidx.compose.ui.graphics.vector.ImageVector,
-    message: String,
+    message: UiText,
     onRetry: (() -> Unit)? = null
 ) {
     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Icon(icon, null, Modifier.size(64.dp), tint = MaterialTheme.colorScheme.outline)
             Spacer(Modifier.height(16.dp))
-            Text(message, style = MaterialTheme.typography.titleMedium)
+            Text(message.asString(), style = MaterialTheme.typography.titleMedium)
             if (onRetry != null) {
                 Spacer(Modifier.height(8.dp))
                 Button(onClick = onRetry) { Text(stringResource(R.string.common_retry)) }

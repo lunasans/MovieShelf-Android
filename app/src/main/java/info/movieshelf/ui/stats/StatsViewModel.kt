@@ -9,13 +9,15 @@ import androidx.lifecycle.viewModelScope
 import info.movieshelf.data.repository.MovieRepository
 import info.movieshelf.data.model.*
 import kotlinx.coroutines.launch
+import info.movieshelf.R
+import info.movieshelf.ui.util.UiText
 
 class StatsViewModel(
     private val repository: MovieRepository
 ) : ViewModel() {
     var stats by mutableStateOf<Stats?>(null)
     var isLoading by mutableStateOf(false)
-    var error by mutableStateOf<String?>(null)
+    var error by mutableStateOf<UiText?>(null)
 
     init {
         loadStats()
@@ -28,7 +30,7 @@ class StatsViewModel(
             try {
                 stats = repository.getStats()
             } catch (e: Exception) {
-                error = "Fehler beim Laden der Statistik: ${e.message}"
+                error = UiText.of(R.string.error_stats_load, e.message ?: "")
             } finally {
                 isLoading = false
             }

@@ -62,7 +62,7 @@ fun StatsScreen(
                         tint = MaterialTheme.colorScheme.outline
                     )
                     Spacer(Modifier.height(16.dp))
-                    Text(error, style = MaterialTheme.typography.titleMedium)
+                    Text(error.asString(), style = MaterialTheme.typography.titleMedium)
                     Spacer(Modifier.height(8.dp))
                     Button(onClick = { viewModel.loadStats() }) { Text(stringResource(R.string.common_retry)) }
                 }

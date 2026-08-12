@@ -150,13 +150,13 @@ private fun MovieDetailContent(
 
     LaunchedEffect(viewModel.listActionMessage) {
         viewModel.listActionMessage?.let {
-            Toast.makeText(ctx, it, Toast.LENGTH_SHORT).show()
+            Toast.makeText(ctx, it.asString(ctx), Toast.LENGTH_SHORT).show()
             viewModel.listActionMessage = null
         }
     }
     LaunchedEffect(viewModel.error) {
         viewModel.error?.let {
-            Toast.makeText(ctx, it, Toast.LENGTH_SHORT).show()
+            Toast.makeText(ctx, it.asString(ctx), Toast.LENGTH_SHORT).show()
             viewModel.error = null
         }
     }
@@ -731,7 +731,7 @@ private fun PhysicalCollectionCard(movie: Movie, modifier: Modifier = Modifier) 
         "like_new" -> "Wie neu"
         "good" -> "Gut"
         "acceptable" -> "Akzeptabel"
-        "damaged" -> "Beschädigt"
+        "damaged" -> stringResource(R.string.condition_damaged)
         else -> movie.condition
     }
     val entries = listOfNotNull(
@@ -784,7 +784,7 @@ private fun MovieDescription(
     onActorClick: (Int) -> Unit,
     onActorNameClick: (String) -> Unit
 ) {
-    val rawDescription = movie.overview ?: "Keine Beschreibung verfügbar."
+    val rawDescription = movie.overview ?: stringResource(R.string.detail_no_overview)
     val primaryColor = MaterialTheme.colorScheme.primary
 
     val annotatedString = buildAnnotatedString {

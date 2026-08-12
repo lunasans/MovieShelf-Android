@@ -44,6 +44,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.compose.ui.platform.LocalContext
 import info.movieshelf.R
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -56,9 +57,10 @@ fun TwoFactorScreen(
     var showDisableDialog by remember { mutableStateOf(false) }
 
     // Fehler als Snackbar anzeigen und danach zurücksetzen.
+    val snackbarContext = LocalContext.current
     LaunchedEffect(viewModel.error) {
         viewModel.error?.let { message ->
-            snackbarHostState.showSnackbar(message)
+            snackbarHostState.showSnackbar(message.asString(snackbarContext))
             viewModel.clearError()
         }
     }

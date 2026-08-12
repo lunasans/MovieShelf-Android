@@ -104,6 +104,8 @@ fun EditMovieScreen(
         showDiscardDialog = true
     }
 
+    val snackbarContext = LocalContext.current
+
     LaunchedEffect(viewModel.saved) {
         if (viewModel.saved) onSaved()
     }
@@ -112,13 +114,13 @@ fun EditMovieScreen(
     }
     LaunchedEffect(viewModel.error) {
         viewModel.error?.let {
-            snackbarHostState.showSnackbar(it)
+            snackbarHostState.showSnackbar(it.asString(snackbarContext))
             viewModel.error = null
         }
     }
     LaunchedEffect(viewModel.uploadMessage) {
         viewModel.uploadMessage?.let {
-            snackbarHostState.showSnackbar(it)
+            snackbarHostState.showSnackbar(it.asString(snackbarContext))
             viewModel.uploadMessage = null
         }
     }

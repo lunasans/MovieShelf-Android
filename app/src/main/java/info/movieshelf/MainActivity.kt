@@ -26,6 +26,8 @@ import info.movieshelf.ui.components.FloatingNavBar
 import info.movieshelf.data.SessionManager
 import info.movieshelf.data.api.RetrofitClient
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.ui.res.stringResource
+import info.movieshelf.R
 import info.movieshelf.data.local.DataStoreManager
 import info.movieshelf.data.local.ThemeMode
 import info.movieshelf.data.model.Movie
@@ -565,8 +567,8 @@ fun MovieShelfApp(oauthCallbackUri: MutableState<Uri?> = mutableStateOf(null)) {
                             contentDescription = null
                         )
                     },
-                    title = { Text("Abmelden?") },
-                    text = { Text("Möchtest du dich wirklich abmelden?") },
+                    title = { Text(stringResource(R.string.logout_question)) },
+                    text = { Text(stringResource(R.string.logout_body)) },
                     confirmButton = {
                         TextButton(
                             onClick = {

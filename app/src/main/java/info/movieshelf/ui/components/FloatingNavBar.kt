@@ -30,6 +30,8 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.res.stringResource
+import info.movieshelf.R
 import info.movieshelf.ui.theme.NavAccentRed
 import info.movieshelf.ui.theme.NavAccentRedDark
 import info.movieshelf.ui.theme.OnSurfaceVariantDark
@@ -194,7 +196,7 @@ private fun AddCenterButton(onClick: () -> Unit) {
     ) {
         Icon(
             imageVector = Icons.Default.Add,
-            contentDescription = "Film hinzufügen",
+            contentDescription = stringResource(R.string.nav_add_movie),
             tint = Color.White,
             modifier = Modifier.size(28.dp)
         )

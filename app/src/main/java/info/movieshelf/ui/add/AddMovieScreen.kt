@@ -29,6 +29,7 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.compose.ui.res.stringResource
 import info.movieshelf.R
+import info.movieshelf.ui.util.UiText
 import info.movieshelf.MovieShelfApplication
 import coil.compose.AsyncImage
 
@@ -55,13 +56,15 @@ fun AddMovieScreen(
         if (isGranted) {
             showScanner = true
         } else {
-            viewModel.error = "Kamera-Berechtigung erforderlich"
+            viewModel.error = UiText.of(R.string.error_camera_permission)
         }
     }
 
+    val snackbarContext = LocalContext.current
+
     LaunchedEffect(viewModel.error) {
         viewModel.error?.let {
-            snackbarHostState.showSnackbar(it)
+            snackbarHostState.showSnackbar(it.asString(snackbarContext))
             viewModel.error = null
         }
     }
