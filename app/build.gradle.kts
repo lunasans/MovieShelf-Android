@@ -2,9 +2,8 @@
 
 plugins {
     alias(libs.plugins.android.application)
-    alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
-    kotlin("kapt")
+    alias(libs.plugins.ksp)
 }
 
 android {
@@ -76,7 +75,14 @@ android {
 tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
     compilerOptions {
         jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_11)
-        freeCompilerArgs.addAll("-opt-in=androidx.compose.material3.ExperimentalMaterial3Api")
+        freeCompilerArgs.addAll(
+            "-opt-in=androidx.compose.material3.ExperimentalMaterial3Api",
+            // Annotationen an Konstruktor-Parametern (etwa @StringRes in UiText)
+            // gelten kuenftig auch fuer das erzeugte Feld. Die Umstellung jetzt
+            // mitzumachen ist die Richtung, in die Kotlin ohnehin geht — sonst
+            // aendert sich das Verhalten spaeter unangekuendigt (KT-73255).
+            "-Xannotation-default-target=param-property"
+        )
     }
 }
 
@@ -103,7 +109,7 @@ dependencies {
     // Room
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.room.ktx)
-    kapt(libs.androidx.room.compiler)
+    ksp(libs.androidx.room.compiler)
 
     // CameraX
     implementation(libs.androidx.camera.core)
