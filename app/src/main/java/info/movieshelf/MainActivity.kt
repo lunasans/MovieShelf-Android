@@ -582,12 +582,12 @@ fun MovieShelfApp(oauthCallbackUri: MutableState<Uri?> = mutableStateOf(null)) {
                                 }
                             }
                         ) {
-                            Text("Abmelden")
+                            Text(stringResource(R.string.nav_logout))
                         }
                     },
                     dismissButton = {
                         TextButton(onClick = { showLogoutDialog = false }) {
-                            Text("Abbrechen")
+                            Text(stringResource(R.string.common_cancel))
                         }
                     }
                 )

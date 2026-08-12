@@ -110,7 +110,7 @@ fun LoginScreen(
                             OutlinedTextField(
                                 value = viewModel.code2fa,
                                 onValueChange = { if (it.length <= 6) viewModel.code2fa = it },
-                                label = { Text("2FA Code") },
+                                label = { Text(stringResource(R.string.login_2fa_code)) },
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .semantics { contentType = ContentType.SmsOtpCode },

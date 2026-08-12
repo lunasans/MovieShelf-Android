@@ -308,14 +308,13 @@ private fun StandaloneSection(
     tmdbApiKey: String?,
     onSaveKey: (String?) -> Unit
 ) {
-    SectionTitle("Betriebsart")
+    SectionTitle(stringResource(R.string.section_mode))
     SettingsCard {
         Column(Modifier.padding(16.dp)) {
             RowHeader(
                 icon = Icons.Default.CloudOff,
                 title = stringResource(R.string.mode_standalone),
-                subtitle = "Deine Sammlung liegt auf dem Telefon. Verbindest du eine " +
-                    "Shelf, wird dein Bestand hochgeladen — er geht dabei nicht verloren."
+                subtitle = stringResource(R.string.mode_standalone_sub_long)
             )
             Spacer(Modifier.height(12.dp))
             Button(
@@ -323,14 +322,14 @@ private fun StandaloneSection(
                 modifier = Modifier.fillMaxWidth(),
                 shape = PillShape
             ) {
-                Text("Shelf verbinden", fontWeight = FontWeight.Bold)
+                Text(stringResource(R.string.mode_shelf_action), fontWeight = FontWeight.Bold)
             }
         }
     }
 
     // TMDb-Schluessel: nur ohne Shelf noetig, weil dort deren Proxy die
     // Suche uebernimmt.
-    SectionTitle("Filmsuche")
+    SectionTitle(stringResource(R.string.section_film_search))
     SettingsCard {
         Column(Modifier.padding(16.dp)) {
             RowHeader(
@@ -356,7 +355,7 @@ private fun StandaloneSection(
                     shape = PillShape,
                     enabled = keyInput.isNotBlank() && keyInput != tmdbApiKey
                 ) {
-                    Text("Speichern", fontWeight = FontWeight.Bold)
+                    Text(stringResource(R.string.common_save), fontWeight = FontWeight.Bold)
                 }
                 if (!tmdbApiKey.isNullOrBlank()) {
                     OutlinedButton(

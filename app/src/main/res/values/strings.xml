@@ -317,4 +317,46 @@
     <string name="nav_add_movie">Film hinzufügen</string>
     <string name="detail_no_overview">Keine Beschreibung verfügbar.</string>
     <string name="copyright">© %1$d René Neuhaus</string>
+
+    <!-- Formulare, Navigation, Statistik -->
+    <string name="section_mode">Betriebsart</string>
+    <string name="section_film_search">Filmsuche</string>
+    <string name="mode_standalone_sub_long">Deine Sammlung liegt auf dem Telefon. Verbindest du eine Shelf, wird dein Bestand hochgeladen — er geht dabei nicht verloren.</string>
+    <string name="nav_movies">Filme</string>
+    <string name="nav_stats">Statistik</string>
+    <string name="nav_profile">Profil</string>
+    <string name="nav_logout">Abmelden</string>
+    <string name="form_section_basics">Stammdaten</string>
+    <string name="form_title">Originaltitel / Titel *</string>
+    <string name="form_year">Erscheinungsjahr *</string>
+    <string name="form_runtime">Laufzeit (Min.)</string>
+    <string name="form_genre">Genre / Kategorien</string>
+    <string name="form_director">Regisseur</string>
+    <string name="form_rating">TMDb-Bewertung</string>
+    <string name="form_section_plot">Handlung &amp; Details</string>
+    <string name="form_plot">Filmhandlung / Storyline</string>
+    <string name="form_trailer">Trailer-URL (YouTube)</string>
+    <string name="form_section_physical">Physische Sammlung</string>
+    <string name="form_edition">Edition / Auflage</string>
+    <string name="form_region">Regionalcode</string>
+    <string name="form_shelf_location">Standort im Regal</string>
+    <string name="form_purchase_date">Kaufdatum</string>
+    <string name="form_purchase_price">Kaufpreis (€)</string>
+    <string name="form_section_status">Status</string>
+    <string name="form_type">Typ *</string>
+    <string name="form_condition">Zustand</string>
+    <string name="form_format">Medium / Format</string>
+    <string name="form_section_media">Visuelle Medien</string>
+    <string name="form_cover">Cover</string>
+    <string name="form_backdrop">Backdrop</string>
+    <string name="lists_rename_action">Umbenennen</string>
+    <string name="lists_none">Noch keine Listen</string>
+    <string name="login_2fa_code">2FA-Code</string>
+    <string name="detail_play_trailer">Trailer abspielen</string>
+    <string name="stats_total">Gesamt</string>
+    <string name="stats_watched">Gesehen</string>
+    <string name="stats_series">Serien</string>
+    <string name="stats_total_runtime">Gesamte Laufzeit</string>
+    <string name="stats_hours">%1$d Stunden</string>
+    <string name="stats_decade">%1$der</string>
 </resources>

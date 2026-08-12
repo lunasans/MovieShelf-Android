@@ -44,7 +44,7 @@ fun ModeChoiceScreen(onModeChosen: (AppMode) -> Unit) {
 
             Image(
                 painter = painterResource(id = R.drawable.logo),
-                contentDescription = "MovieShelf",
+                contentDescription = stringResource(R.string.app_name),
                 modifier = Modifier.height(48.dp)
             )
 

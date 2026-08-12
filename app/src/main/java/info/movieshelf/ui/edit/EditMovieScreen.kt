@@ -173,11 +173,11 @@ fun EditMovieScreen(
                     // Sektions-Zuschnitt und Beschriftungen folgen dem Web-Formular
                     // (`admin/movies/edit.blade.php`), damit beide Oberflächen
                     // dieselbe Gliederung haben.
-                    ShelfFormSection(title = "Stammdaten", icon = Icons.Default.Info) {
+                    ShelfFormSection(title = stringResource(R.string.form_section_basics), icon = Icons.Default.Info) {
                         ShelfTextField(
                             value = viewModel.title,
                             onValueChange = { viewModel.title = it },
-                            label = "Originaltitel / Titel *",
+                            label = stringResource(R.string.form_title),
                             modifier = Modifier.fillMaxWidth(),
                             isError = viewModel.title.isBlank()
                         )
@@ -186,14 +186,14 @@ fun EditMovieScreen(
                             ShelfTextField(
                                 value = viewModel.year,
                                 onValueChange = { v -> viewModel.year = v.filter { it.isDigit() }.take(4) },
-                                label = "Erscheinungsjahr *",
+                                label = stringResource(R.string.form_year),
                                 modifier = Modifier.weight(1f),
                                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
                             )
                             ShelfTextField(
                                 value = viewModel.runtime,
                                 onValueChange = { v -> viewModel.runtime = v.filter { it.isDigit() }.take(4) },
-                                label = "Laufzeit (Min.)",
+                                label = stringResource(R.string.form_runtime),
                                 modifier = Modifier.weight(1f),
                                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
                             )
@@ -213,7 +213,7 @@ fun EditMovieScreen(
                         ShelfTextField(
                             value = viewModel.genre,
                             onValueChange = { viewModel.genre = it },
-                            label = "Genre / Kategorien",
+                            label = stringResource(R.string.form_genre),
                             placeholder = "Komma-getrennt",
                             modifier = Modifier.fillMaxWidth()
                         )
@@ -221,25 +221,25 @@ fun EditMovieScreen(
                         ShelfTextField(
                             value = viewModel.director,
                             onValueChange = { viewModel.director = it },
-                            label = "Regisseur",
+                            label = stringResource(R.string.form_director),
                             modifier = Modifier.fillMaxWidth()
                         )
 
                         ShelfTextField(
                             value = viewModel.rating,
                             onValueChange = { viewModel.rating = it },
-                            label = "TMDb Bewertung",
+                            label = stringResource(R.string.form_rating),
                             placeholder = "0–10",
                             modifier = Modifier.fillMaxWidth(),
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal)
                         )
                     }
 
-                    ShelfFormSection(title = "Handlung & Details", icon = Icons.AutoMirrored.Filled.Notes) {
+                    ShelfFormSection(title = stringResource(R.string.form_section_plot), icon = Icons.AutoMirrored.Filled.Notes) {
                         ShelfTextField(
                             value = viewModel.overview,
                             onValueChange = { viewModel.overview = it },
-                            label = "Filmhandlung / Storyline",
+                            label = stringResource(R.string.form_plot),
                             modifier = Modifier.fillMaxWidth().heightIn(min = 120.dp),
                             singleLine = false,
                             minLines = 4
@@ -248,18 +248,18 @@ fun EditMovieScreen(
                         ShelfTextField(
                             value = viewModel.trailerUrl,
                             onValueChange = { viewModel.trailerUrl = it },
-                            label = "Trailer URL (YouTube)",
+                            label = stringResource(R.string.form_trailer),
                             placeholder = "https://www.youtube.com/watch?v=...",
                             modifier = Modifier.fillMaxWidth(),
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri, imeAction = ImeAction.Next)
                         )
                     }
 
-                    ShelfFormSection(title = "Physische Sammlung", icon = Icons.Default.Collections) {
+                    ShelfFormSection(title = stringResource(R.string.form_section_physical), icon = Icons.Default.Collections) {
                         ShelfTextField(
                             value = viewModel.edition,
                             onValueChange = { viewModel.edition = it },
-                            label = "Edition / Auflage",
+                            label = stringResource(R.string.form_edition),
                             placeholder = "z.B. Steelbook, Director's Cut",
                             modifier = Modifier.fillMaxWidth(),
                             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next)
@@ -269,7 +269,7 @@ fun EditMovieScreen(
                             ShelfTextField(
                                 value = viewModel.regionCode,
                                 onValueChange = { viewModel.regionCode = it },
-                                label = "Regionalcode",
+                                label = stringResource(R.string.form_region),
                                 placeholder = "z.B. 2, B, Free",
                                 modifier = Modifier.weight(1f),
                                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next)
@@ -277,7 +277,7 @@ fun EditMovieScreen(
                             ShelfTextField(
                                 value = viewModel.discLocation,
                                 onValueChange = { viewModel.discLocation = it },
-                                label = "Standort im Regal",
+                                label = stringResource(R.string.form_shelf_location),
                                 placeholder = "z.B. Regal 3, Fach B",
                                 modifier = Modifier.weight(1f),
                                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next)
@@ -294,7 +294,7 @@ fun EditMovieScreen(
                             ShelfTextField(
                                 value = viewModel.purchaseDate,
                                 onValueChange = { viewModel.purchaseDate = it },
-                                label = "Kaufdatum",
+                                label = stringResource(R.string.form_purchase_date),
                                 placeholder = "JJJJ-MM-TT",
                                 modifier = Modifier.weight(1f),
                                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next)
@@ -302,7 +302,7 @@ fun EditMovieScreen(
                             ShelfTextField(
                                 value = viewModel.purchasePrice,
                                 onValueChange = { viewModel.purchasePrice = it },
-                                label = "Kaufpreis (€)",
+                                label = stringResource(R.string.form_purchase_price),
                                 placeholder = "0,00",
                                 modifier = Modifier.weight(1f),
                                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal, imeAction = ImeAction.Next)
@@ -310,7 +310,7 @@ fun EditMovieScreen(
                         }
                     }
 
-                    ShelfFormSection(title = "Visuelle Medien", icon = Icons.Default.Image) {
+                    ShelfFormSection(title = stringResource(R.string.form_section_media), icon = Icons.Default.Image) {
                         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                             OutlinedButton(
                                 onClick = {
@@ -325,7 +325,7 @@ fun EditMovieScreen(
                                 } else {
                                     Icon(Icons.Default.Image, contentDescription = null, modifier = Modifier.size(18.dp))
                                     Spacer(Modifier.width(8.dp))
-                                    Text("Cover", fontWeight = FontWeight.SemiBold)
+                                    Text(stringResource(R.string.form_cover), fontWeight = FontWeight.SemiBold)
                                 }
                             }
                             OutlinedButton(
@@ -341,20 +341,20 @@ fun EditMovieScreen(
                                 } else {
                                     Icon(Icons.Default.Wallpaper, contentDescription = null, modifier = Modifier.size(18.dp))
                                     Spacer(Modifier.width(8.dp))
-                                    Text("Backdrop", fontWeight = FontWeight.SemiBold)
+                                    Text(stringResource(R.string.form_backdrop), fontWeight = FontWeight.SemiBold)
                                 }
                             }
                         }
                     }
 
-                    ShelfFormSection(title = "Status", icon = Icons.Default.Inventory2) {
+                    ShelfFormSection(title = stringResource(R.string.form_section_status), icon = Icons.Default.Inventory2) {
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
                             Column(Modifier.weight(1f)) {
-                                Text("In Sammlung", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
+                                Text(stringResource(R.string.create_in_collection), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
                                 Text(
                                     "Film ist Teil der Sammlung (nicht nur Wunschliste)",
                                     style = MaterialTheme.typography.bodySmall,
@@ -468,7 +468,7 @@ private fun CollectionTypeDropdown(
         ShelfTextField(
             value = value,
             onValueChange = onValueChange,
-            label = "Typ *",
+            label = stringResource(R.string.form_type),
             trailingIcon = { Icon(Icons.Default.ArrowDropDown, contentDescription = null) },
             isError = value.isBlank(),
             modifier = Modifier
@@ -524,7 +524,7 @@ private fun ConditionDropdown(
             value = label,
             onValueChange = {},
             readOnly = true,
-            label = "Zustand",
+            label = stringResource(R.string.form_condition),
             trailingIcon = { Icon(Icons.Default.ArrowDropDown, contentDescription = null) },
             modifier = Modifier
                 .fillMaxWidth()
@@ -568,7 +568,7 @@ private fun TagDropdown(
         ShelfTextField(
             value = value,
             onValueChange = onValueChange,
-            label = "Medium / Format",
+            label = stringResource(R.string.form_format),
             trailingIcon = { Icon(Icons.Default.ArrowDropDown, contentDescription = null) },
             modifier = Modifier
                 .fillMaxWidth()

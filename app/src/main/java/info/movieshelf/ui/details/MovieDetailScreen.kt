@@ -566,7 +566,7 @@ private fun SeasonBackfillDialog(viewModel: MovieDetailViewModel) {
             TextButton(
                 onClick = { viewModel.showSeasonDialog = false },
                 enabled = !viewModel.seasonImporting
-            ) { Text("Abbrechen") }
+            ) { Text(stringResource(R.string.common_cancel)) }
         }
     )
 }
@@ -629,7 +629,7 @@ private fun MovieBackdropHeader(
             ) {
                 Icon(
                     imageVector = Icons.Default.PlayArrow,
-                    contentDescription = "Trailer abspielen",
+                    contentDescription = stringResource(R.string.detail_play_trailer),
                     modifier = Modifier.size(40.dp)
                 )
             }
@@ -748,7 +748,7 @@ private fun PhysicalCollectionCard(movie: Movie, modifier: Modifier = Modifier) 
     // Gleiche Glas-Karte wie im Formular, damit Detail- und Edit-Ansicht
     // denselben Block zeigen.
     ShelfFormSection(
-        title = "Physische Sammlung",
+        title = stringResource(R.string.form_section_physical),
         icon = Icons.Default.Collections,
         modifier = modifier
     ) {

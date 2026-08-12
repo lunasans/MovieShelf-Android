@@ -81,15 +81,15 @@ fun StatsScreen(
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                     StatCard(
                         modifier = Modifier.weight(1f),
-                        title = "Gesamt",
+                        title = stringResource(R.string.stats_total),
                         value = stats.totalFilms.toString(),
-                        subtitle = "Filme",
+                        subtitle = stringResource(R.string.shelf_movies),
                         icon = Icons.Default.Movie,
                         color = MaterialTheme.colorScheme.primary
                     )
                     StatCard(
                         modifier = Modifier.weight(1f),
-                        title = "Gesehen",
+                        title = stringResource(R.string.stats_watched),
                         value = stats.watched?.count.toString(),
                         subtitle = "${stats.watched?.percentage?.toInt()}%",
                         icon = Icons.Default.Visibility,
@@ -102,7 +102,7 @@ fun StatsScreen(
                 if (stats.totalSeries > 0) {
                     StatCard(
                         modifier = Modifier.fillMaxWidth(),
-                        title = "Serien",
+                        title = stringResource(R.string.stats_series),
                         value = stats.totalSeries.toString(),
                         subtitle = if (stats.totalSeries == 1) "Serie in der Sammlung" else "Serien in der Sammlung",
                         icon = Icons.Default.Tv,
@@ -112,9 +112,9 @@ fun StatsScreen(
 
                 StatCard(
                     modifier = Modifier.fillMaxWidth(),
-                    title = "Gesamte Laufzeit",
+                    title = stringResource(R.string.stats_total_runtime),
                     value = "${stats.totalRuntimeDays.toInt()} Tage",
-                    subtitle = "${stats.totalRuntimeHours.toInt()} Stunden",
+                    subtitle = stringResource(R.string.stats_hours, stats.totalRuntimeHours.toInt()),
                     icon = Icons.Default.AccessTime,
                     color = Color(0xFFFF9800)
                 )
@@ -155,7 +155,7 @@ fun StatsScreen(
                     Card(modifier = Modifier.fillMaxWidth()) {
                         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                             stats.decades.sortedByDescending { it.decade }.forEach { decade ->
-                                StatRow(label = "${decade.decade}er", value = "${decade.count} Filme")
+                                StatRow(label = stringResource(R.string.stats_decade, decade.decade), value = "${decade.count} Filme")
                             }
                         }
                     }

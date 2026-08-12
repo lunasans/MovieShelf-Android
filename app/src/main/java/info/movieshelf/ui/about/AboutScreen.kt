@@ -124,7 +124,7 @@ fun AboutScreen(onBack: () -> Unit) {
             ) {
                 Icon(
                     painter = painterResource(id = R.drawable.ic_github),
-                    contentDescription = "GitHub",
+                    contentDescription = stringResource(R.string.about_github),
                     modifier = Modifier.size(20.dp),
                     tint = MaterialTheme.colorScheme.onSurface
                 )

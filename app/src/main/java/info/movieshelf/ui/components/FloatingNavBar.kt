@@ -81,13 +81,13 @@ fun FloatingNavBar(
             ) {
                 NavPillItem(
                     icon = Icons.Default.Home,
-                    label = "Filme",
+                    label = stringResource(R.string.nav_movies),
                     selected = currentRoute == "dashboard",
                     onClick = onHomeClick
                 )
                 NavPillItem(
                     icon = Icons.Default.BarChart,
-                    label = "Statistik",
+                    label = stringResource(R.string.nav_stats),
                     selected = currentRoute == "stats",
                     onClick = onStatsClick
                 )
@@ -97,13 +97,13 @@ fun FloatingNavBar(
 
                 NavPillItem(
                     icon = Icons.Default.Person,
-                    label = "Profil",
+                    label = stringResource(R.string.nav_profile),
                     selected = currentRoute == "profile",
                     onClick = onProfileClick
                 )
                 if (showLogout) NavPillItem(
                     icon = Icons.AutoMirrored.Filled.Logout,
-                    label = "Abmelden",
+                    label = stringResource(R.string.nav_logout),
                     selected = false,
                     // Abmelden hebt sich neutral-grau ab: Rosé ist jetzt der
                     // Marken-Akzent der ganzen Leiste und wäre hier doppelt.

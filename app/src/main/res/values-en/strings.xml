@@ -314,4 +314,46 @@
     <string name="nav_add_movie">Add film</string>
     <string name="detail_no_overview">No description available.</string>
     <string name="copyright">© %1$d René Neuhaus</string>
+
+    <!-- Forms, navigation, statistics -->
+    <string name="section_mode">Mode</string>
+    <string name="section_film_search">Film search</string>
+    <string name="mode_standalone_sub_long">Your collection lives on this phone. If you connect a shelf, your library is uploaded — nothing is lost.</string>
+    <string name="nav_movies">Films</string>
+    <string name="nav_stats">Stats</string>
+    <string name="nav_profile">Profile</string>
+    <string name="nav_logout">Sign out</string>
+    <string name="form_section_basics">Basics</string>
+    <string name="form_title">Original title / title *</string>
+    <string name="form_year">Release year *</string>
+    <string name="form_runtime">Runtime (min)</string>
+    <string name="form_genre">Genre / categories</string>
+    <string name="form_director">Director</string>
+    <string name="form_rating">TMDb rating</string>
+    <string name="form_section_plot">Plot &amp; details</string>
+    <string name="form_plot">Plot / storyline</string>
+    <string name="form_trailer">Trailer URL (YouTube)</string>
+    <string name="form_section_physical">Physical collection</string>
+    <string name="form_edition">Edition</string>
+    <string name="form_region">Region code</string>
+    <string name="form_shelf_location">Shelf location</string>
+    <string name="form_purchase_date">Purchase date</string>
+    <string name="form_purchase_price">Price paid (€)</string>
+    <string name="form_section_status">Status</string>
+    <string name="form_type">Type *</string>
+    <string name="form_condition">Condition</string>
+    <string name="form_format">Medium / format</string>
+    <string name="form_section_media">Artwork</string>
+    <string name="form_cover">Cover</string>
+    <string name="form_backdrop">Backdrop</string>
+    <string name="lists_rename_action">Rename</string>
+    <string name="lists_none">No lists yet</string>
+    <string name="login_2fa_code">2FA code</string>
+    <string name="detail_play_trailer">Play trailer</string>
+    <string name="stats_total">Total</string>
+    <string name="stats_watched">Watched</string>
+    <string name="stats_series">Series</string>
+    <string name="stats_total_runtime">Total runtime</string>
+    <string name="stats_hours">%1$d hours</string>
+    <string name="stats_decade">%1$ds</string>
 </resources>

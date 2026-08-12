@@ -210,7 +210,7 @@ private fun ListCard(
                     onDismissRequest = { menuExpanded = false }
                 ) {
                     DropdownMenuItem(
-                        text = { Text("Umbenennen") },
+                        text = { Text(stringResource(R.string.lists_rename_action)) },
                         onClick = {
                             menuExpanded = false
                             onRename()
@@ -240,7 +240,7 @@ private fun EmptyState() {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Icon(Icons.AutoMirrored.Filled.PlaylistPlay, null, Modifier.size(64.dp), tint = MaterialTheme.colorScheme.outline)
             Spacer(Modifier.height(16.dp))
-            Text("Noch keine Listen", style = MaterialTheme.typography.titleMedium)
+            Text(stringResource(R.string.lists_none), style = MaterialTheme.typography.titleMedium)
             Text(
                 "Listen (z. B. eine Wunschliste) legst du in der Web- oder Desktop-App an.",
                 style = MaterialTheme.typography.bodySmall,
