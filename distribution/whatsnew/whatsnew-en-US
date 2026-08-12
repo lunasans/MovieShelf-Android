@@ -1,0 +1,8 @@
+The app now speaks English and German – it follows your device language.
+
+Fixed:
+
+• Without a shelf, the profile screen kept reporting that the profile could not be loaded. With no server there is nothing to load, so the app no longer tries.
+• The bottom bar stands out more clearly from the background. In front of light covers its labels were hard to read.
+
+New: the app now tells you where to get a shelf and a TMDb key.

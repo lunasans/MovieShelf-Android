@@ -66,6 +66,10 @@ jobs:
           track: internal
           status: completed
           mappingFile: app/build/outputs/mapping/release/mapping.txt
+          # Versionshinweise je Sprache: eine Datei "whatsnew-<locale>" pro
+          # Uebersetzung. Sie gehen mit dem Bundle hoch, damit sie nicht bei
+          # jedem Release von Hand in die Console getippt werden muessen.
+          whatsNewDirectory: distribution/whatsnew
 
       # Bewusst kein APK: getestet wird ueber das Play-Testprogramm, und nur
       # eine Installation von dort zaehlt dafuer. Ein direkt verteiltes APK
@@ -85,10 +89,7 @@ jobs:
           # den Commits seit dem letzten Tag.
           generate_release_notes: true
 
-      # Das Bundle bleibt als Artefakt erreichbar - fuer den ersten Upload einer
-      # neu angelegten App, den die Play-API nicht uebernehmen kann.
-      - name: App Bundle als Workflow-Artefakt sichern
-        uses: actions/upload-artifact@v4
-        with:
-          name: app-release-aab
-          path: app/build/outputs/bundle/release/app-release.aab
+      # Bewusst kein Artefakt mehr: Das Bundle geht ueber die API direkt in den
+      # Internal-Track, und in einem oeffentlichen Repository koennte es sonst
+      # jeder angemeldete Nutzer herunterladen. Gebraucht wurde es nur fuer den
+      # ersten Upload der neu angelegten App, den die API nicht uebernimmt.
