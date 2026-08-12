@@ -79,8 +79,17 @@ val NavAccentRose500 = Color(0xFFF43F5E) // Rose-500 (helles Ende des Marken-Ver
 
 // Glass-Tokens für frosted-glass Panels (Nav-Bar, Badges, Overlays)
 val GlassWhite08 = Color(0x14FFFFFF) // 8% weißes Overlay
-val GlassBorder18 = Color(0x2EFFFFFF) // 18% weißer Rand
-val GlassScrimDark = Color(0xB3101014) // Fallback-Scrim für Geräte ohne Blur-Support
+val GlassBorder18 = Color(0x40FFFFFF) // 25% weißer Rand — hebt die Kante auch vor hellen Covern ab
+val GlassScrimDark = Color(0xF0101014) // 94% deckender Scrim: bei hellen Covern war die Schrift sonst nicht lesbar
+
+/**
+ * Verlauf hinter der schwebenden Navigationsleiste. Ohne ihn steht die Pill
+ * unvermittelt auf dem Poster; je nach Cover verschwimmt ihre Kante mit dem
+ * Bild. Der Verlauf dunkelt nur den unteren Rand ab und laesst den Rest der
+ * Ansicht unangetastet.
+ */
+val NavScrimTop = Color(0x00000000)
+val NavScrimBottom = Color(0xB3000000)
 
 // Medienformat-Farben (DVD/Blu-ray/4K/Streaming/Digital/Leihe)
 val MediaFormatDvd = Color(0xFFF97316) // Orange

@@ -16,6 +16,8 @@ import info.movieshelf.data.sync.SyncProgress
 import info.movieshelf.data.sync.SyncResult
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
+import info.movieshelf.R
+import info.movieshelf.ui.util.UiText
 
 /** Welche Richtungen ein Lauf bedient. */
 enum class SyncDirection { PULL, PUSH, BOTH }
@@ -41,7 +43,7 @@ class SyncViewModel(
         private set
     var isBusy by mutableStateOf(false)
         private set
-    var error by mutableStateOf<String?>(null)
+    var error by mutableStateOf<UiText?>(null)
 
     init {
         viewModelScope.launch {
@@ -65,7 +67,7 @@ class SyncViewModel(
             try {
                 preview = syncEngine.preview(full)
             } catch (e: Exception) {
-                error = "Vorschau nicht moeglich: ${e.message}"
+                error = UiText.of(R.string.error_preview_failed, e.message ?: "")
             } finally {
                 isBusy = false
             }
@@ -103,7 +105,7 @@ class SyncViewModel(
                 lastSyncAt = syncEngine.lastSyncAt()
                 preview = null
             } catch (e: Exception) {
-                error = "Abgleich fehlgeschlagen: ${e.message}"
+                error = UiText.of(R.string.error_sync_failed, e.message ?: "")
             } finally {
                 isBusy = false
                 progress = null

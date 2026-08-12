@@ -1,5 +1,6 @@
 package info.movieshelf.ui.dashboard
 
+import androidx.annotation.StringRes
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -14,12 +15,14 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import info.movieshelf.R
+import info.movieshelf.ui.util.UiText
 
 /** Kategorie einer Dashboard-Shelf-Reihe, für die "Alle anzeigen"-Rasteransicht. */
-enum class ShelfCategory(val label: String) {
-    NEW("Neue Filme"),
-    FILME("Filme"),
-    SERIEN("Serien")
+enum class ShelfCategory(@StringRes val labelRes: Int) {
+    NEW(R.string.shelf_new_movies),
+    FILME(R.string.shelf_movies),
+    SERIEN(R.string.shelf_series)
 }
 
 class DashboardViewModel(private val repository: MovieRepository) : ViewModel() {
@@ -30,7 +33,7 @@ class DashboardViewModel(private val repository: MovieRepository) : ViewModel() 
     var isRefreshing by mutableStateOf(false)
     var isLoadingMore by mutableStateOf(false)
     var hasMore by mutableStateOf(true)
-    var error by mutableStateOf<String?>(null)
+    var error by mutableStateOf<UiText?>(null)
     var isOffline by mutableStateOf(false)
 
     var searchQuery by mutableStateOf("")
@@ -316,21 +319,21 @@ class DashboardViewModel(private val repository: MovieRepository) : ViewModel() 
     }
 
 
-    private fun friendlyError(e: Exception): String {
+    private fun friendlyError(e: Exception): UiText {
         val msg = e.message ?: ""
         return when {
             msg.contains("Unable to resolve host", ignoreCase = true) ||
             msg.contains("failed to connect", ignoreCase = true) ->
-                "Server nicht erreichbar. Zeige zwischengespeicherte Daten."
+                UiText.of(R.string.error_no_connection)
             msg.contains("timeout", ignoreCase = true) ->
-                "Zeitüberschreitung. Zeige zwischengespeicherte Daten."
+                UiText.of(R.string.error_timeout)
             msg.contains("401") || msg.contains("Unauthorized", ignoreCase = true) ->
-                "Sitzung abgelaufen. Bitte erneut anmelden."
-            msg.contains("403") -> "Zugriff verweigert."
-            msg.contains("404") -> "Inhalte nicht gefunden."
+                UiText.of(R.string.error_session_expired)
+            msg.contains("403") -> UiText.of(R.string.error_access_denied)
+            msg.contains("404") -> UiText.of(R.string.error_content_not_found)
             msg.contains("500") || msg.contains("502") || msg.contains("503") ->
-                "Serverfehler. Bitte später erneut versuchen."
-            else -> "Filme konnten nicht geladen werden."
+                UiText.of(R.string.error_server)
+            else -> UiText.of(R.string.error_movie_not_loaded)
         }
     }
 

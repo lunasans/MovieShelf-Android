@@ -10,6 +10,8 @@ import info.movieshelf.data.model.Actor
 import info.movieshelf.data.model.Movie
 import info.movieshelf.data.repository.ActorRepository
 import kotlinx.coroutines.launch
+import info.movieshelf.R
+import info.movieshelf.ui.util.UiText
 
 class ActorDetailViewModel(
     private val actorId: Int,
@@ -17,7 +19,7 @@ class ActorDetailViewModel(
 ) : ViewModel() {
     var actor by mutableStateOf<Actor?>(null)
     var isLoading by mutableStateOf(false)
-    var error by mutableStateOf<String?>(null)
+    var error by mutableStateOf<UiText?>(null)
 
     init {
         loadActor()
@@ -30,7 +32,7 @@ class ActorDetailViewModel(
             try {
                 actor = repository.getActor(actorId)
             } catch (e: Exception) {
-                error = "Fehler beim Laden des Schauspielers: ${e.message}"
+                error = UiText.of(R.string.error_actor_load, e.message ?: "")
             } finally {
                 isLoading = false
             }

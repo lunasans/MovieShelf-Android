@@ -26,17 +26,18 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.compose.ui.res.stringResource
 import info.movieshelf.R
+import info.movieshelf.ui.util.UiText
 import info.movieshelf.data.api.RetrofitClient
 import info.movieshelf.data.local.DataStoreManager
 import kotlinx.coroutines.launch
-import java.util.Calendar
 
 class SetupViewModel(private val dataStoreManager: DataStoreManager) : ViewModel() {
     var url by mutableStateOf("")
     var isSaving by mutableStateOf(false)
     var isTesting by mutableStateOf(false)
-    var connectionError by mutableStateOf<String?>(null)
+    var connectionError by mutableStateOf<UiText?>(null)
     var connectionSuccess by mutableStateOf(false)
 
     val showEmulatorHint by derivedStateOf {
@@ -90,10 +91,10 @@ class SetupViewModel(private val dataStoreManager: DataStoreManager) : ViewModel
                     RetrofitClient.api.getServerInfo()
                     connectionSuccess = true
                 } else {
-                    connectionError = "Ungültiges URL-Format"
+                    connectionError = UiText.of(R.string.setup_url_invalid)
                 }
             } catch (e: Exception) {
-                connectionError = "Server nicht erreichbar: ${e.message}"
+                connectionError = UiText.of(R.string.error_server_unreachable, e.message ?: "")
             } finally {
                 isTesting = false
             }
@@ -133,7 +134,6 @@ fun SetupScreen(
      */
     onChangeMode: () -> Unit = {}
 ) {
-    val currentYear = Calendar.getInstance().get(Calendar.YEAR)
     val viewModel: SetupViewModel = viewModel(factory = SetupViewModel.Factory(dataStoreManager))
     
     // Prüfen, ob bereits eine URL gespeichert ist, um den Zurück-Button anzuzeigen
@@ -147,7 +147,7 @@ fun SetupScreen(
                     title = { },
                     navigationIcon = {
                         IconButton(onClick = onSetupComplete) {
-                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Zurück")
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.common_back))
                         }
                     },
                     colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent)
@@ -170,7 +170,7 @@ fun SetupScreen(
             ) {
                 Image(
                     painter = painterResource(id = R.drawable.logo),
-                    contentDescription = "MovieShelf Logo",
+                    contentDescription = stringResource(R.string.login_logo_description),
                     modifier = Modifier
                         .height(120.dp)
                         .padding(bottom = 32.dp)
@@ -185,13 +185,13 @@ fun SetupScreen(
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         Text(
-                            text = "Willkommen!",
+                            text = stringResource(R.string.setup_welcome),
                             style = MaterialTheme.typography.headlineSmall,
                             fontWeight = FontWeight.Bold
                         )
                         Spacer(Modifier.height(8.dp))
                         Text(
-                            text = "Bitte gib die URL deines MovieShelf-Servers ein, um zu starten.",
+                            text = stringResource(R.string.setup_intro),
                             style = MaterialTheme.typography.bodyMedium,
                             textAlign = TextAlign.Center,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -206,8 +206,8 @@ fun SetupScreen(
                                 viewModel.connectionSuccess = false
                                 viewModel.connectionError = null
                             },
-                            label = { Text("Server URL") },
-                            placeholder = { Text("z.B. 10.0.2.2:8000") },
+                            label = { Text(stringResource(R.string.setup_server_url)) },
+                            placeholder = { Text(stringResource(R.string.setup_server_hint)) },
                             modifier = Modifier.fillMaxWidth(),
                             singleLine = true,
                             leadingIcon = { Icon(Icons.Default.Link, contentDescription = null) },
@@ -215,7 +215,7 @@ fun SetupScreen(
                             isError = viewModel.connectionError != null,
                             supportingText = {
                                 if (viewModel.showEmulatorHint) {
-                                    Text("Tipp: Nutze '10.0.2.2' für den Emulator.")
+                                    Text(stringResource(R.string.setup_emulator_tip))
                                 }
                             }
                         )
@@ -227,7 +227,7 @@ fun SetupScreen(
                             ) {
                                 Icon(Icons.Default.Warning, contentDescription = null, tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(16.dp))
                                 Spacer(Modifier.width(8.dp))
-                                Text(viewModel.connectionError ?: "", color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
+                                Text(viewModel.connectionError?.asString() ?: "", color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
                             }
                         }
 
@@ -238,7 +238,7 @@ fun SetupScreen(
                             ) {
                                 Icon(Icons.Default.CheckCircle, contentDescription = null, tint = Color(0xFF4CAF50), modifier = Modifier.size(16.dp))
                                 Spacer(Modifier.width(8.dp))
-                                Text("Verbindung erfolgreich!", color = Color(0xFF4CAF50), style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Bold)
+                                Text(stringResource(R.string.setup_connection_ok), color = Color(0xFF4CAF50), style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Bold)
                             }
                         }
 
@@ -253,7 +253,7 @@ fun SetupScreen(
                                 if (viewModel.isTesting) {
                                     CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
                                 } else {
-                                    Text("Testen")
+                                    Text(stringResource(R.string.setup_test))
                                 }
                             }
                             Spacer(Modifier.width(12.dp))
@@ -265,7 +265,7 @@ fun SetupScreen(
                                 if (viewModel.isSaving) {
                                     CircularProgressIndicator(modifier = Modifier.size(18.dp), color = MaterialTheme.colorScheme.onPrimary, strokeWidth = 2.dp)
                                 } else {
-                                    Text("Speichern")
+                                    Text(stringResource(R.string.common_save))
                                 }
                             }
                         }
@@ -281,15 +281,9 @@ fun SetupScreen(
                 ) {
                     Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null, modifier = Modifier.size(18.dp))
                     Spacer(Modifier.width(8.dp))
-                    Text("Andere Betriebsart wählen")
+                    Text(stringResource(R.string.login_change_mode))
                 }
 
-                Spacer(Modifier.height(32.dp))
-                Text(
-                    text = "© $currentYear René Neuhaus",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.outline
-                )
             }
         }
     }

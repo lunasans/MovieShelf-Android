@@ -1,5 +1,6 @@
 package info.movieshelf.ui.about
 
+import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -23,7 +24,12 @@ import java.util.Calendar
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AboutScreen(onBack: () -> Unit) {
-    var serverVersion by remember { mutableStateOf("Lädt...") }
+    // Vorab aufloesen: weder remember-Lambda noch LaunchedEffect sind ein
+    // Composable-Kontext, in dem stringResource aufgerufen werden koennte.
+    val loadingLabel = stringResource(R.string.about_loading)
+    val unknownLabel = stringResource(R.string.common_unknown)
+    val unreachableLabel = stringResource(R.string.about_unreachable)
+    var serverVersion by remember { mutableStateOf(loadingLabel) }
     val uriHandler = LocalUriHandler.current
     val currentYear = Calendar.getInstance().get(Calendar.YEAR)
 
@@ -39,9 +45,9 @@ fun AboutScreen(onBack: () -> Unit) {
     LaunchedEffect(Unit) {
         try {
             val info = RetrofitClient.api.getServerInfo()
-            serverVersion = info.version ?: "Unbekannt"
+            serverVersion = info.version ?: unknownLabel
         } catch (_: Exception) {
-            serverVersion = "Nicht erreichbar"
+            serverVersion = unreachableLabel
         }
     }
 
@@ -49,10 +55,10 @@ fun AboutScreen(onBack: () -> Unit) {
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             TopAppBar(
-                title = { Text("Über MovieShelf") },
+                title = { Text(stringResource(R.string.about_title)) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Zurück")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.common_back))
                     }
                 }
             )
@@ -69,7 +75,7 @@ fun AboutScreen(onBack: () -> Unit) {
             // App Logo
             Image(
                 painter = painterResource(id = R.drawable.logo),
-                contentDescription = "MovieShelf Logo",
+                contentDescription = stringResource(R.string.login_logo_description),
                 modifier = Modifier.size(120.dp)
             )
             
@@ -87,7 +93,7 @@ fun AboutScreen(onBack: () -> Unit) {
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
-                        Text("App Version", fontWeight = FontWeight.Bold)
+                        Text(stringResource(R.string.about_app_version), fontWeight = FontWeight.Bold)
                         Text(appVersion)
                     }
                     HorizontalDivider(
@@ -98,7 +104,7 @@ fun AboutScreen(onBack: () -> Unit) {
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
-                        Text("Server Version", fontWeight = FontWeight.Bold)
+                        Text(stringResource(R.string.about_server_version), fontWeight = FontWeight.Bold)
                         Text(serverVersion)
                     }
                 }
@@ -118,18 +124,18 @@ fun AboutScreen(onBack: () -> Unit) {
             ) {
                 Icon(
                     painter = painterResource(id = R.drawable.ic_github),
-                    contentDescription = "GitHub",
+                    contentDescription = stringResource(R.string.about_github),
                     modifier = Modifier.size(20.dp),
                     tint = MaterialTheme.colorScheme.onSurface
                 )
                 Spacer(Modifier.width(10.dp))
-                Text("Projekt auf GitHub ansehen")
+                Text(stringResource(R.string.about_github_sub))
             }
 
             Spacer(Modifier.height(32.dp))
             
             Text(
-                text = "Deine persönliche Filmbibliothek. Behalte den Überblick über deine Film-Sammlung mit Leichtigkeit.",
+                text = stringResource(R.string.about_tagline),
                 textAlign = TextAlign.Center,
                 style = MaterialTheme.typography.bodyLarge
             )
@@ -146,14 +152,14 @@ fun AboutScreen(onBack: () -> Unit) {
                     horizontalArrangement = Arrangement.Center
                 ) {
                     Text(
-                        text = "Powered by",
+                        text = stringResource(R.string.about_powered_by),
                         style = MaterialTheme.typography.labelLarge,
                         color = MaterialTheme.colorScheme.outline
                     )
                     Spacer(Modifier.width(16.dp))
                     Image(
                         painter = painterResource(id = R.drawable.tmdb_logo),
-                        contentDescription = "TMDb Logo",
+                        contentDescription = stringResource(R.string.about_tmdb_logo),
                         modifier = Modifier
                             .width(100.dp)
                             .height(43.dp)
@@ -161,7 +167,7 @@ fun AboutScreen(onBack: () -> Unit) {
                 }
                 Spacer(Modifier.height(12.dp))
                 Text(
-                    text = "Dieses Produkt verwendet die TMDB-API, wird jedoch nicht von TMDB unterstützt oder zertifiziert.",
+                    text = stringResource(R.string.about_tmdb_note),
                     textAlign = TextAlign.Center,
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.outline,
@@ -172,7 +178,7 @@ fun AboutScreen(onBack: () -> Unit) {
             Spacer(Modifier.height(56.dp))
             
             Text(
-                text = "© $currentYear René Neuhaus",
+                text = stringResource(R.string.copyright, currentYear),
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.outline
             )

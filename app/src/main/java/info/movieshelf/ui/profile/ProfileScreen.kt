@@ -1,5 +1,6 @@
 package info.movieshelf.ui.profile
 
+import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -35,7 +36,10 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.foundation.layout.PaddingValues
 import android.os.Build
+import info.movieshelf.R
 import info.movieshelf.data.local.DataStoreManager
 import info.movieshelf.data.local.ThemeMode
 import info.movieshelf.ui.theme.PillShape
@@ -63,6 +67,12 @@ fun ProfileScreen(
     onAboutClick: () -> Unit = {}
 ) {
     val viewModel: ProfileViewModel = viewModel()
+
+    // Nur mit Shelf: ohne Server gibt es kein Profil zu laden, und der Versuch
+    // endete jedes Mal in der Meldung stringResource(R.string.error_profile_not_loaded).
+    LaunchedEffect(isStandalone) {
+        if (!isStandalone) viewModel.loadProfile()
+    }
     val snackbarHostState = remember { SnackbarHostState() }
     val context = LocalContext.current
     val dataStoreManager = remember { DataStoreManager(context) }
@@ -72,16 +82,18 @@ fun ProfileScreen(
     val tmdbApiKey by dataStoreManager.tmdbApiKey.collectAsState(initial = null)
     val supportsDynamic = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
 
+    val snackbarContext = LocalContext.current
+
     LaunchedEffect(viewModel.error) {
         viewModel.error?.let {
-            snackbarHostState.showSnackbar(it)
+            snackbarHostState.showSnackbar(it.asString(snackbarContext))
             viewModel.error = null
         }
     }
 
     LaunchedEffect(viewModel.successMessage) {
         viewModel.successMessage?.let {
-            snackbarHostState.showSnackbar(it)
+            snackbarHostState.showSnackbar(it.asString(snackbarContext))
             viewModel.successMessage = null
         }
     }
@@ -91,10 +103,10 @@ fun ProfileScreen(
         topBar = {
             TopAppBar(
                 // Ohne Konto gibt es kein Profil, nur Einstellungen.
-                title = { Text(if (isStandalone) "Einstellungen" else "Profil") },
+                title = { Text(if (isStandalone) stringResource(R.string.profile_settings) else stringResource(R.string.profile_title)) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Zurück")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.common_back))
                     }
                 }
             )
@@ -125,50 +137,50 @@ fun ProfileScreen(
                 AccountSection(viewModel = viewModel)
             }
 
-            SectionTitle("Sammlung")
+            SectionTitle(stringResource(R.string.section_collection))
             SettingsCard {
                 SettingsRow(
                     icon = Icons.AutoMirrored.Filled.PlaylistPlay,
-                    title = "Meine Listen",
-                    subtitle = "Eigene Listen und Wunschliste",
+                    title = stringResource(R.string.profile_my_lists),
+                    subtitle = stringResource(R.string.profile_my_lists_sub),
                     onClick = onListsClick
                 )
                 if (!isStandalone) {
                     HorizontalDivider(Modifier.padding(start = 56.dp))
                     SettingsRow(
                         icon = Icons.Default.Sync,
-                        title = "Synchronisation",
-                        subtitle = "Lokale Sammlung mit deiner MovieShelf abgleichen",
+                        title = stringResource(R.string.sync_title),
+                        subtitle = stringResource(R.string.profile_sync_sub),
                         onClick = onSyncClick
                     )
                 }
             }
 
             if (!isStandalone) {
-                SectionTitle("Sicherheit")
+                SectionTitle(stringResource(R.string.section_security))
                 SettingsCard {
                     SettingsRow(
                         icon = Icons.Default.Security,
-                        title = "Zwei-Faktor-Authentifizierung",
+                        title = stringResource(R.string.twofactor_title),
                         subtitle = if (viewModel.twoFactorEnabled) {
-                            "Aktiv – tippen zum Verwalten"
+                            stringResource(R.string.twofactor_active_tap)
                         } else {
-                            "Nicht aktiv – tippen zum Einrichten"
+                            stringResource(R.string.twofactor_inactive_tap)
                         },
                         onClick = onTwoFactorClick
                     )
                 }
             }
 
-            SectionTitle("Darstellung")
+            SectionTitle(stringResource(R.string.section_appearance))
             SettingsCard {
                 Column(Modifier.padding(16.dp)) {
                     RowHeader(
                         icon = Icons.Default.DarkMode,
-                        title = "Erscheinungsbild",
+                        title = stringResource(R.string.appearance_theme),
                         // Standard ist dunkel wie die Web-Oberfläche;
-                        // "System" bleibt für alle, die es Android-üblich wollen.
-                        subtitle = "MovieShelf ist auf den dunklen Look ausgelegt"
+                        // stringResource(R.string.appearance_system) bleibt für alle, die es Android-üblich wollen.
+                        subtitle = stringResource(R.string.appearance_hint)
                     )
                     Spacer(Modifier.height(12.dp))
                     SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
@@ -181,7 +193,7 @@ fun ProfileScreen(
                                     count = ThemeMode.entries.size
                                 )
                             ) {
-                                Text(mode.label)
+                                Text(stringResource(mode.labelRes))
                             }
                         }
                     }
@@ -194,11 +206,11 @@ fun ProfileScreen(
                     Box(Modifier.weight(1f)) {
                         RowHeader(
                             icon = Icons.Default.Palette,
-                            title = "Material You",
+                            title = stringResource(R.string.appearance_material_you),
                             subtitle = if (supportsDynamic) {
-                                "Systemfarben verwenden"
+                                stringResource(R.string.appearance_use_system_colors)
                             } else {
-                                "Erst ab Android 12 verfügbar"
+                                stringResource(R.string.appearance_android12_only)
                             }
                         )
                     }
@@ -210,12 +222,12 @@ fun ProfileScreen(
                 }
             }
 
-            SectionTitle("App")
+            SectionTitle(stringResource(R.string.section_app))
             SettingsCard {
                 SettingsRow(
                     icon = Icons.Default.Info,
-                    title = "Über MovieShelf",
-                    subtitle = "Fassung, Lizenzen und Hinweise",
+                    title = stringResource(R.string.about_title),
+                    subtitle = stringResource(R.string.about_subtitle),
                     onClick = onAboutClick
                 )
             }
@@ -250,7 +262,7 @@ private fun AccountSection(viewModel: ProfileViewModel) {
         OutlinedTextField(
             value = viewModel.name,
             onValueChange = { viewModel.name = it },
-            label = { Text("Name") },
+            label = { Text(stringResource(R.string.common_name)) },
             modifier = Modifier.fillMaxWidth(),
             leadingIcon = { Icon(Icons.Default.Person, contentDescription = null) },
             singleLine = true
@@ -261,7 +273,7 @@ private fun AccountSection(viewModel: ProfileViewModel) {
         OutlinedTextField(
             value = viewModel.email,
             onValueChange = { viewModel.email = it },
-            label = { Text("E-Mail") },
+            label = { Text(stringResource(R.string.login_email)) },
             modifier = Modifier.fillMaxWidth(),
             leadingIcon = { Icon(Icons.Default.Email, contentDescription = null) },
             singleLine = true
@@ -285,7 +297,7 @@ private fun AccountSection(viewModel: ProfileViewModel) {
                     strokeWidth = 2.dp
                 )
             } else {
-                Text("Änderungen speichern", fontWeight = FontWeight.Bold)
+                Text(stringResource(R.string.profile_save_changes), fontWeight = FontWeight.Bold)
             }
         }
     }
@@ -298,14 +310,14 @@ private fun StandaloneSection(
     tmdbApiKey: String?,
     onSaveKey: (String?) -> Unit
 ) {
-    SectionTitle("Betriebsart")
+    val uriHandler = LocalUriHandler.current
+    SectionTitle(stringResource(R.string.section_mode))
     SettingsCard {
         Column(Modifier.padding(16.dp)) {
             RowHeader(
                 icon = Icons.Default.CloudOff,
-                title = "Nur auf diesem Gerät",
-                subtitle = "Deine Sammlung liegt auf dem Telefon. Verbindest du eine " +
-                    "Shelf, wird dein Bestand hochgeladen — er geht dabei nicht verloren."
+                title = stringResource(R.string.mode_standalone),
+                subtitle = stringResource(R.string.mode_standalone_sub_long)
             )
             Spacer(Modifier.height(12.dp))
             Button(
@@ -313,30 +325,45 @@ private fun StandaloneSection(
                 modifier = Modifier.fillMaxWidth(),
                 shape = PillShape
             ) {
-                Text("Shelf verbinden", fontWeight = FontWeight.Bold)
+                Text(stringResource(R.string.mode_shelf_action), fontWeight = FontWeight.Bold)
             }
         }
     }
 
     // TMDb-Schluessel: nur ohne Shelf noetig, weil dort deren Proxy die
     // Suche uebernimmt.
-    SectionTitle("Filmsuche")
+    SectionTitle(stringResource(R.string.section_film_search))
     SettingsCard {
         Column(Modifier.padding(16.dp)) {
             RowHeader(
                 icon = Icons.Default.Key,
-                title = "TMDb-Schlüssel",
-                subtitle = "Für die Filmsuche brauchst du einen eigenen, kostenlosen " +
-                    "Schlüssel von themoviedb.org. Er wird verschlüsselt auf diesem " +
-                    "Gerät gespeichert und nur an TMDb geschickt."
+                title = stringResource(R.string.profile_tmdb_key),
+                subtitle = stringResource(R.string.profile_tmdb_hint)
             )
+            Spacer(Modifier.height(8.dp))
+            // Ohne den Weg zum Schluessel bleibt der Hinweis oben folgenlos —
+            // TMDb versteckt ihn hinter Konto und Einstellungen.
+            Text(
+                text = stringResource(R.string.profile_tmdb_where),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            TextButton(
+                onClick = { uriHandler.openUri("https://www.themoviedb.org/settings/api") },
+                contentPadding = PaddingValues(horizontal = 0.dp, vertical = 4.dp)
+            ) {
+                Text(
+                    text = stringResource(R.string.profile_tmdb_get_key),
+                    fontWeight = FontWeight.Bold
+                )
+            }
             Spacer(Modifier.height(12.dp))
             var keyInput by remember(tmdbApiKey) { mutableStateOf(tmdbApiKey.orEmpty()) }
             OutlinedTextField(
                 value = keyInput,
                 onValueChange = { keyInput = it },
-                label = { Text("API-Schlüssel") },
-                placeholder = { Text("z.B. 8f2c…") },
+                label = { Text(stringResource(R.string.profile_api_key)) },
+                placeholder = { Text(stringResource(R.string.profile_api_key_hint)) },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true
             )
@@ -348,7 +375,7 @@ private fun StandaloneSection(
                     shape = PillShape,
                     enabled = keyInput.isNotBlank() && keyInput != tmdbApiKey
                 ) {
-                    Text("Speichern", fontWeight = FontWeight.Bold)
+                    Text(stringResource(R.string.common_save), fontWeight = FontWeight.Bold)
                 }
                 if (!tmdbApiKey.isNullOrBlank()) {
                     OutlinedButton(
@@ -359,7 +386,7 @@ private fun StandaloneSection(
                         modifier = Modifier.weight(1f),
                         shape = PillShape
                     ) {
-                        Text("Entfernen")
+                        Text(stringResource(R.string.common_remove))
                     }
                 }
             }

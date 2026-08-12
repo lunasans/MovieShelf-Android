@@ -11,6 +11,8 @@ import info.movieshelf.data.repository.ActorRepository
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import info.movieshelf.R
+import info.movieshelf.ui.util.UiText
 
 class ActorListViewModel(
     private val repository: ActorRepository
@@ -18,7 +20,7 @@ class ActorListViewModel(
     var actors by mutableStateOf<List<Actor>>(emptyList())
     var isLoading by mutableStateOf(false)
     var isRefreshing by mutableStateOf(false)
-    var error by mutableStateOf<String?>(null)
+    var error by mutableStateOf<UiText?>(null)
 
     var searchQuery by mutableStateOf("")
     private var searchJob: Job? = null
@@ -34,7 +36,7 @@ class ActorListViewModel(
             try {
                 actors = repository.getActors(page = 1, perPage = 100)
             } catch (e: Exception) {
-                error = "Fehler beim Laden der Schauspieler: ${e.message}"
+                error = UiText.of(R.string.error_actors_load, e.message ?: "")
             } finally {
                 isLoading = false
                 isRefreshing = false
@@ -61,7 +63,7 @@ class ActorListViewModel(
         try {
             actors = repository.searchActors(query)
         } catch (e: Exception) {
-            error = "Suche fehlgeschlagen: ${e.message}"
+            error = UiText.of(R.string.error_search_failed, e.message ?: "")
         } finally {
             isLoading = false
         }

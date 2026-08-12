@@ -131,7 +131,11 @@ class TmdbRepository(
     }
 }
 
-/** Ohne hinterlegten Schluessel geht im eigenstaendigen Betrieb nichts. */
-class MissingTmdbKeyException : IllegalStateException(
-    "Kein TMDb-Schlüssel hinterlegt. Du kannst ihn im Profil eintragen."
-)
+/**
+ * Ohne hinterlegten Schluessel geht im eigenstaendigen Betrieb nichts.
+ *
+ * Der Text hier ist fuer Protokolle gedacht, nicht fuer die Anzeige — die
+ * Oberflaeche faengt diesen Fall gesondert ab und zeigt einen uebersetzten
+ * Hinweis (R.string.add_no_tmdb_key).
+ */
+class MissingTmdbKeyException : IllegalStateException("No TMDb API key configured")

@@ -30,8 +30,12 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.res.stringResource
+import info.movieshelf.R
 import info.movieshelf.ui.theme.NavAccentRed
 import info.movieshelf.ui.theme.NavAccentRedDark
+import info.movieshelf.ui.theme.NavScrimTop
+import info.movieshelf.ui.theme.NavScrimBottom
 import info.movieshelf.ui.theme.OnSurfaceVariantDark
 
 @Composable
@@ -49,6 +53,11 @@ fun FloatingNavBar(
     Box(
         modifier = modifier
             .fillMaxWidth()
+            // Der Verlauf liegt vor der Navigationsleisten-Aussparung und dem
+            // Innenabstand, damit er bis zum Bildschirmrand reicht: die Pill
+            // schwebt ueber dem Poster, und ohne abgedunkelten Grund
+            // verschwimmt ihre Kante mit hellen Covern.
+            .background(Brush.verticalGradient(listOf(NavScrimTop, NavScrimBottom)))
             .navigationBarsPadding()
             .padding(horizontal = 20.dp)
             .padding(bottom = 14.dp),
@@ -72,13 +81,13 @@ fun FloatingNavBar(
             ) {
                 NavPillItem(
                     icon = Icons.Default.Home,
-                    label = "Filme",
+                    label = stringResource(R.string.nav_movies),
                     selected = currentRoute == "dashboard",
                     onClick = onHomeClick
                 )
                 NavPillItem(
                     icon = Icons.Default.BarChart,
-                    label = "Statistik",
+                    label = stringResource(R.string.nav_stats),
                     selected = currentRoute == "stats",
                     onClick = onStatsClick
                 )
@@ -88,13 +97,13 @@ fun FloatingNavBar(
 
                 NavPillItem(
                     icon = Icons.Default.Person,
-                    label = "Profil",
+                    label = stringResource(R.string.nav_profile),
                     selected = currentRoute == "profile",
                     onClick = onProfileClick
                 )
                 if (showLogout) NavPillItem(
                     icon = Icons.AutoMirrored.Filled.Logout,
-                    label = "Abmelden",
+                    label = stringResource(R.string.nav_logout),
                     selected = false,
                     // Abmelden hebt sich neutral-grau ab: Rosé ist jetzt der
                     // Marken-Akzent der ganzen Leiste und wäre hier doppelt.
@@ -194,7 +203,7 @@ private fun AddCenterButton(onClick: () -> Unit) {
     ) {
         Icon(
             imageVector = Icons.Default.Add,
-            contentDescription = "Film hinzufügen",
+            contentDescription = stringResource(R.string.nav_add_movie),
             tint = Color.White,
             modifier = Modifier.size(28.dp)
         )

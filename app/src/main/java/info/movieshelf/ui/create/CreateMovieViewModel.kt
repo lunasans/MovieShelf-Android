@@ -10,6 +10,8 @@ import info.movieshelf.data.model.MovieUpdateRequest
 import info.movieshelf.data.repository.MovieRepository
 import kotlinx.coroutines.launch
 import retrofit2.HttpException
+import info.movieshelf.R
+import info.movieshelf.ui.util.UiText
 
 class CreateMovieViewModel(
     private val repository: MovieRepository
@@ -20,7 +22,7 @@ class CreateMovieViewModel(
     /** Lokale ID des angelegten Films — damit navigiert der Screen weiter. */
     var createdMovieId by mutableStateOf<Long?>(null)
         private set
-    var error by mutableStateOf<String?>(null)
+    var error by mutableStateOf<UiText?>(null)
 
     // Eingabefelder
     var title by mutableStateOf("")
@@ -46,7 +48,7 @@ class CreateMovieViewModel(
         val ratingNum = rating.trim().replace(',', '.').toDoubleOrNull()
 
         when {
-            title.isBlank() -> { error = "Titel darf nicht leer sein."; return 
+            title.isBlank() -> { error = UiText.of(R.string.error_title_empty); return 
     class Factory(
         private val repository: MovieRepository
     ) : ViewModelProvider.Factory {
@@ -56,10 +58,10 @@ class CreateMovieViewModel(
         }
     }
 }
-            yearInt == null -> { error = "Bitte ein gültiges Jahr eingeben."; return }
-            collectionType.isBlank() -> { error = "Bitte einen Typ wählen."; return }
+            yearInt == null -> { error = UiText.of(R.string.error_year_invalid); return }
+            collectionType.isBlank() -> { error = UiText.of(R.string.error_type_missing); return }
             rating.isNotBlank() && (ratingNum == null || ratingNum < 0 || ratingNum > 100) -> {
-                error = "Bewertung muss zwischen 0 und 100 liegen."; return
+                error = UiText.of(R.string.error_rating_range); return
             }
         }
 
@@ -88,16 +90,16 @@ class CreateMovieViewModel(
                 )
                 createdMovieId = repository.createMovie(request)
                 if (createdMovieId == null) {
-                    error = "Film wurde angelegt, aber es wurde keine ID zurückgegeben."
+                    error = UiText.of(R.string.error_no_id_returned)
                 }
             } catch (e: HttpException) {
                 error = when (e.code()) {
-                    403 -> "Keine Berechtigung zum Anlegen."
-                    422 -> "Eingaben ungültig. Bitte prüfe die Felder."
-                    else -> "Anlegen fehlgeschlagen (Fehler ${e.code()})."
+                    403 -> UiText.of(R.string.error_no_permission_create)
+                    422 -> UiText.of(R.string.error_invalid_input)
+                    else -> UiText.of(R.string.error_create_failed_code, e.code())
                 }
             } catch (e: Exception) {
-                error = "Verbindungsfehler: ${e.message}"
+                error = UiText.of(R.string.error_connection, e.message ?: "")
             } finally {
                 isSaving = false
             }

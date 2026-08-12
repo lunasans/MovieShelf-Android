@@ -27,6 +27,9 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.compose.ui.res.stringResource
+import info.movieshelf.R
+import info.movieshelf.ui.util.UiText
 import info.movieshelf.MovieShelfApplication
 import coil.compose.AsyncImage
 
@@ -53,13 +56,15 @@ fun AddMovieScreen(
         if (isGranted) {
             showScanner = true
         } else {
-            viewModel.error = "Kamera-Berechtigung erforderlich"
+            viewModel.error = UiText.of(R.string.error_camera_permission)
         }
     }
 
+    val snackbarContext = LocalContext.current
+
     LaunchedEffect(viewModel.error) {
         viewModel.error?.let {
-            snackbarHostState.showSnackbar(it)
+            snackbarHostState.showSnackbar(it.asString(snackbarContext))
             viewModel.error = null
         }
     }
@@ -81,16 +86,16 @@ fun AddMovieScreen(
             Surface(tonalElevation = 3.dp) {
                 Column {
                     TopAppBar(
-                        title = { Text("Film hinzufügen") },
+                        title = { Text(stringResource(R.string.add_title)) },
                         navigationIcon = {
                             IconButton(onClick = onBack) {
-                                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Zurück")
+                                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.common_back))
                             }
                         },
                         actions = {
                             if (isAdmin) {
                                 IconButton(onClick = onCreateManual) {
-                                    Icon(Icons.Default.Edit, contentDescription = "Manuell anlegen")
+                                    Icon(Icons.Default.Edit, contentDescription = stringResource(R.string.add_manual))
                                 }
                             }
                         }
@@ -104,12 +109,12 @@ fun AddMovieScreen(
                         OutlinedTextField(
                             value = viewModel.searchQuery,
                             onValueChange = { viewModel.onSearchQueryChange(it) },
-                            placeholder = { Text("TMDb durchsuchen...") },
+                            placeholder = { Text(stringResource(R.string.add_search_tmdb)) },
                             leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
                             trailingIcon = {
                                 if (viewModel.searchQuery.isNotEmpty()) {
                                     IconButton(onClick = { viewModel.onSearchQueryChange("") }) {
-                                        Icon(Icons.Default.Close, contentDescription = "Löschen")
+                                        Icon(Icons.Default.Close, contentDescription = stringResource(R.string.common_clear))
                                     }
                                 }
                             },
@@ -133,7 +138,7 @@ fun AddMovieScreen(
                             },
                             modifier = Modifier.size(56.dp)
                         ) {
-                            Icon(Icons.Default.CameraAlt, contentDescription = "Scan Titel")
+                            Icon(Icons.Default.CameraAlt, contentDescription = stringResource(R.string.add_scan_title))
                         }
                     }
                     
@@ -147,7 +152,7 @@ fun AddMovieScreen(
                             )
                         ) {
                             Text(
-                                "Für die Suche fehlt ein TMDb-Schlüssel. Du kannst ihn im Profil eintragen.",
+                                stringResource(R.string.add_no_tmdb_key),
                                 modifier = Modifier.padding(16.dp),
                                 style = MaterialTheme.typography.bodySmall
                             )
@@ -163,12 +168,12 @@ fun AddMovieScreen(
                             selected = !viewModel.searchSeries,
                             onClick = { viewModel.onTypeChanged(false) },
                             shape = SegmentedButtonDefaults.itemShape(index = 0, count = 2)
-                        ) { Text("Film") }
+                        ) { Text(stringResource(R.string.type_film)) }
                         SegmentedButton(
                             selected = viewModel.searchSeries,
                             onClick = { viewModel.onTypeChanged(true) },
                             shape = SegmentedButtonDefaults.itemShape(index = 1, count = 2)
-                        ) { Text("Serie") }
+                        ) { Text(stringResource(R.string.type_series)) }
                     }
 
                     Row(
@@ -179,7 +184,7 @@ fun AddMovieScreen(
                         horizontalArrangement = Arrangement.End
                     ) {
                         Text(
-                            "In Sammlung aufnehmen",
+                            stringResource(R.string.add_include_in_collection),
                             style = MaterialTheme.typography.labelLarge,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -208,7 +213,7 @@ fun AddMovieScreen(
                 CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
             } else if (viewModel.searchResults.isEmpty() && viewModel.searchQuery.length >= 2) {
                 Text(
-                    "Keine Ergebnisse gefunden",
+                    stringResource(R.string.add_no_results),
                     modifier = Modifier.align(Alignment.Center),
                     style = MaterialTheme.typography.bodyLarge
                 )
@@ -242,7 +247,7 @@ fun AddMovieScreen(
                             ) {
                                 CircularProgressIndicator()
                                 Spacer(Modifier.height(16.dp))
-                                Text("Importiere Film...")
+                                Text(stringResource(R.string.add_importing))
                             }
                         }
                     }
@@ -257,7 +262,7 @@ fun AddMovieScreen(
                     Box(contentAlignment = Alignment.Center) {
                         Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)) {
                             Text(
-                                viewModel.successMessage!!,
+                                viewModel.successMessage!!.asString(),
                                 modifier = Modifier.padding(24.dp),
                                 color = MaterialTheme.colorScheme.onPrimaryContainer,
                                 fontWeight = FontWeight.Bold
@@ -272,7 +277,7 @@ fun AddMovieScreen(
 
 @Composable
 fun TmdbMovieItem(item: Map<String, Any>, onImport: () -> Unit) {
-    val title = item["title"] as? String ?: (item["name"] as? String) ?: "Unbekannt"
+    val title = item["title"] as? String ?: (item["name"] as? String) ?: stringResource(R.string.common_unknown)
     val overview = item["overview"] as? String ?: ""
     val releaseDate = item["release_date"] as? String ?: (item["first_air_date"] as? String) ?: ""
     val posterPath = item["poster_path"] as? String
@@ -311,7 +316,7 @@ fun TmdbMovieItem(item: Map<String, Any>, onImport: () -> Unit) {
         },
         trailingContent = {
             IconButton(onClick = onImport) {
-                Icon(Icons.Default.Download, contentDescription = "Importieren", tint = MaterialTheme.colorScheme.primary)
+                Icon(Icons.Default.Download, contentDescription = stringResource(R.string.add_import), tint = MaterialTheme.colorScheme.primary)
             }
         }
     )

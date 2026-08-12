@@ -11,6 +11,8 @@ import info.movieshelf.data.local.db.UploadKind
 import info.movieshelf.data.repository.MovieRepository
 import kotlinx.coroutines.launch
 import retrofit2.HttpException
+import info.movieshelf.R
+import info.movieshelf.ui.util.UiText
 
 class EditMovieViewModel(
     private val movieLocalId: Long,
@@ -33,8 +35,8 @@ class EditMovieViewModel(
         private set
     var isUploadingBackdrop by mutableStateOf(false)
         private set
-    var uploadMessage by mutableStateOf<String?>(null)
-    var error by mutableStateOf<String?>(null)
+    var uploadMessage by mutableStateOf<UiText?>(null)
+    var error by mutableStateOf<UiText?>(null)
 
     // Bearbeitbare Felder
     var title by mutableStateOf("")
@@ -155,11 +157,11 @@ class EditMovieViewModel(
         val ratingNum = rating.trim().replace(',', '.').toDoubleOrNull()
 
         when {
-            title.isBlank() -> { error = "Titel darf nicht leer sein."; return }
-            yearInt == null -> { error = "Bitte ein gültiges Jahr eingeben."; return }
-            collectionType.isBlank() -> { error = "Bitte einen Typ wählen."; return }
+            title.isBlank() -> { error = UiText.of(R.string.error_title_empty); return }
+            yearInt == null -> { error = UiText.of(R.string.error_year_invalid); return }
+            collectionType.isBlank() -> { error = UiText.of(R.string.error_type_missing); return }
             rating.isNotBlank() && (ratingNum == null || ratingNum < 0 || ratingNum > 100) -> {
-                error = "Bewertung muss zwischen 0 und 100 liegen."; return
+                error = UiText.of(R.string.error_rating_range); return
             }
         }
 
@@ -190,12 +192,12 @@ class EditMovieViewModel(
                 saved = true
             } catch (e: HttpException) {
                 error = when (e.code()) {
-                    403 -> "Keine Berechtigung zum Bearbeiten."
-                    422 -> "Eingaben ungültig. Bitte prüfe die Felder."
-                    else -> "Speichern fehlgeschlagen (Fehler ${e.code()})."
+                    403 -> UiText.of(R.string.error_no_permission_edit)
+                    422 -> UiText.of(R.string.error_invalid_input)
+                    else -> UiText.of(R.string.error_save_failed_code, e.code())
                 }
             } catch (e: Exception) {
-                error = "Verbindungsfehler: ${e.message}"
+                error = UiText.of(R.string.error_connection, e.message ?: "")
             } finally {
                 isSaving = false
             }
@@ -211,12 +213,12 @@ class EditMovieViewModel(
                 deleted = true
             } catch (e: HttpException) {
                 error = when (e.code()) {
-                    403 -> "Keine Berechtigung zum Löschen."
-                    404 -> "Film nicht gefunden."
-                    else -> "Löschen fehlgeschlagen (Fehler ${e.code()})."
+                    403 -> UiText.of(R.string.error_no_permission_delete)
+                    404 -> UiText.of(R.string.error_movie_not_found_dot)
+                    else -> UiText.of(R.string.error_delete_failed, e.code())
                 }
             } catch (e: Exception) {
-                error = "Verbindungsfehler: ${e.message}"
+                error = UiText.of(R.string.error_connection, e.message ?: "")
             } finally {
                 isDeleting = false
             }
@@ -234,16 +236,16 @@ class EditMovieViewModel(
                 val kind = if (isCover) UploadKind.COVER else UploadKind.BACKDROP
                 repository.setMovieImage(movieLocalId, bytes, mime, kind)
                 uploadMessage = if (repository.isOffline) {
-                    "Bild gespeichert — wird beim nächsten Abgleich hochgeladen."
-                } else if (isCover) "Cover aktualisiert." else "Backdrop aktualisiert."
+                    UiText.of(R.string.message_image_saved)
+                } else if (isCover) UiText.of(R.string.message_cover_updated) else UiText.of(R.string.message_backdrop_updated)
             } catch (e: HttpException) {
                 error = when (e.code()) {
-                    403 -> "Keine Berechtigung."
-                    422 -> "Bild ungültig oder zu groß."
-                    else -> "Upload fehlgeschlagen (Fehler ${e.code()})."
+                    403 -> UiText.of(R.string.error_no_permission)
+                    422 -> UiText.of(R.string.error_image_invalid)
+                    else -> UiText.of(R.string.error_upload_failed_code, e.code())
                 }
             } catch (e: Exception) {
-                error = "Verbindungsfehler: ${e.message}"
+                error = UiText.of(R.string.error_connection, e.message ?: "")
             } finally {
                 if (isCover) isUploadingCover = false else isUploadingBackdrop = false
             }

@@ -19,6 +19,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.contentType
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
@@ -28,6 +29,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import info.movieshelf.R
+import info.movieshelf.ui.util.UiText
 import info.movieshelf.data.local.DataStoreManager
 
 @OptIn(ExperimentalComposeUiApi::class)
@@ -82,14 +84,14 @@ fun LoginScreen(
             ) {
                 Image(
                     painter = painterResource(id = R.drawable.logo),
-                    contentDescription = "MovieShelf Logo",
+                    contentDescription = stringResource(R.string.login_logo_description),
                     modifier = Modifier
                         .height(100.dp)
                         .padding(bottom = 32.dp)
                 )
 
                 Text(
-                    text = if (viewModel.is2faRequired) "Zwei-Faktor-Check" else "Anmelden",
+                    text = stringResource(if (viewModel.is2faRequired) R.string.login_title_2fa else R.string.login_title),
                     style = MaterialTheme.typography.headlineMedium,
                     fontWeight = FontWeight.Bold,
                     modifier = Modifier.padding(bottom = 8.dp)
@@ -101,14 +103,14 @@ fun LoginScreen(
                     if (is2fa) {
                         Column {
                             Text(
-                                "Bitte gib den 6-stelligen Code aus deiner Authenticator-App ein.",
+                                stringResource(R.string.login_hint_2fa),
                                 style = MaterialTheme.typography.bodyMedium,
                                 modifier = Modifier.padding(bottom = 16.dp)
                             )
                             OutlinedTextField(
                                 value = viewModel.code2fa,
                                 onValueChange = { if (it.length <= 6) viewModel.code2fa = it },
-                                label = { Text("2FA Code") },
+                                label = { Text(stringResource(R.string.login_2fa_code)) },
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .semantics { contentType = ContentType.SmsOtpCode },
@@ -125,7 +127,7 @@ fun LoginScreen(
                             OutlinedTextField(
                                 value = viewModel.email,
                                 onValueChange = { viewModel.email = it },
-                                label = { Text("E-Mail") },
+                                label = { Text(stringResource(R.string.login_email)) },
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .semantics { contentType = ContentType.Username + ContentType.EmailAddress },
@@ -142,14 +144,14 @@ fun LoginScreen(
                             OutlinedTextField(
                                 value = viewModel.password,
                                 onValueChange = { viewModel.password = it },
-                                label = { Text("Passwort") },
+                                label = { Text(stringResource(R.string.login_password)) },
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .semantics { contentType = ContentType.Password },
                                 leadingIcon = { Icon(Icons.Default.Lock, contentDescription = null) },
                                 trailingIcon = {
                                     val icon = if (passwordVisible) Icons.Filled.Visibility else Icons.Filled.VisibilityOff
-                                    val description = if (passwordVisible) "Passwort ausblenden" else "Passwort anzeigen"
+                                    val description = stringResource(if (passwordVisible) R.string.login_password_hide else R.string.login_password_show)
                                     
                                     IconButton(onClick = { passwordVisible = !passwordVisible }) {
                                         Icon(imageVector = icon, contentDescription = description)
@@ -168,7 +170,7 @@ fun LoginScreen(
 
                 if (oauthViewModel.error != null) {
                     Text(
-                        text = oauthViewModel.error!!,
+                        text = oauthViewModel.error!!.asString(),
                         color = MaterialTheme.colorScheme.error,
                         style = MaterialTheme.typography.bodySmall,
                         modifier = Modifier.padding(top = 8.dp)
@@ -177,7 +179,7 @@ fun LoginScreen(
 
                 if (viewModel.error != null) {
                     Text(
-                        text = viewModel.error!!,
+                        text = viewModel.error!!.asString(),
                         color = MaterialTheme.colorScheme.error,
                         style = MaterialTheme.typography.bodySmall,
                         modifier = Modifier.padding(top = 16.dp)
@@ -203,7 +205,7 @@ fun LoginScreen(
                         } else {
                             Icon(Icons.Default.Cloud, contentDescription = null)
                             Spacer(Modifier.width(8.dp))
-                            Text("Mit Movieshelf anmelden")
+                            Text(stringResource(R.string.login_with_movieshelf))
                         }
                     }
 
@@ -242,7 +244,7 @@ fun LoginScreen(
                         val icon = if (viewModel.is2faRequired) Icons.Default.Pin else Icons.AutoMirrored.Filled.Login
                         Icon(icon, contentDescription = null)
                         Spacer(Modifier.width(8.dp))
-                        Text(if (viewModel.is2faRequired) "Code verifizieren" else "Anmelden")
+                        Text(stringResource(if (viewModel.is2faRequired) R.string.login_submit_2fa else R.string.login_submit))
                     }
                 }
 
@@ -252,7 +254,7 @@ fun LoginScreen(
                 ) {
                     Icon(Icons.Default.Refresh, contentDescription = null, modifier = Modifier.size(18.dp))
                     Spacer(Modifier.width(8.dp))
-                    Text("Server-URL ändern")
+                    Text(stringResource(R.string.login_change_server))
                 }
 
                 OutlinedButton(
@@ -260,7 +262,7 @@ fun LoginScreen(
                     modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
                     shape = info.movieshelf.ui.theme.PillShape
                 ) {
-                    Text("Andere Betriebsart wählen")
+                    Text(stringResource(R.string.login_change_mode))
                 }
             }
         }
