@@ -164,4 +164,83 @@
         <item quantity="one">%1$d Film</item>
         <item quantity="other">%1$d Filme</item>
     </plurals>
+
+    <!-- Details, Bearbeiten, Profil, Zwei-Faktor -->
+    <string name="detail_add_to_list">Zu Liste hinzufügen</string>
+    <string name="common_edit">Bearbeiten</string>
+    <string name="detail_wishlist">Zur Wunschliste</string>
+    <string name="detail_mark_watched">Gesehen markieren</string>
+    <string name="detail_fetch_trailer">Trailer von TMDb holen</string>
+    <string name="common_manage">Verwalten</string>
+    <string name="detail_no_lists">Keine Listen vorhanden. Lege eine unter „Meine Listen“ (Profil) an.</string>
+    <string name="detail_manage_seasons">Staffeln verwalten</string>
+    <string name="detail_seasons_hint">Fehlende Staffeln anhaken zum Nachladen, vorhandene abwählen zum Entfernen.</string>
+    <string name="detail_seasons_warning">Achtung: Entfernen löscht auch alle Episoden der abgewählten Staffel(n).</string>
+    <string name="common_no_changes">Keine Änderungen</string>
+    <string name="edit_title">Film bearbeiten</string>
+    <string name="error_movie_not_loaded">Film konnte nicht geladen werden.</string>
+    <string name="edit_delete_movie">Film löschen</string>
+    <string name="edit_delete_question">Film löschen?</string>
+    <string name="edit_delete_body">%1$s wird dauerhaft aus der Sammlung entfernt. Das kann nicht rückgängig gemacht werden.</string>
+    <string name="edit_discard_question">Änderungen verwerfen?</string>
+    <string name="edit_discard_body">Du hast ungespeicherte Änderungen. Wirklich verwerfen?</string>
+    <string name="common_discard">Verwerfen</string>
+    <string name="profile_save_changes">Änderungen speichern</string>
+    <string name="profile_tmdb_key">TMDb-Schlüssel</string>
+    <string name="profile_tmdb_hint">Für die Filmsuche brauchst du einen eigenen, kostenlosen Schlüssel von themoviedb.org. Er wird verschlüsselt auf diesem Gerät gespeichert und nur an TMDb geschickt.</string>
+    <string name="profile_api_key">API-Schlüssel</string>
+    <string name="profile_api_key_hint">z.B. 8f2c…</string>
+    <string name="common_remove">Entfernen</string>
+    <string name="twofactor_explain">Zwei-Faktor-Authentifizierung (2FA) schützt dein Konto zusätzlich: Neben deinem Passwort benötigst du beim Login einen Einmal-Code aus einer Authenticator-App.</string>
+    <string name="twofactor_disable_body">Möchtest du die Zwei-Faktor-Authentifizierung wirklich deaktivieren? Dein Konto ist danach nur noch durch das Passwort geschützt.</string>
+    <string name="twofactor_enter_key">Diesen Schlüssel in deiner Authenticator-App (z. B. Google Authenticator) eintragen:</string>
+    <string name="twofactor_recovery_hint">Sicher aufbewahren! Mit diesen Codes kannst du dich anmelden, wenn du keinen Zugriff auf die Authenticator-App hast. Jeder Code ist nur einmal gültig.</string>
+
+    <!-- Hinzufuegen, Dashboard, Statistik, Rest -->
+    <string name="add_title">Film hinzufügen</string>
+    <string name="add_manual">Manuell anlegen</string>
+    <string name="add_search_tmdb">TMDb durchsuchen…</string>
+    <string name="common_clear">Löschen</string>
+    <string name="add_scan_title">Titel scannen</string>
+    <string name="add_no_tmdb_key">Für die Suche fehlt ein TMDb-Schlüssel. Du kannst ihn im Profil eintragen.</string>
+    <string name="type_film">Film</string>
+    <string name="type_series">Serie</string>
+    <string name="add_importing">Importiere Film…</string>
+    <string name="add_import">Importieren</string>
+    <string name="scanner_close">Schließen</string>
+    <string name="scanner_flash">Blitz</string>
+    <string name="scanner_use_title">Titel übernehmen</string>
+    <string name="dashboard_no_movies">Noch keine Filme</string>
+    <string name="dashboard_add_first">Lege deinen ersten Film über das Plus an.</string>
+    <string name="dashboard_sync_now">Jetzt synchronisieren</string>
+    <string name="dashboard_no_results">Keine Filme gefunden</string>
+    <string name="dashboard_clear_filter">Auswahl aufheben</string>
+    <string name="dashboard_search_hint">Filme suchen…</string>
+    <string name="common_details">Details</string>
+    <string name="stats_title">Statistik</string>
+    <string name="common_retry">Erneut versuchen</string>
+    <string name="stats_timeline">Zeitreise</string>
+    <string name="stats_oldest">Ältester Film</string>
+    <string name="stats_newest">Neuester Film</string>
+    <string name="stats_avg_year">Durchschnittsjahr</string>
+    <string name="stats_top_genres">Top Genres</string>
+    <string name="stats_decades">Jahrzehnte</string>
+    <string name="actor_known_for">Bekannt für</string>
+    <string name="create_title">Film anlegen</string>
+    <string name="create_in_collection">In Sammlung</string>
+    <string name="condition_damaged">Beschädigt</string>
+    <string name="sync_never">Noch nie synchronisiert — der erste Lauf holt den vollständigen Bestand.</string>
+    <string name="sync_last">Zuletzt synchronisiert: %1$s</string>
+    <string name="sync_direction_hint">Beide Richtungen sind der Regelfall. Einzeln ist nützlich, wenn nur eine Seite stimmen soll — etwa nach einem Fehlversuch.</string>
+    <string name="setup_url_invalid">Ungültiges URL-Format</string>
+    <string name="list_remove_from">Aus Liste entfernen</string>
+    <string name="list_remove_movie">Film entfernen</string>
+
+    <!-- Zustand des Datentraegers -->
+    <string name="condition_none">—</string>
+    <string name="condition_new">Neu</string>
+    <string name="condition_like_new">Wie neu</string>
+    <string name="condition_good">Gut</string>
+    <string name="condition_acceptable">Akzeptabel</string>
+    <string name="error_server_unreachable">Server nicht erreichbar: %1$s</string>
 </resources>

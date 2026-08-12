@@ -28,6 +28,7 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.compose.ui.res.stringResource
 import info.movieshelf.R
+import info.movieshelf.ui.util.UiText
 import info.movieshelf.data.api.RetrofitClient
 import info.movieshelf.data.local.DataStoreManager
 import kotlinx.coroutines.launch
@@ -37,7 +38,7 @@ class SetupViewModel(private val dataStoreManager: DataStoreManager) : ViewModel
     var url by mutableStateOf("")
     var isSaving by mutableStateOf(false)
     var isTesting by mutableStateOf(false)
-    var connectionError by mutableStateOf<String?>(null)
+    var connectionError by mutableStateOf<UiText?>(null)
     var connectionSuccess by mutableStateOf(false)
 
     val showEmulatorHint by derivedStateOf {
@@ -91,10 +92,10 @@ class SetupViewModel(private val dataStoreManager: DataStoreManager) : ViewModel
                     RetrofitClient.api.getServerInfo()
                     connectionSuccess = true
                 } else {
-                    connectionError = "Ungültiges URL-Format"
+                    connectionError = UiText.of(R.string.setup_url_invalid)
                 }
             } catch (e: Exception) {
-                connectionError = "Server nicht erreichbar: ${e.message}"
+                connectionError = UiText.of(R.string.error_server_unreachable, e.message ?: "")
             } finally {
                 isTesting = false
             }
@@ -228,7 +229,7 @@ fun SetupScreen(
                             ) {
                                 Icon(Icons.Default.Warning, contentDescription = null, tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(16.dp))
                                 Spacer(Modifier.width(8.dp))
-                                Text(viewModel.connectionError ?: "", color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
+                                Text(viewModel.connectionError?.asString() ?: "", color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
                             }
                         }
 

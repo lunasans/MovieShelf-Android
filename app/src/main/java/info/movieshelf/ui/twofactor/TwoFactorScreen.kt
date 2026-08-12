@@ -138,9 +138,7 @@ fun TwoFactorScreen(
                 // Nicht aktiv, noch nicht im Einrichten
                 else -> {
                     Text(
-                        text = "Zwei-Faktor-Authentifizierung (2FA) schützt dein Konto " +
-                            "zusätzlich: Neben deinem Passwort benötigst du beim Login einen " +
-                            "Einmal-Code aus einer Authenticator-App.",
+                        text = stringResource(R.string.twofactor_explain),
                         style = MaterialTheme.typography.bodyMedium
                     )
                     Button(
@@ -170,8 +168,7 @@ fun TwoFactorScreen(
             title = { Text(stringResource(R.string.twofactor_disable_question)) },
             text = {
                 Text(
-                    "Möchtest du die Zwei-Faktor-Authentifizierung wirklich deaktivieren? " +
-                        "Dein Konto ist danach nur noch durch das Passwort geschützt."
+                    stringResource(R.string.twofactor_disable_body)
                 )
             },
             confirmButton = {
@@ -202,8 +199,7 @@ private fun SetupStep(viewModel: TwoFactorViewModel) {
         fontWeight = FontWeight.Bold
     )
     Text(
-        text = "Diesen Schlüssel in deiner Authenticator-App " +
-            "(z. B. Google Authenticator) eintragen:",
+        text = stringResource(R.string.twofactor_enter_key),
         style = MaterialTheme.typography.bodyMedium
     )
 
@@ -278,9 +274,7 @@ private fun RecoveryCodes(codes: List<String>?) {
                 fontWeight = FontWeight.Bold
             )
             Text(
-                text = "Sicher aufbewahren! Mit diesen Codes kannst du dich anmelden, " +
-                    "falls du keinen Zugriff auf deine Authenticator-App hast. " +
-                    "Jeder Code ist nur einmal gültig.",
+                text = stringResource(R.string.twofactor_recovery_hint),
                 style = MaterialTheme.typography.bodySmall
             )
             SelectionContainer {

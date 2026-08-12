@@ -21,6 +21,8 @@ import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
+import androidx.compose.ui.res.stringResource
+import info.movieshelf.R
 import com.google.mlkit.vision.barcode.BarcodeScanner
 import com.google.mlkit.vision.barcode.BarcodeScanning
 import com.google.mlkit.vision.common.InputImage
@@ -104,7 +106,7 @@ fun CameraScanner(
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 IconButton(onClick = onClose) {
-                    Icon(Icons.Default.Close, contentDescription = "Schließen", tint = Color.White)
+                    Icon(Icons.Default.Close, contentDescription = stringResource(R.string.scanner_close), tint = Color.White)
                 }
                 
                 IconButton(onClick = { 
@@ -113,7 +115,7 @@ fun CameraScanner(
                 }) {
                     Icon(
                         if (flashEnabled) Icons.Default.FlashOn else Icons.Default.FlashOff,
-                        contentDescription = "Blitz",
+                        contentDescription = stringResource(R.string.scanner_flash),
                         tint = Color.White
                     )
                 }
@@ -142,7 +144,7 @@ fun CameraScanner(
                         onClick = { onDetected(if (detectedBarcode.isNotEmpty()) detectedBarcode else detectedText) },
                         modifier = Modifier.fillMaxWidth().height(56.dp)
                     ) {
-                        Text(if (detectedBarcode.isNotEmpty()) "Barcode suchen" else "Titel übernehmen")
+                        Text(if (detectedBarcode.isNotEmpty()) "Barcode suchen" else stringResource(R.string.scanner_use_title))
                     }
                 } else {
                     Surface(

@@ -17,6 +17,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.compose.ui.res.stringResource
+import info.movieshelf.R
 import info.movieshelf.MovieShelfApplication
 import info.movieshelf.data.model.Stats
 
@@ -37,10 +39,10 @@ fun StatsScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Statistik") },
+                title = { Text(stringResource(R.string.stats_title)) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Zurück")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.common_back))
                     }
                 }
             )
@@ -62,7 +64,7 @@ fun StatsScreen(
                     Spacer(Modifier.height(16.dp))
                     Text(error, style = MaterialTheme.typography.titleMedium)
                     Spacer(Modifier.height(8.dp))
-                    Button(onClick = { viewModel.loadStats() }) { Text("Erneut versuchen") }
+                    Button(onClick = { viewModel.loadStats() }) { Text(stringResource(R.string.common_retry)) }
                 }
             }
         } else if (stats != null) {
@@ -118,18 +120,18 @@ fun StatsScreen(
                 )
 
                 // Zeitreise
-                Text("Zeitreise", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                Text(stringResource(R.string.stats_timeline), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
                 Card(modifier = Modifier.fillMaxWidth()) {
                     Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        StatRow(label = "Ältester Film", value = stats.years?.oldestYear?.toString() ?: "-")
-                        StatRow(label = "Neuester Film", value = stats.years?.newestYear?.toString() ?: "-")
-                        StatRow(label = "Durchschnittsjahr", value = stats.years?.avgYear?.toInt()?.toString() ?: "-")
+                        StatRow(label = stringResource(R.string.stats_oldest), value = stats.years?.oldestYear?.toString() ?: "-")
+                        StatRow(label = stringResource(R.string.stats_newest), value = stats.years?.newestYear?.toString() ?: "-")
+                        StatRow(label = stringResource(R.string.stats_avg_year), value = stats.years?.avgYear?.toInt()?.toString() ?: "-")
                     }
                 }
 
                 // Top Genres
                 if (!stats.genres.isNullOrEmpty()) {
-                    Text("Top Genres", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                    Text(stringResource(R.string.stats_top_genres), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
                     Card(modifier = Modifier.fillMaxWidth()) {
                         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                             stats.genres.take(5).forEach { genre ->
@@ -149,7 +151,7 @@ fun StatsScreen(
 
                 // Jahrzehnte
                 if (!stats.decades.isNullOrEmpty()) {
-                    Text("Jahrzehnte", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                    Text(stringResource(R.string.stats_decades), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
                     Card(modifier = Modifier.fillMaxWidth()) {
                         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                             stats.decades.sortedByDescending { it.decade }.forEach { decade ->

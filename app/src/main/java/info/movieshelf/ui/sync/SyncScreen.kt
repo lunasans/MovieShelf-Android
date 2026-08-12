@@ -98,8 +98,8 @@ fun SyncScreen(onBack: () -> Unit) {
             ShelfFormSection(title = stringResource(R.string.sync_status), icon = Icons.Default.Sync) {
                 Text(
                     text = SyncClock.formatForDisplay(viewModel.lastSyncAt)
-                        ?.let { "Zuletzt synchronisiert: $it" }
-                        ?: "Noch nie synchronisiert — der erste Lauf holt den vollständigen Bestand.",
+                        ?.let { stringResource(R.string.sync_last, it) }
+                        ?: stringResource(R.string.sync_never),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -164,8 +164,7 @@ fun SyncScreen(onBack: () -> Unit) {
 
             ShelfFormSection(title = stringResource(R.string.sync_single_direction), icon = Icons.Default.Sync) {
                 Text(
-                    "Beide Richtungen sind der Regelfall. Einzeln ist nützlich, wenn " +
-                        "nur eine Seite stimmen soll — etwa nach einem Fehlversuch.",
+                    stringResource(R.string.sync_direction_hint),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )

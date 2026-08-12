@@ -21,6 +21,8 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.compose.ui.res.stringResource
+import info.movieshelf.R
 import info.movieshelf.MovieShelfApplication
 import info.movieshelf.ui.components.ShelfFormSection
 import info.movieshelf.ui.components.ShelfSectionSpacing
@@ -59,10 +61,10 @@ fun CreateMovieScreen(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
-                title = { Text("Film anlegen") },
+                title = { Text(stringResource(R.string.create_title)) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Zurück")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.common_back))
                     }
                 },
                 actions = {
@@ -73,7 +75,7 @@ fun CreateMovieScreen(
                         )
                     } else {
                         IconButton(onClick = { viewModel.save() }) {
-                            Icon(Icons.Default.Save, contentDescription = "Speichern")
+                            Icon(Icons.Default.Save, contentDescription = stringResource(R.string.common_save))
                         }
                     }
                 }
@@ -235,7 +237,7 @@ fun CreateMovieScreen(
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     Column(Modifier.weight(1f)) {
-                        Text("In Sammlung", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
+                        Text(stringResource(R.string.create_in_collection), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
                         Text(
                             "Film ist Teil der Sammlung (nicht nur Wunschliste)",
                             style = MaterialTheme.typography.bodySmall,
@@ -264,7 +266,7 @@ fun CreateMovieScreen(
                         color = MaterialTheme.colorScheme.onPrimary
                     )
                 } else {
-                    Text("Anlegen")
+                    Text(stringResource(R.string.common_create))
                 }
             }
 
@@ -316,13 +318,16 @@ private fun CollectionTypeDropdown(
 }
 
 // Zustand: gespeichert wird der Enum-Wert, angezeigt das deutsche Label.
+// Gespeichert wird der Enum-Wert, angezeigt ein uebersetzter Text. Deshalb
+// stehen hier Ressourcen-Verweise: eine Konstante auf oberster Ebene hat
+// keinen Composable-Kontext, in dem sich Texte aufloesen liessen.
 private val CONDITION_OPTIONS = listOf(
-    "" to "—",
-    "new" to "Neu",
-    "like_new" to "Wie neu",
-    "good" to "Gut",
-    "acceptable" to "Akzeptabel",
-    "damaged" to "Beschädigt"
+    "" to R.string.condition_none,
+    "new" to R.string.condition_new,
+    "like_new" to R.string.condition_like_new,
+    "good" to R.string.condition_good,
+    "acceptable" to R.string.condition_acceptable,
+    "damaged" to R.string.condition_damaged
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -333,7 +338,7 @@ private fun ConditionDropdown(
     modifier: Modifier = Modifier
 ) {
     var expanded by remember { mutableStateOf(false) }
-    val label = CONDITION_OPTIONS.firstOrNull { it.first == value }?.second ?: value
+    val label = CONDITION_OPTIONS.firstOrNull { it.first == value }?.let { stringResource(it.second) } ?: value
 
     ExposedDropdownMenuBox(
         expanded = expanded,
@@ -354,9 +359,9 @@ private fun ConditionDropdown(
             expanded = expanded,
             onDismissRequest = { expanded = false }
         ) {
-            CONDITION_OPTIONS.forEach { (optValue, optLabel) ->
+            CONDITION_OPTIONS.forEach { (optValue, optLabelRes) ->
                 DropdownMenuItem(
-                    text = { Text(optLabel) },
+                    text = { Text(stringResource(optLabelRes)) },
                     onClick = {
                         onValueChange(optValue)
                         expanded = false

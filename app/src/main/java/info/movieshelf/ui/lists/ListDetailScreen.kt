@@ -24,6 +24,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.compose.ui.res.stringResource
+import info.movieshelf.R
 import info.movieshelf.MovieShelfApplication
 import info.movieshelf.data.model.Movie
 import info.movieshelf.ui.dashboard.MovieItem
@@ -49,7 +51,7 @@ fun ListDetailScreen(
                 title = { Text(viewModel.name.ifBlank { "Liste" }) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Zurück")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.common_back))
                     }
                 }
             )
@@ -89,7 +91,7 @@ fun ListDetailScreen(
                                 ) {
                                     Icon(
                                         Icons.Default.Delete,
-                                        contentDescription = "Aus Liste entfernen",
+                                        contentDescription = stringResource(R.string.list_remove_from),
                                         tint = Color.White,
                                         modifier = Modifier.size(18.dp)
                                     )
@@ -105,16 +107,16 @@ fun ListDetailScreen(
     removeTarget?.let { movie ->
         AlertDialog(
             onDismissRequest = { removeTarget = null },
-            title = { Text("Film entfernen") },
+            title = { Text(stringResource(R.string.list_remove_movie)) },
             text = { Text("\"${movie.title ?: "Dieser Film"}\" aus der Liste entfernen?") },
             confirmButton = {
                 TextButton(onClick = {
                     viewModel.removeMovie(movie.id)
                     removeTarget = null
-                }) { Text("Entfernen") }
+                }) { Text(stringResource(R.string.common_remove)) }
             },
             dismissButton = {
-                TextButton(onClick = { removeTarget = null }) { Text("Abbrechen") }
+                TextButton(onClick = { removeTarget = null }) { Text(stringResource(R.string.common_cancel)) }
             }
         )
     }
@@ -133,7 +135,7 @@ private fun StateMessage(
             Text(message, style = MaterialTheme.typography.titleMedium)
             if (onRetry != null) {
                 Spacer(Modifier.height(8.dp))
-                Button(onClick = onRetry) { Text("Erneut versuchen") }
+                Button(onClick = onRetry) { Text(stringResource(R.string.common_retry)) }
             }
         }
     }

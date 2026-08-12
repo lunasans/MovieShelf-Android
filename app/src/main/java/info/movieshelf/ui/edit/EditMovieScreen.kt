@@ -31,6 +31,8 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.compose.ui.res.stringResource
+import info.movieshelf.R
 import info.movieshelf.MovieShelfApplication
 import info.movieshelf.ui.components.ShelfFormSection
 import info.movieshelf.ui.components.ShelfSectionSpacing
@@ -125,10 +127,10 @@ fun EditMovieScreen(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
-                title = { Text("Film bearbeiten") },
+                title = { Text(stringResource(R.string.edit_title)) },
                 navigationIcon = {
                     IconButton(onClick = { requestBack() }) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Zurück")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.common_back))
                     }
                 },
                 actions = {
@@ -139,7 +141,7 @@ fun EditMovieScreen(
                         )
                     } else {
                         IconButton(onClick = { viewModel.save() }, enabled = !viewModel.isLoading) {
-                            Icon(Icons.Default.Save, contentDescription = "Speichern")
+                            Icon(Icons.Default.Save, contentDescription = stringResource(R.string.common_save))
                         }
                     }
                 }
@@ -154,7 +156,7 @@ fun EditMovieScreen(
             }
             viewModel.loadError -> {
                 Box(Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
-                    Text("Film konnte nicht geladen werden.")
+                    Text(stringResource(R.string.error_movie_not_loaded))
                 }
             }
             else -> {
@@ -375,7 +377,7 @@ fun EditMovieScreen(
                         if (viewModel.isSaving) {
                             CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp, color = MaterialTheme.colorScheme.onPrimary)
                         } else {
-                            Text("Speichern")
+                            Text(stringResource(R.string.common_save))
                         }
                     }
 
@@ -392,7 +394,7 @@ fun EditMovieScreen(
                         } else {
                             Icon(Icons.Default.DeleteOutline, contentDescription = null)
                             Spacer(Modifier.width(8.dp))
-                            Text("Film löschen")
+                            Text(stringResource(R.string.edit_delete_movie))
                         }
                     }
 
@@ -406,8 +408,8 @@ fun EditMovieScreen(
         AlertDialog(
             onDismissRequest = { showDeleteDialog = false },
             icon = { Icon(Icons.Default.Warning, contentDescription = null, tint = MaterialTheme.colorScheme.error) },
-            title = { Text("Film löschen?") },
-            text = { Text("„${viewModel.title}\" wird dauerhaft aus der Sammlung entfernt. Das kann nicht rückgängig gemacht werden.") },
+            title = { Text(stringResource(R.string.edit_delete_question)) },
+            text = { Text(stringResource(R.string.edit_delete_body, viewModel.title)) },
             confirmButton = {
                 TextButton(
                     onClick = {
@@ -415,10 +417,10 @@ fun EditMovieScreen(
                         viewModel.deleteMovie()
                     },
                     colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
-                ) { Text("Löschen") }
+                ) { Text(stringResource(R.string.common_delete)) }
             },
             dismissButton = {
-                TextButton(onClick = { showDeleteDialog = false }) { Text("Abbrechen") }
+                TextButton(onClick = { showDeleteDialog = false }) { Text(stringResource(R.string.common_cancel)) }
             }
         )
     }
@@ -427,8 +429,8 @@ fun EditMovieScreen(
         AlertDialog(
             onDismissRequest = { showDiscardDialog = false },
             icon = { Icon(Icons.Default.Warning, contentDescription = null, tint = MaterialTheme.colorScheme.error) },
-            title = { Text("Änderungen verwerfen?") },
-            text = { Text("Du hast ungespeicherte Änderungen. Wirklich verwerfen?") },
+            title = { Text(stringResource(R.string.edit_discard_question)) },
+            text = { Text(stringResource(R.string.edit_discard_body)) },
             confirmButton = {
                 TextButton(
                     onClick = {
@@ -436,10 +438,10 @@ fun EditMovieScreen(
                         onBack()
                     },
                     colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
-                ) { Text("Verwerfen") }
+                ) { Text(stringResource(R.string.common_discard)) }
             },
             dismissButton = {
-                TextButton(onClick = { showDiscardDialog = false }) { Text("Abbrechen") }
+                TextButton(onClick = { showDiscardDialog = false }) { Text(stringResource(R.string.common_cancel)) }
             }
         )
     }
@@ -489,13 +491,16 @@ private fun CollectionTypeDropdown(
 }
 
 // Zustand: gespeichert wird der Enum-Wert, angezeigt das deutsche Label.
+// Gespeichert wird der Enum-Wert, angezeigt ein uebersetzter Text. Deshalb
+// stehen hier Ressourcen-Verweise: eine Konstante auf oberster Ebene hat
+// keinen Composable-Kontext, in dem sich Texte aufloesen liessen.
 private val CONDITION_OPTIONS = listOf(
-    "" to "—",
-    "new" to "Neu",
-    "like_new" to "Wie neu",
-    "good" to "Gut",
-    "acceptable" to "Akzeptabel",
-    "damaged" to "Beschädigt"
+    "" to R.string.condition_none,
+    "new" to R.string.condition_new,
+    "like_new" to R.string.condition_like_new,
+    "good" to R.string.condition_good,
+    "acceptable" to R.string.condition_acceptable,
+    "damaged" to R.string.condition_damaged
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -506,7 +511,7 @@ private fun ConditionDropdown(
     modifier: Modifier = Modifier
 ) {
     var expanded by remember { mutableStateOf(false) }
-    val label = CONDITION_OPTIONS.firstOrNull { it.first == value }?.second ?: value
+    val label = CONDITION_OPTIONS.firstOrNull { it.first == value }?.let { stringResource(it.second) } ?: value
 
     ExposedDropdownMenuBox(
         expanded = expanded,
@@ -527,9 +532,9 @@ private fun ConditionDropdown(
             expanded = expanded,
             onDismissRequest = { expanded = false }
         ) {
-            CONDITION_OPTIONS.forEach { (optValue, optLabel) ->
+            CONDITION_OPTIONS.forEach { (optValue, optLabelRes) ->
                 DropdownMenuItem(
-                    text = { Text(optLabel) },
+                    text = { Text(stringResource(optLabelRes)) },
                     onClick = {
                         onValueChange(optValue)
                         expanded = false

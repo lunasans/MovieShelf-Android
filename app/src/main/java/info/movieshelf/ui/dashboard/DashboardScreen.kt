@@ -41,6 +41,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.compose.ui.res.stringResource
 import info.movieshelf.MovieShelfApplication
 import info.movieshelf.R
 import info.movieshelf.data.model.Movie
@@ -108,13 +109,13 @@ fun DashboardScreen(
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
             Column {
-                // Logo linksbündig wie im Web; "Über MovieShelf" sitzt
+                // Logo linksbündig wie im Web; stringResource(R.string.about_title) sitzt
                 // jetzt in den Einstellungen und braucht hier keinen Platz.
                 TopAppBar(
                     title = {
                         Image(
                             painter = painterResource(id = R.drawable.logo),
-                            contentDescription = "MovieShelf",
+                            contentDescription = stringResource(R.string.app_name),
                             modifier = Modifier.height(32.dp)
                         )
                     },
@@ -183,13 +184,13 @@ fun DashboardScreen(
                         ) {
                             Icon(Icons.Default.SearchOff, null, Modifier.size(64.dp), tint = MaterialTheme.colorScheme.outline)
                             Spacer(Modifier.height(16.dp))
-                            Text("Noch keine Filme", style = MaterialTheme.typography.titleMedium)
+                            Text(stringResource(R.string.dashboard_no_movies), style = MaterialTheme.typography.titleMedium)
                             Spacer(Modifier.height(8.dp))
                             Text(
                                 text = if (isShelfMode) {
                                     "Deine Sammlung wird beim Synchronisieren von der Shelf geholt."
                                 } else {
-                                    "Lege deinen ersten Film über das Plus an."
+                                    stringResource(R.string.dashboard_add_first)
                                 },
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -200,7 +201,7 @@ fun DashboardScreen(
                                 Button(onClick = onSyncClick, shape = info.movieshelf.ui.theme.PillShape) {
                                     Icon(Icons.Default.Sync, contentDescription = null, modifier = Modifier.size(18.dp))
                                     Spacer(Modifier.width(8.dp))
-                                    Text("Jetzt synchronisieren", fontWeight = FontWeight.Bold)
+                                    Text(stringResource(R.string.dashboard_sync_now), fontWeight = FontWeight.Bold)
                                 }
                             }
                         }
@@ -287,13 +288,13 @@ fun DashboardScreen(
                     ) {
                         Icon(Icons.Default.SearchOff, null, Modifier.size(64.dp), tint = MaterialTheme.colorScheme.outline)
                         Spacer(Modifier.height(16.dp))
-                        Text("Keine Filme gefunden", style = MaterialTheme.typography.titleMedium)
+                        Text(stringResource(R.string.dashboard_no_results), style = MaterialTheme.typography.titleMedium)
                         if (viewModel.searchQuery.isNotEmpty() || viewModel.selectedShelf != null) {
                             TextButton(onClick = {
                                 viewModel.onSearchQueryChange("")
                                 viewModel.clearShelf()
                             }) {
-                                Text("Auswahl aufheben")
+                                Text(stringResource(R.string.dashboard_clear_filter))
                             }
                         }
                     }
@@ -356,12 +357,12 @@ private fun DashboardSearchField(viewModel: DashboardViewModel, modifier: Modifi
     OutlinedTextField(
         value = viewModel.searchQuery,
         onValueChange = { viewModel.onSearchQueryChange(it) },
-        placeholder = { Text("Filme suchen...") },
+        placeholder = { Text(stringResource(R.string.dashboard_search_hint)) },
         leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
         trailingIcon = {
             if (viewModel.searchQuery.isNotEmpty()) {
                 IconButton(onClick = { viewModel.onSearchQueryChange("") }) {
-                    Icon(Icons.Default.Close, contentDescription = "Löschen")
+                    Icon(Icons.Default.Close, contentDescription = stringResource(R.string.common_clear))
                 }
             }
         },
@@ -522,7 +523,7 @@ fun HeroSlider(
                     ) {
                         Icon(Icons.Default.PlayArrow, contentDescription = null, modifier = Modifier.size(22.dp))
                         Spacer(Modifier.width(8.dp))
-                        Text("Details", fontWeight = FontWeight.Black)
+                        Text(stringResource(R.string.common_details), fontWeight = FontWeight.Black)
                     }
                 }
             }

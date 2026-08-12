@@ -49,6 +49,9 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
+import info.movieshelf.R
 import info.movieshelf.data.model.Actor
 import info.movieshelf.data.model.Movie
 import info.movieshelf.ui.components.ShelfFormSection
@@ -199,7 +202,7 @@ private fun MovieDetailContent(
                             contentColor = iconContentColor
                         )
                     ) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Zurück")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.common_back))
                     }
                 },
                 actions = {
@@ -214,7 +217,7 @@ private fun MovieDetailContent(
                                 contentColor = iconContentColor
                             )
                         ) {
-                            Icon(Icons.AutoMirrored.Filled.PlaylistAdd, contentDescription = "Zu Liste hinzufügen")
+                            Icon(Icons.AutoMirrored.Filled.PlaylistAdd, contentDescription = stringResource(R.string.detail_add_to_list))
                         }
                     }
                     if (movie != null && isAdmin) {
@@ -225,7 +228,7 @@ private fun MovieDetailContent(
                                 contentColor = iconContentColor
                             )
                         ) {
-                            Icon(Icons.Default.Edit, contentDescription = "Bearbeiten")
+                            Icon(Icons.Default.Edit, contentDescription = stringResource(R.string.common_edit))
                         }
                     }
                     if (movie != null) {
@@ -238,7 +241,7 @@ private fun MovieDetailContent(
                         ) {
                             Icon(
                                 imageVector = if (movie.isWishlisted == true) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
-                                contentDescription = "Zur Wunschliste"
+                                contentDescription = stringResource(R.string.detail_wishlist)
                             )
                         }
                     }
@@ -252,7 +255,7 @@ private fun MovieDetailContent(
                         ) {
                             Icon(
                                 imageVector = if (movie.isWatched == true) Icons.Filled.CheckCircle else Icons.Outlined.CheckCircle,
-                                contentDescription = "Gesehen markieren"
+                                contentDescription = stringResource(R.string.detail_mark_watched)
                             )
                         }
                     }
@@ -303,7 +306,7 @@ private fun MovieDetailContent(
                             } else {
                                 Icon(Icons.Default.Movie, contentDescription = null, modifier = Modifier.size(18.dp))
                                 Spacer(Modifier.width(8.dp))
-                                Text("Trailer von TMDb holen")
+                                Text(stringResource(R.string.detail_fetch_trailer))
                             }
                         }
                     }
@@ -354,7 +357,7 @@ private fun MovieDetailContent(
                                 TextButton(onClick = { viewModel.openSeasonDialog() }) {
                                     Icon(Icons.Default.Edit, contentDescription = null, modifier = Modifier.size(18.dp))
                                     Spacer(Modifier.width(4.dp))
-                                    Text("Verwalten")
+                                    Text(stringResource(R.string.common_manage))
                                 }
                             }
                         }
@@ -440,11 +443,11 @@ private fun MovieDetailContent(
                     .padding(horizontal = 20.dp)
                     .padding(bottom = 24.dp)
             ) {
-                Text("Zu Liste hinzufügen", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                Text(stringResource(R.string.detail_add_to_list), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
                 Spacer(Modifier.height(8.dp))
                 if (viewModel.availableLists.isEmpty()) {
                     Text(
-                        "Keine Listen vorhanden. Lege eine unter „Meine Listen“ (Profil) an.",
+                        stringResource(R.string.detail_no_lists),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(vertical = 16.dp)
@@ -453,7 +456,7 @@ private fun MovieDetailContent(
                     viewModel.availableLists.forEach { list ->
                         ListItem(
                             headlineContent = { Text(list.name ?: "Liste") },
-                            supportingContent = { Text("${list.movieCount} Filme") },
+                            supportingContent = { Text(pluralStringResource(R.plurals.film_count, list.movieCount, list.movieCount)) },
                             leadingContent = { Icon(Icons.AutoMirrored.Filled.PlaylistAdd, contentDescription = null) },
                             modifier = Modifier.clickable {
                                 viewModel.addToList(list)
@@ -475,7 +478,7 @@ private fun MovieDetailContent(
 private fun SeasonBackfillDialog(viewModel: MovieDetailViewModel) {
     AlertDialog(
         onDismissRequest = { if (!viewModel.seasonImporting) viewModel.showSeasonDialog = false },
-        title = { Text("Staffeln verwalten") },
+        title = { Text(stringResource(R.string.detail_manage_seasons)) },
         text = {
             if (viewModel.seasonDialogLoading) {
                 Box(Modifier.fillMaxWidth().padding(24.dp), contentAlignment = Alignment.Center) {
@@ -484,7 +487,7 @@ private fun SeasonBackfillDialog(viewModel: MovieDetailViewModel) {
             } else {
                 Column {
                     Text(
-                        "Fehlende Staffeln anhaken zum Nachladen, vorhandene abwählen zum Entfernen.",
+                        stringResource(R.string.detail_seasons_hint),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -536,7 +539,7 @@ private fun SeasonBackfillDialog(viewModel: MovieDetailViewModel) {
                     if (viewModel.seasonsToRemove.isNotEmpty()) {
                         Spacer(Modifier.height(8.dp))
                         Text(
-                            "Achtung: Entfernen löscht auch alle Episoden der abgewählten Staffel(n).",
+                            stringResource(R.string.detail_seasons_warning),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.error
                         )
@@ -556,7 +559,7 @@ private fun SeasonBackfillDialog(viewModel: MovieDetailViewModel) {
                 val parts = mutableListOf<String>()
                 if (viewModel.seasonsToAdd.isNotEmpty()) parts.add("${viewModel.seasonsToAdd.size} nachladen")
                 if (viewModel.seasonsToRemove.isNotEmpty()) parts.add("${viewModel.seasonsToRemove.size} entfernen")
-                Text(if (parts.isEmpty()) "Keine Änderungen" else parts.joinToString(", "))
+                Text(if (parts.isEmpty()) stringResource(R.string.common_no_changes) else parts.joinToString(", "))
             }
         },
         dismissButton = {

@@ -26,6 +26,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.compose.ui.res.stringResource
+import info.movieshelf.R
 import info.movieshelf.MovieShelfApplication
 import info.movieshelf.data.model.Movie
 import info.movieshelf.ui.dashboard.MovieItem
@@ -51,7 +53,7 @@ fun ActorDetailScreen(
                 title = { Text(actor?.name ?: "Schauspieler") },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Zurück")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.common_back))
                     }
                 }
             )
@@ -76,7 +78,7 @@ fun ActorDetailScreen(
                         style = MaterialTheme.typography.titleMedium
                     )
                     Spacer(Modifier.height(8.dp))
-                    Button(onClick = { viewModel.loadActor() }) { Text("Erneut versuchen") }
+                    Button(onClick = { viewModel.loadActor() }) { Text(stringResource(R.string.common_retry)) }
                 }
             }
         } else if (actor != null) {
@@ -142,7 +144,7 @@ fun ActorDetailScreen(
 
                 if (!actor.movies.isNullOrEmpty()) {
                     Text(
-                        text = "Bekannt für",
+                        text = stringResource(R.string.actor_known_for),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         modifier = Modifier.fillMaxWidth()

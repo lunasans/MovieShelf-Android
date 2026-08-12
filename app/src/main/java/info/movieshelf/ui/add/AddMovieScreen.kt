@@ -27,6 +27,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.compose.ui.res.stringResource
+import info.movieshelf.R
 import info.movieshelf.MovieShelfApplication
 import coil.compose.AsyncImage
 
@@ -81,16 +83,16 @@ fun AddMovieScreen(
             Surface(tonalElevation = 3.dp) {
                 Column {
                     TopAppBar(
-                        title = { Text("Film hinzufügen") },
+                        title = { Text(stringResource(R.string.add_title)) },
                         navigationIcon = {
                             IconButton(onClick = onBack) {
-                                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Zurück")
+                                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.common_back))
                             }
                         },
                         actions = {
                             if (isAdmin) {
                                 IconButton(onClick = onCreateManual) {
-                                    Icon(Icons.Default.Edit, contentDescription = "Manuell anlegen")
+                                    Icon(Icons.Default.Edit, contentDescription = stringResource(R.string.add_manual))
                                 }
                             }
                         }
@@ -104,12 +106,12 @@ fun AddMovieScreen(
                         OutlinedTextField(
                             value = viewModel.searchQuery,
                             onValueChange = { viewModel.onSearchQueryChange(it) },
-                            placeholder = { Text("TMDb durchsuchen...") },
+                            placeholder = { Text(stringResource(R.string.add_search_tmdb)) },
                             leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
                             trailingIcon = {
                                 if (viewModel.searchQuery.isNotEmpty()) {
                                     IconButton(onClick = { viewModel.onSearchQueryChange("") }) {
-                                        Icon(Icons.Default.Close, contentDescription = "Löschen")
+                                        Icon(Icons.Default.Close, contentDescription = stringResource(R.string.common_clear))
                                     }
                                 }
                             },
@@ -133,7 +135,7 @@ fun AddMovieScreen(
                             },
                             modifier = Modifier.size(56.dp)
                         ) {
-                            Icon(Icons.Default.CameraAlt, contentDescription = "Scan Titel")
+                            Icon(Icons.Default.CameraAlt, contentDescription = stringResource(R.string.add_scan_title))
                         }
                     }
                     
@@ -147,7 +149,7 @@ fun AddMovieScreen(
                             )
                         ) {
                             Text(
-                                "Für die Suche fehlt ein TMDb-Schlüssel. Du kannst ihn im Profil eintragen.",
+                                stringResource(R.string.add_no_tmdb_key),
                                 modifier = Modifier.padding(16.dp),
                                 style = MaterialTheme.typography.bodySmall
                             )
@@ -163,12 +165,12 @@ fun AddMovieScreen(
                             selected = !viewModel.searchSeries,
                             onClick = { viewModel.onTypeChanged(false) },
                             shape = SegmentedButtonDefaults.itemShape(index = 0, count = 2)
-                        ) { Text("Film") }
+                        ) { Text(stringResource(R.string.type_film)) }
                         SegmentedButton(
                             selected = viewModel.searchSeries,
                             onClick = { viewModel.onTypeChanged(true) },
                             shape = SegmentedButtonDefaults.itemShape(index = 1, count = 2)
-                        ) { Text("Serie") }
+                        ) { Text(stringResource(R.string.type_series)) }
                     }
 
                     Row(
@@ -242,7 +244,7 @@ fun AddMovieScreen(
                             ) {
                                 CircularProgressIndicator()
                                 Spacer(Modifier.height(16.dp))
-                                Text("Importiere Film...")
+                                Text(stringResource(R.string.add_importing))
                             }
                         }
                     }
@@ -311,7 +313,7 @@ fun TmdbMovieItem(item: Map<String, Any>, onImport: () -> Unit) {
         },
         trailingContent = {
             IconButton(onClick = onImport) {
-                Icon(Icons.Default.Download, contentDescription = "Importieren", tint = MaterialTheme.colorScheme.primary)
+                Icon(Icons.Default.Download, contentDescription = stringResource(R.string.add_import), tint = MaterialTheme.colorScheme.primary)
             }
         }
     )

@@ -252,7 +252,7 @@ private fun AccountSection(viewModel: ProfileViewModel) {
         OutlinedTextField(
             value = viewModel.name,
             onValueChange = { viewModel.name = it },
-            label = { Text("Name") },
+            label = { Text(stringResource(R.string.common_name)) },
             modifier = Modifier.fillMaxWidth(),
             leadingIcon = { Icon(Icons.Default.Person, contentDescription = null) },
             singleLine = true
@@ -263,7 +263,7 @@ private fun AccountSection(viewModel: ProfileViewModel) {
         OutlinedTextField(
             value = viewModel.email,
             onValueChange = { viewModel.email = it },
-            label = { Text("E-Mail") },
+            label = { Text(stringResource(R.string.login_email)) },
             modifier = Modifier.fillMaxWidth(),
             leadingIcon = { Icon(Icons.Default.Email, contentDescription = null) },
             singleLine = true
@@ -287,7 +287,7 @@ private fun AccountSection(viewModel: ProfileViewModel) {
                     strokeWidth = 2.dp
                 )
             } else {
-                Text("Änderungen speichern", fontWeight = FontWeight.Bold)
+                Text(stringResource(R.string.profile_save_changes), fontWeight = FontWeight.Bold)
             }
         }
     }
@@ -305,7 +305,7 @@ private fun StandaloneSection(
         Column(Modifier.padding(16.dp)) {
             RowHeader(
                 icon = Icons.Default.CloudOff,
-                title = "Nur auf diesem Gerät",
+                title = stringResource(R.string.mode_standalone),
                 subtitle = "Deine Sammlung liegt auf dem Telefon. Verbindest du eine " +
                     "Shelf, wird dein Bestand hochgeladen — er geht dabei nicht verloren."
             )
@@ -327,18 +327,16 @@ private fun StandaloneSection(
         Column(Modifier.padding(16.dp)) {
             RowHeader(
                 icon = Icons.Default.Key,
-                title = "TMDb-Schlüssel",
-                subtitle = "Für die Filmsuche brauchst du einen eigenen, kostenlosen " +
-                    "Schlüssel von themoviedb.org. Er wird verschlüsselt auf diesem " +
-                    "Gerät gespeichert und nur an TMDb geschickt."
+                title = stringResource(R.string.profile_tmdb_key),
+                subtitle = stringResource(R.string.profile_tmdb_hint)
             )
             Spacer(Modifier.height(12.dp))
             var keyInput by remember(tmdbApiKey) { mutableStateOf(tmdbApiKey.orEmpty()) }
             OutlinedTextField(
                 value = keyInput,
                 onValueChange = { keyInput = it },
-                label = { Text("API-Schlüssel") },
-                placeholder = { Text("z.B. 8f2c…") },
+                label = { Text(stringResource(R.string.profile_api_key)) },
+                placeholder = { Text(stringResource(R.string.profile_api_key_hint)) },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true
             )
@@ -361,7 +359,7 @@ private fun StandaloneSection(
                         modifier = Modifier.weight(1f),
                         shape = PillShape
                     ) {
-                        Text("Entfernen")
+                        Text(stringResource(R.string.common_remove))
                     }
                 }
             }
