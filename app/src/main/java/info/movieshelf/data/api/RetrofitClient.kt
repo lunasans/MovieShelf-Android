@@ -5,6 +5,7 @@ import android.util.Log
 import info.movieshelf.BuildConfig
 import info.movieshelf.data.SessionManager
 import com.google.gson.GsonBuilder
+import com.google.gson.Strictness
 import okhttp3.Cache
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.Interceptor
@@ -91,7 +92,9 @@ object RetrofitClient {
             finalUrl.toHttpUrlOrNull() ?: return false
 
             val gson = GsonBuilder()
-                .setLenient()
+                // setLenient() ist seit Gson 2.11 abgeloest; die Nachsicht
+                // gegenueber unsauberem JSON bleibt dieselbe.
+                .setStrictness(Strictness.LENIENT)
                 .create()
 
             _httpClient = newClientBuilder(context).build()

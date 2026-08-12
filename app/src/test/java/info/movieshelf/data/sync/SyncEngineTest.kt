@@ -12,6 +12,7 @@ import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import okhttp3.ResponseBody.Companion.toResponseBody
 
 /**
  * Prüft die Regeln, die in der Desktop-App teuer erkauft wurden. Sie sind
@@ -266,7 +267,7 @@ class SyncEngineTest {
         val api = object : FakeSyncApi() {
             override suspend fun deleteMovie(id: Int) {
                 throw retrofit2.HttpException(
-                    retrofit2.Response.error<Any>(404, okhttp3.ResponseBody.create(null, ""))
+                    retrofit2.Response.error<Any>(404, "".toResponseBody(null))
                 )
             }
         }
