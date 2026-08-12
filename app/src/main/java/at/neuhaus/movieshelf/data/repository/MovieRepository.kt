@@ -32,6 +32,26 @@ data class LocalCastMember(
     val tmdbId: Int? = null
 )
 
+/**
+ * Einen Zielzustand ueber einen Umschalter durchsetzen.
+ *
+ * Die Shelf kennt fuer "gesehen" nur ein Umschalten. Wer damit einen Wert
+ * setzen will, muss pruefen, wo er herausgekommen ist: stand die andere Seite
+ * bereits auf dem Zielwert, dreht der erste Aufruf davon **weg**. Ein zweiter
+ * bringt ihn zurueck — mehr braucht es nie, weil nach dem ersten Aufruf der
+ * Stand der Gegenseite bekannt ist.
+ *
+ * @param toggle schaltet einmal um und liefert den neuen Stand der Gegenseite.
+ * @return der Stand, der am Ende gilt. Weicht er von [desired] ab, liess sich
+ *   der Zielzustand nicht durchsetzen und der Aufrufer muss sich fuegen.
+ */
+internal suspend fun applyWatchedState(desired: Boolean, toggle: suspend () -> Boolean): Boolean {
+    val afterFirst = toggle()
+    if (afterFirst == desired) return afterFirst
+
+    return toggle()
+}
+
 /** Groesse der Sammlung nach Kennzahl-Regel — siehe [MovieRepository.getCollectionCounts]. */
 data class CollectionCounts(
     val films: Int,
@@ -77,9 +97,30 @@ class MovieRepository(
      * Knopfdruck oder im Hintergrund. Genauso macht es die Desktop-App.
      */
     suspend fun getMovies(page: Int = 1, perPage: Int = 30, tag: String? = null): List<Movie> {
-        if (tag == "new") return movieDao.getNewest(perPage).map { it.toMovie() }
-        val local = movieDao.getAllMovies().map { it.toMovie() }
+        if (tag == "new") return withBoxsetWatched(movieDao.getNewest(perPage).map { it.toMovie() })
+        val local = withBoxsetWatched(movieDao.getAllMovies().map { it.toMovie() })
         return if (page <= 1) local.take(perPage) else local.drop((page - 1) * perPage).take(perPage)
+    }
+
+    /**
+     * Den "gesehen"-Stand der Boxsets aus ihren Teilen ableiten.
+     *
+     * Ein Boxset schaut niemand — man schaut die Filme darin. Ohne diese
+     * Ableitung stuende jede Sammlung als ungesehen in der Liste, auch wenn
+     * laengst alles daraus geschaut ist: die Huelle traegt keine eigene
+     * Markierung, weil es nichts gibt, was man an ihr haette schauen koennen.
+     *
+     * Eine Abfrage fuer alle Boxsets zusammen, nicht eine je Zeile.
+     */
+    private suspend fun withBoxsetWatched(movies: List<Movie>): List<Movie> {
+        if (movies.none { it.isBoxset == true }) return movies
+
+        val states = movieDao.getBoxsetWatchStates().associateBy { it.parentLocalId }
+        return movies.map { movie ->
+            if (movie.isBoxset != true) return@map movie
+            val state = states[movie.localId] ?: return@map movie
+            movie.copy(isWatched = state.isFullyWatched)
+        }
     }
 
     /**
@@ -95,7 +136,7 @@ class MovieRepository(
 
     /** Suche in der lokalen Sammlung. */
     suspend fun searchMovies(query: String): List<Movie> =
-        movieDao.searchMovies(query).map { it.toMovie() }
+        withBoxsetWatched(movieDao.searchMovies(query).map { it.toMovie() })
 
     // ── Lokale Identität ─────────────────────────────────────────────────────
     // Ab hier arbeitet die Oberfläche mit lokalen IDs. Die Server-ID wird erst
@@ -152,7 +193,12 @@ class MovieRepository(
         if (movie.isBoxset == true) {
             val children = movieDao.getBoxsetChildren(entity.localId)
             if (children.isNotEmpty()) {
-                movie = movie.copy(boxsetChildren = children.map { it.toMovie() })
+                movie = movie.copy(
+                    boxsetChildren = children.map { it.toMovie() },
+                    // Aus den Teilen abgeleitet — siehe [withBoxsetWatched].
+                    // Hier ohne zweite Abfrage: die Teile liegen schon vor.
+                    isWatched = children.all { it.isWatched == true }
+                )
             }
         }
         return movie
@@ -272,17 +318,46 @@ class MovieRepository(
      * sie nie nachgeholt. Uebertragen wird sie jetzt beim Abgleich.
      */
     suspend fun toggleWatchedByLocalId(localId: Long, currentState: Boolean) {
-        movieDao.getByLocalId(localId) ?: return
-        movieDao.updateWatched(localId, !currentState, SyncClock.now())
+        val entity = movieDao.getByLocalId(localId) ?: return
+        val desired = !currentState
+
+        // Bei einem Boxset gehoert die Markierung an seine Teile: sein eigener
+        // Stand wird aus ihnen abgeleitet, ihn zu setzen bliebe wirkungslos.
+        // Jeder Teil geht einzeln zur Shelf — sie kennt keinen Sammelaufruf.
+        val children = if (entity.isBoxset == true) movieDao.getBoxsetChildren(localId) else emptyList()
+        if (children.isEmpty()) {
+            movieDao.updateWatched(localId, desired, SyncClock.now())
+            return
+        }
+
+        val now = SyncClock.now()
+        for (child in children) {
+            if ((child.isWatched == true) != desired) {
+                movieDao.updateWatched(child.localId, desired, now)
+            }
+        }
     }
 
     /**
      * Offene "gesehen"-Markierungen zur Shelf bringen.
      *
-     * Der Endpunkt schaltet um, statt einen Wert zu setzen, und liefert den
-     * neuen Stand zurueck. Der wird uebernommen: hat jemand an einem anderen
-     * Geraet zwischendurch dasselbe getan, steht danach der Stand des Servers
-     * in der Zeile, statt dass beide Seiten gegeneinander schalten.
+     * **Der Endpunkt schaltet um, statt zu setzen** — und das ist die Falle,
+     * an der die Uebertragung lange scheiterte: Wir wollen einen Zielzustand
+     * durchsetzen, geschickt wird aber "dreh um". Stand die Shelf schon auf
+     * dem Wert, den wir setzen wollten, dreht der Aufruf in die falsche
+     * Richtung. Aus "als gesehen markieren" wurde dann ein
+     * `Movie marked as unwatched` — mit 200 quittiert, also von aussen nicht
+     * von einem Erfolg zu unterscheiden.
+     *
+     * Dass beide Seiten auseinanderlaufen, ist dabei kein Sonderfall, sondern
+     * der Normalfall: der Umschalter aendert nur die Zwischentabelle und
+     * fasst `movies.updated_at` nicht an, weshalb der Delta-Export eine
+     * Aenderung des Gesehen-Standes nie nachliefert.
+     *
+     * Deshalb wird die Antwort geprueft und noetigenfalls ein zweites Mal
+     * umgeschaltet. Zwei Aufrufe im schlechtesten Fall, aber der Zielzustand
+     * gilt danach wirklich. Erst wenn auch das nicht greift, behaelt die
+     * Shelf recht und ihr Stand wandert in die Zeile.
      *
      * Scheitern Aufrufe, wird das nach dem Durchgang gemeldet — der Abgleich
      * traegt es als Fehler in sein Ergebnis ein.
@@ -300,11 +375,15 @@ class MovieRepository(
             onProgress(++done, pending.size, entity.title)
             val remoteId = entity.remoteId ?: continue
             try {
-                val answer = api.toggleWatched(remoteId)
-                val serverState = (answer["is_watched"] as? Boolean)
-                    ?: (entity.isWatched != true)
+                val desired = entity.isWatched == true
+                var assumed = !desired
+                val serverState = applyWatchedState(desired) {
+                    toggleWatchedOnce(remoteId, assumed).also { assumed = !assumed }
+                }
                 movieDao.markWatchedSynced(entity.localId, serverState)
-                if (serverState != (entity.isWatched == true)) {
+                if (serverState != desired) {
+                    // Zweimal danebengedreht heisst: die Shelf laesst sich
+                    // nicht auf den gewollten Wert bringen. Dann gilt ihrer.
                     movieDao.updateWatched(entity.localId, serverState, SyncClock.now())
                     movieDao.markWatchedSynced(entity.localId, serverState)
                 }
@@ -326,6 +405,18 @@ class MovieRepository(
             )
         }
         return pushed
+    }
+
+    /**
+     * Einmal umschalten und den neuen Stand der Shelf zurueckgeben.
+     *
+     * [assumed] ist der Wert, der gilt, wenn die Antwort kein `is_watched`
+     * traegt — dann bleibt nur die Annahme, dass der Umschalter getan hat,
+     * was sein Name verspricht.
+     */
+    private suspend fun toggleWatchedOnce(remoteId: Int, assumed: Boolean): Boolean {
+        val answer = api.toggleWatched(remoteId)
+        return answer["is_watched"] as? Boolean ?: assumed
     }
 
     // ── Schreiben: erst lokal, dann übertragen ───────────────────────────────
@@ -738,7 +829,7 @@ class MovieRepository(
     }
 
     suspend fun getCachedMovies(): List<Movie> =
-        movieDao.getAllMovies().map { it.toMovie() }
+        withBoxsetWatched(movieDao.getAllMovies().map { it.toMovie() })
 
     suspend fun isCacheAvailable(): Boolean =
         movieDao.getMovieCount() > 0

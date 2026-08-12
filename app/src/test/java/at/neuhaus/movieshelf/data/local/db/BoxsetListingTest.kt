@@ -113,6 +113,29 @@ class BoxsetListingTest {
     }
 
     @Test
+    fun `ein Boxset gilt als gesehen, wenn alle Teile gesehen sind`() = runTest {
+        val dao = db.movieDao()
+        // Genau die Lage in Renes Sammlung: alle 15 ungesehenen Eintraege
+        // waren Boxset-Huellen, deren Teile saemtlich gesehen sind.
+        val komplett = dao.insert(row(title = "Rocky Collection").copy(remoteId = 1, isBoxset = true))
+        dao.insert(row(title = "Rocky").copy(remoteId = 2, boxsetParentLocalId = komplett, isWatched = true))
+        dao.insert(row(title = "Rocky II").copy(remoteId = 3, boxsetParentLocalId = komplett, isWatched = true))
+
+        val angefangen = dao.insert(row(title = "Alien - Die Saga").copy(remoteId = 4, isBoxset = true))
+        dao.insert(row(title = "Alien").copy(remoteId = 5, boxsetParentLocalId = angefangen, isWatched = true))
+        dao.insert(row(title = "Aliens").copy(remoteId = 6, boxsetParentLocalId = angefangen, isWatched = false))
+
+        val states = dao.getBoxsetWatchStates().associateBy { it.parentLocalId }
+
+        assertEquals(true, states[komplett]?.isFullyWatched)
+        assertEquals(false, states[angefangen]?.isFullyWatched)
+        // Ein halb geschautes Boxset als gesehen auszuweisen waere die
+        // unangenehmere Luege.
+        assertEquals(1, states[angefangen]?.watched)
+        assertEquals(2, states[angefangen]?.total)
+    }
+
+    @Test
     fun `der Zaehler meint die Filme, nicht die Zeilen der Liste`() = runTest {
         val dao = db.movieDao()
         val boxset = dao.insert(row(title = "Alien Anthology").copy(remoteId = 1, isBoxset = true))

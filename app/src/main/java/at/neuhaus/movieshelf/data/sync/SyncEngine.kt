@@ -222,8 +222,10 @@ class SyncEngine(
         }
 
         val total = incomingNew + incomingUpdated + incomingDeleted + keptLocal + dirty.size
+        val pendingWatched = movieDao.getPendingWatched().size
 
         return SyncPreview(
+            toPushWatched = pendingWatched,
             items = items,
             overflow = maxOf(0, total - items.size),
             toCreate = toCreate,
@@ -616,10 +618,16 @@ data class SyncPreview(
     val incomingDeleted: Int = 0,
     /** Zeilen, die lokale Aenderungen behalten und deshalb nicht ueberschrieben werden. */
     val keptLocal: Int = 0,
+    /**
+     * Offene "gesehen"-Markierungen. Eigener Posten, weil sie ueber einen
+     * eigenen Endpunkt gehen und in [toUpdate] nicht auftauchen — ohne sie
+     * meldete die Vorschau "nichts zu tun", waehrend sehr wohl etwas anstand.
+     */
+    val toPushWatched: Int = 0,
     val isDelta: Boolean = false,
     val lastSyncAt: String? = null
 ) {
-    val outgoing: Int get() = toCreate + toUpdate + toDeleteRemote
+    val outgoing: Int get() = toCreate + toUpdate + toDeleteRemote + toPushWatched
     val incoming: Int get() = incomingNew + incomingUpdated + incomingDeleted
     val hasDeletions: Boolean get() = toDeleteRemote > 0 || incomingDeleted > 0
     val isEmpty: Boolean get() = outgoing == 0 && incoming == 0

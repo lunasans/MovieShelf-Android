@@ -26,3 +26,7 @@ native-debug-symbols.zip
 
 # IDE-Einstellungen sind lokal und gehoeren nicht ins Repo
 .idea/
+
+# Arbeitsdateien der Test-Shelf: eine Kopie der Sammlung und ihr Protokoll
+tools/testshelf/shelf.sqlite
+tools/testshelf/requests.log

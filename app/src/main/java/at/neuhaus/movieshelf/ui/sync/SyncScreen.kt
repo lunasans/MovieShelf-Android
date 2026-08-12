@@ -226,6 +226,7 @@ private fun PreviewSection(preview: SyncPreview) {
         if (preview.toCreate > 0) DetailRow("neu", preview.toCreate)
         if (preview.toUpdate > 0) DetailRow("geändert", preview.toUpdate)
         if (preview.toDeleteRemote > 0) DetailRow("gelöscht", preview.toDeleteRemote)
+        if (preview.toPushWatched > 0) DetailRow("gesehen", preview.toPushWatched)
 
         Spacer(Modifier.height(4.dp))
         CountRow(Icons.Default.CloudDownload, "Shelf → App", preview.incoming)
@@ -310,6 +311,9 @@ private fun PreviewItemRow(item: SyncPreviewItem) {
 private fun ResultSection(result: SyncResult, viewModel: SyncViewModel) {
     ShelfFormSection(title = "Ergebnis", icon = Icons.Default.Sync) {
         CountRow(Icons.Default.CloudUpload, "Hochgeladen", result.push.total)
+        // Eigene Zeile: in der Summe ginge unter, ob eine gesetzte Markierung
+        // tatsaechlich hinausgegangen ist.
+        if (result.push.watched > 0) DetailRow("davon gesehen", result.push.watched)
         CountRow(Icons.Default.CloudDownload, "Übernommen", result.pull.applied)
         if (result.pull.deleted > 0) CountRow(Icons.Default.DeleteOutline, "Lokal entfernt", result.pull.deleted)
         if (result.pull.skipped > 0) CountRow(Icons.Default.Shield, "Lokale Änderung behalten", result.pull.skipped)

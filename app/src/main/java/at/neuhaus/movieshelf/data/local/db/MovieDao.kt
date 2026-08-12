@@ -256,6 +256,25 @@ interface MovieDao {
     """)
     suspend fun getBoxsetChildren(boxsetLocalId: Long): List<MovieEntity>
 
+    /**
+     * Wie viele Teile jedes Boxsets gesehen sind.
+     *
+     * Grundlage fuer den abgeleiteten Stand der Huelle: ein Boxset schaut
+     * niemand, man schaut die Filme darin. Der eigene "gesehen"-Wert der
+     * Huelle bleibt deshalb ungenutzt — er stuende sonst als zweite Wahrheit
+     * neben dieser hier.
+     */
+    @Query("""
+        SELECT boxsetParentLocalId AS parentLocalId,
+               COUNT(*) AS total,
+               SUM(CASE WHEN isWatched = 1 THEN 1 ELSE 0 END) AS watched
+        FROM movies
+        WHERE isDeleted = 0 AND boxsetParentLocalId IS NOT NULL
+          AND (inCollection = 1 OR inCollection IS NULL)
+        GROUP BY boxsetParentLocalId
+    """)
+    suspend fun getBoxsetWatchStates(): List<BoxsetWatchState>
+
     // ── Kennzahlen ───────────────────────────────────────────────────────────
 
     @Query("""
@@ -294,4 +313,19 @@ interface MovieDao {
     @Query("SELECT MAX(cachedAt) FROM movies")
     suspend fun getLastCacheTime(): Long?
 
+}
+
+/**
+ * Gesehen-Stand der Teile eines Boxsets — siehe [MovieDao.getBoxsetWatchStates].
+ *
+ * [isFullyWatched] ist bewusst streng: erst wenn wirklich jeder Teil gesehen
+ * ist, gilt das Boxset als gesehen. Ein halb geschautes Boxset als "gesehen"
+ * auszuweisen waere die unangenehmere Luege.
+ */
+data class BoxsetWatchState(
+    val parentLocalId: Long,
+    val total: Int,
+    val watched: Int
+) {
+    val isFullyWatched: Boolean get() = total > 0 && watched == total
 }
