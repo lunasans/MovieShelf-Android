@@ -12,6 +12,7 @@ import androidx.compose.material.icons.filled.ErrorOutline
 import androidx.compose.material.icons.filled.Shield
 import androidx.compose.material.icons.filled.Sync
 import androidx.compose.material3.*
+import androidx.compose.ui.res.stringResource
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -35,6 +36,7 @@ import info.movieshelf.data.sync.SyncDirection
 import info.movieshelf.data.sync.SyncPreview
 import info.movieshelf.data.sync.SyncPreviewItem
 import info.movieshelf.data.sync.SyncResult
+import info.movieshelf.R
 import info.movieshelf.ui.components.ShelfFormSection
 import info.movieshelf.ui.components.ShelfSectionSpacing
 import info.movieshelf.ui.theme.PillShape
@@ -76,10 +78,10 @@ fun SyncScreen(onBack: () -> Unit) {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Synchronisation") },
+                title = { Text(stringResource(R.string.sync_title)) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Zurück")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.common_back))
                     }
                 }
             )
@@ -93,7 +95,7 @@ fun SyncScreen(onBack: () -> Unit) {
                 .padding(horizontal = 20.dp, vertical = 16.dp),
             verticalArrangement = Arrangement.spacedBy(ShelfSectionSpacing)
         ) {
-            ShelfFormSection(title = "Stand", icon = Icons.Default.Sync) {
+            ShelfFormSection(title = stringResource(R.string.sync_status), icon = Icons.Default.Sync) {
                 Text(
                     text = SyncClock.formatForDisplay(viewModel.lastSyncAt)
                         ?.let { "Zuletzt synchronisiert: $it" }
@@ -104,7 +106,7 @@ fun SyncScreen(onBack: () -> Unit) {
             }
 
             viewModel.progress?.let { progress ->
-                ShelfFormSection(title = "Läuft", icon = Icons.Default.Sync) {
+                ShelfFormSection(title = stringResource(R.string.sync_running), icon = Icons.Default.Sync) {
                     Text(
                         text = progress.phase.label,
                         style = MaterialTheme.typography.titleSmall,
@@ -134,7 +136,7 @@ fun SyncScreen(onBack: () -> Unit) {
             }
 
             viewModel.error?.let { message ->
-                ShelfFormSection(title = "Fehler", icon = Icons.Default.ErrorOutline) {
+                ShelfFormSection(title = stringResource(R.string.sync_errors), icon = Icons.Default.ErrorOutline) {
                     Text(message, style = MaterialTheme.typography.bodyMedium)
                 }
             }
@@ -146,7 +148,7 @@ fun SyncScreen(onBack: () -> Unit) {
                     shape = PillShape,
                     enabled = !viewModel.isBusy
                 ) {
-                    Text("Vorschau", fontWeight = FontWeight.SemiBold)
+                    Text(stringResource(R.string.sync_preview), fontWeight = FontWeight.SemiBold)
                 }
                 Button(
                     onClick = { startingSync { viewModel.runSync() } },
@@ -156,11 +158,11 @@ fun SyncScreen(onBack: () -> Unit) {
                     // bestätigen, die er nicht gesehen hat.
                     enabled = !viewModel.isBusy && viewModel.preview != null
                 ) {
-                    Text("Synchronisieren", fontWeight = FontWeight.Bold)
+                    Text(stringResource(R.string.sync_start), fontWeight = FontWeight.Bold)
                 }
             }
 
-            ShelfFormSection(title = "Einzelne Richtung", icon = Icons.Default.Sync) {
+            ShelfFormSection(title = stringResource(R.string.sync_single_direction), icon = Icons.Default.Sync) {
                 Text(
                     "Beide Richtungen sind der Regelfall. Einzeln ist nützlich, wenn " +
                         "nur eine Seite stimmen soll — etwa nach einem Fehlversuch.",
@@ -176,7 +178,7 @@ fun SyncScreen(onBack: () -> Unit) {
                     ) {
                         Icon(Icons.Default.CloudDownload, contentDescription = null, modifier = Modifier.size(18.dp))
                         Spacer(Modifier.width(8.dp))
-                        Text("Shelf → App")
+                        Text(stringResource(R.string.sync_shelf_to_app))
                     }
                     OutlinedButton(
                         onClick = { startingSync { viewModel.runPushOnly() } },
@@ -186,14 +188,14 @@ fun SyncScreen(onBack: () -> Unit) {
                     ) {
                         Icon(Icons.Default.CloudUpload, contentDescription = null, modifier = Modifier.size(18.dp))
                         Spacer(Modifier.width(8.dp))
-                        Text("App → Shelf")
+                        Text(stringResource(R.string.sync_app_to_shelf))
                     }
                 }
             }
 
             if (viewModel.preview == null && !viewModel.isBusy) {
                 Text(
-                    "Die Synchronisation startet erst nach einer Vorschau.",
+                    stringResource(R.string.sync_needs_preview),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -203,7 +205,7 @@ fun SyncScreen(onBack: () -> Unit) {
                 onClick = { viewModel.loadPreview(full = true) },
                 enabled = !viewModel.isBusy
             ) {
-                Text("Vollständig synchronisieren")
+                Text(stringResource(R.string.sync_full))
             }
 
             Spacer(Modifier.height(32.dp))
@@ -214,35 +216,35 @@ fun SyncScreen(onBack: () -> Unit) {
 @Composable
 private fun PreviewSection(preview: SyncPreview) {
     ShelfFormSection(
-        title = if (preview.isDelta) "Vorschau (nur Änderungen)" else "Vorschau (Vollstand)",
+        title = stringResource(if (preview.isDelta) R.string.sync_preview_delta else R.string.sync_preview_full),
         icon = Icons.Default.Sync
     ) {
         if (preview.isEmpty) {
-            Text("Alles auf dem gleichen Stand.", style = MaterialTheme.typography.bodyMedium)
+            Text(stringResource(R.string.sync_up_to_date), style = MaterialTheme.typography.bodyMedium)
             return@ShelfFormSection
         }
 
-        CountRow(Icons.Default.CloudUpload, "App → Shelf", preview.outgoing)
-        if (preview.toCreate > 0) DetailRow("neu", preview.toCreate)
-        if (preview.toUpdate > 0) DetailRow("geändert", preview.toUpdate)
-        if (preview.toDeleteRemote > 0) DetailRow("gelöscht", preview.toDeleteRemote)
-        if (preview.toPushWatched > 0) DetailRow("gesehen", preview.toPushWatched)
+        CountRow(Icons.Default.CloudUpload, stringResource(R.string.sync_app_to_shelf), preview.outgoing)
+        if (preview.toCreate > 0) DetailRow(stringResource(R.string.sync_new), preview.toCreate)
+        if (preview.toUpdate > 0) DetailRow(stringResource(R.string.sync_changed), preview.toUpdate)
+        if (preview.toDeleteRemote > 0) DetailRow(stringResource(R.string.sync_deleted), preview.toDeleteRemote)
+        if (preview.toPushWatched > 0) DetailRow(stringResource(R.string.sync_watched), preview.toPushWatched)
 
         Spacer(Modifier.height(4.dp))
-        CountRow(Icons.Default.CloudDownload, "Shelf → App", preview.incoming)
-        if (preview.incomingNew > 0) DetailRow("neu", preview.incomingNew)
-        if (preview.incomingUpdated > 0) DetailRow("geändert", preview.incomingUpdated)
-        if (preview.incomingDeleted > 0) DetailRow("gelöscht", preview.incomingDeleted)
+        CountRow(Icons.Default.CloudDownload, stringResource(R.string.sync_shelf_to_app), preview.incoming)
+        if (preview.incomingNew > 0) DetailRow(stringResource(R.string.sync_new), preview.incomingNew)
+        if (preview.incomingUpdated > 0) DetailRow(stringResource(R.string.sync_changed), preview.incomingUpdated)
+        if (preview.incomingDeleted > 0) DetailRow(stringResource(R.string.sync_deleted), preview.incomingDeleted)
 
         if (preview.keptLocal > 0) {
             Spacer(Modifier.height(4.dp))
-            CountRow(Icons.Default.Shield, "Behält lokale Änderung", preview.keptLocal)
+            CountRow(Icons.Default.Shield, stringResource(R.string.sync_keeps_local), preview.keptLocal)
         }
 
         if (preview.hasDeletions) {
             Spacer(Modifier.height(8.dp))
             Text(
-                text = "Die Synchronisation entfernt Filme. Das lässt sich nicht rückgängig machen.",
+                text = stringResource(R.string.sync_deletes_warning),
                 style = MaterialTheme.typography.bodySmall,
                 fontWeight = FontWeight.SemiBold,
                 color = MaterialTheme.colorScheme.error
@@ -256,7 +258,7 @@ private fun PreviewSection(preview: SyncPreview) {
             preview.items.forEach { PreviewItemRow(it) }
             if (preview.overflow > 0) {
                 Text(
-                    "… und ${preview.overflow} weitere",
+                    stringResource(R.string.sync_and_more, preview.overflow),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -283,7 +285,7 @@ private fun PreviewItemRow(item: SyncPreviewItem) {
         Column(Modifier.weight(1f)) {
             Text(
                 text = buildString {
-                    append(item.title ?: "Ohne Titel")
+                    append(item.title ?: stringResource(R.string.common_no_title))
                     item.year?.takeIf { it > 0 }?.let { append(" ($it)") }
                 },
                 style = MaterialTheme.typography.bodySmall,
@@ -291,10 +293,10 @@ private fun PreviewItemRow(item: SyncPreviewItem) {
                 overflow = TextOverflow.Ellipsis
             )
             val detail = when (item.action) {
-                SyncAction.NEW -> "Neu"
-                SyncAction.DELETED -> "Gelöscht"
-                SyncAction.KEPT_LOCAL -> "lokale Änderung behalten"
-                SyncAction.UPDATED -> if (item.changes.isEmpty()) "Update"
+                SyncAction.NEW -> stringResource(R.string.sync_action_new)
+                SyncAction.DELETED -> stringResource(R.string.sync_action_deleted)
+                SyncAction.KEPT_LOCAL -> stringResource(R.string.sync_action_kept_local)
+                SyncAction.UPDATED -> if (item.changes.isEmpty()) stringResource(R.string.sync_action_updated)
                 else item.changes.joinToString(", ")
             }
             Text(
@@ -309,20 +311,20 @@ private fun PreviewItemRow(item: SyncPreviewItem) {
 
 @Composable
 private fun ResultSection(result: SyncResult, viewModel: SyncViewModel) {
-    ShelfFormSection(title = "Ergebnis", icon = Icons.Default.Sync) {
-        CountRow(Icons.Default.CloudUpload, "Hochgeladen", result.push.total)
+    ShelfFormSection(title = stringResource(R.string.sync_result), icon = Icons.Default.Sync) {
+        CountRow(Icons.Default.CloudUpload, stringResource(R.string.sync_uploaded), result.push.total)
         // Eigene Zeile: in der Summe ginge unter, ob eine gesetzte Markierung
         // tatsaechlich hinausgegangen ist.
-        if (result.push.watched > 0) DetailRow("davon gesehen", result.push.watched)
-        CountRow(Icons.Default.CloudDownload, "Übernommen", result.pull.applied)
-        if (result.pull.deleted > 0) CountRow(Icons.Default.DeleteOutline, "Lokal entfernt", result.pull.deleted)
-        if (result.pull.skipped > 0) CountRow(Icons.Default.Shield, "Lokale Änderung behalten", result.pull.skipped)
+        if (result.push.watched > 0) DetailRow(stringResource(R.string.sync_of_which_watched), result.push.watched)
+        CountRow(Icons.Default.CloudDownload, stringResource(R.string.sync_applied), result.pull.applied)
+        if (result.pull.deleted > 0) CountRow(Icons.Default.DeleteOutline, stringResource(R.string.sync_removed_locally), result.pull.deleted)
+        if (result.pull.skipped > 0) CountRow(Icons.Default.Shield, stringResource(R.string.sync_kept_local), result.pull.skipped)
 
         viewModel.listResult?.let { lists ->
             if (lists.itemsAdded > 0 || lists.itemsRemoved > 0) {
                 Spacer(Modifier.height(4.dp))
-                DetailRow("Listen-Einträge ergänzt", lists.itemsAdded)
-                DetailRow("Listen-Einträge entfernt", lists.itemsRemoved)
+                DetailRow(stringResource(R.string.sync_list_items_added), lists.itemsAdded)
+                DetailRow(stringResource(R.string.sync_list_items_removed), lists.itemsRemoved)
             }
         }
 
@@ -330,7 +332,7 @@ private fun ResultSection(result: SyncResult, viewModel: SyncViewModel) {
         if (errors.isNotEmpty()) {
             Spacer(Modifier.height(8.dp))
             Text(
-                "Fehlerprotokoll",
+                stringResource(R.string.sync_error_log),
                 style = MaterialTheme.typography.titleSmall,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.error
@@ -343,13 +345,13 @@ private fun ResultSection(result: SyncResult, viewModel: SyncViewModel) {
                 )
             }
             Text(
-                "Diese Einträge bleiben vorgemerkt und werden beim nächsten Abgleich erneut versucht.",
+                stringResource(R.string.sync_errors_retry),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
 
-        TextButton(onClick = { viewModel.dismissResult() }) { Text("Ausblenden") }
+        TextButton(onClick = { viewModel.dismissResult() }) { Text(stringResource(R.string.common_hide)) }
     }
 }
 

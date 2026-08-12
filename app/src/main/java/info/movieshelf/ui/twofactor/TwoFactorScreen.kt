@@ -1,5 +1,6 @@
 package info.movieshelf.ui.twofactor
 
+import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -43,6 +44,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import info.movieshelf.R
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -64,12 +66,12 @@ fun TwoFactorScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Zwei-Faktor-Authentifizierung") },
+                title = { Text(stringResource(R.string.twofactor_title)) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Zurück"
+                            contentDescription = stringResource(R.string.common_back)
                         )
                     }
                 }
@@ -108,12 +110,12 @@ fun TwoFactorScreen(
                                 tint = MaterialTheme.colorScheme.primary
                             )
                             Text(
-                                text = "2FA ist aktiv",
+                                text = stringResource(R.string.twofactor_active),
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Bold
                             )
                             Text(
-                                text = "Dein Konto ist durch Zwei-Faktor-Authentifizierung geschützt.",
+                                text = stringResource(R.string.twofactor_protected),
                                 style = MaterialTheme.typography.bodyMedium
                             )
                         }
@@ -129,7 +131,7 @@ fun TwoFactorScreen(
                         enabled = !viewModel.isLoading,
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        Text("2FA deaktivieren")
+                        Text(stringResource(R.string.twofactor_disable))
                     }
                 }
 
@@ -146,7 +148,7 @@ fun TwoFactorScreen(
                         enabled = !viewModel.isLoading,
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        Text("2FA einrichten")
+                        Text(stringResource(R.string.twofactor_setup))
                     }
                 }
             }
@@ -165,7 +167,7 @@ fun TwoFactorScreen(
     if (showDisableDialog) {
         AlertDialog(
             onDismissRequest = { showDisableDialog = false },
-            title = { Text("2FA deaktivieren?") },
+            title = { Text(stringResource(R.string.twofactor_disable_question)) },
             text = {
                 Text(
                     "Möchtest du die Zwei-Faktor-Authentifizierung wirklich deaktivieren? " +
@@ -179,12 +181,12 @@ fun TwoFactorScreen(
                         viewModel.disable()
                     }
                 ) {
-                    Text("Deaktivieren")
+                    Text(stringResource(R.string.common_disable))
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showDisableDialog = false }) {
-                    Text("Abbrechen")
+                    Text(stringResource(R.string.common_cancel))
                 }
             }
         )
@@ -195,7 +197,7 @@ fun TwoFactorScreen(
 @Composable
 private fun SetupStep(viewModel: TwoFactorViewModel) {
     Text(
-        text = "Einrichtung",
+        text = stringResource(R.string.twofactor_setup_title),
         style = MaterialTheme.typography.titleMedium,
         fontWeight = FontWeight.Bold
     )
@@ -223,7 +225,7 @@ private fun SetupStep(viewModel: TwoFactorViewModel) {
 
     viewModel.otpauthUrl?.let { url ->
         Text(
-            text = "Oder per Setup-Link:",
+            text = stringResource(R.string.twofactor_setup_link),
             style = MaterialTheme.typography.bodySmall
         )
         SelectionContainer {
@@ -245,7 +247,7 @@ private fun SetupStep(viewModel: TwoFactorViewModel) {
                 viewModel.code = input
             }
         },
-        label = { Text("6-stelliger Code") },
+        label = { Text(stringResource(R.string.twofactor_code_6)) },
         singleLine = true,
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
         modifier = Modifier.fillMaxWidth()
@@ -256,7 +258,7 @@ private fun SetupStep(viewModel: TwoFactorViewModel) {
         enabled = !viewModel.isLoading && viewModel.code.length == 6,
         modifier = Modifier.fillMaxWidth()
     ) {
-        Text("Bestätigen")
+        Text(stringResource(R.string.common_confirm))
     }
 }
 
@@ -271,7 +273,7 @@ private fun RecoveryCodes(codes: List<String>?) {
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             Text(
-                text = "Wiederherstellungscodes",
+                text = stringResource(R.string.twofactor_recovery),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold
             )

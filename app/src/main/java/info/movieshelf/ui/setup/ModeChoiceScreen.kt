@@ -16,6 +16,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
 import info.movieshelf.R
 import info.movieshelf.data.local.db.AppMode
 import info.movieshelf.ui.theme.PillShape
@@ -48,14 +49,14 @@ fun ModeChoiceScreen(onModeChosen: (AppMode) -> Unit) {
             )
 
             Text(
-                text = "Wie möchtest du MovieShelf nutzen?",
+                text = stringResource(R.string.mode_question),
                 style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.Bold,
                 textAlign = TextAlign.Center
             )
 
             Text(
-                text = "Du kannst das später jederzeit ändern.",
+                text = stringResource(R.string.mode_change_later),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center
@@ -65,17 +66,17 @@ fun ModeChoiceScreen(onModeChosen: (AppMode) -> Unit) {
 
             ModeCard(
                 icon = Icons.Default.PhoneAndroid,
-                title = "Nur auf diesem Gerät",
-                description = "Deine Sammlung bleibt auf dem Telefon. Kein Konto, keine Anmeldung.",
-                actionLabel = "Ohne Konto starten",
+                title = stringResource(R.string.mode_standalone),
+                description = stringResource(R.string.mode_standalone_sub),
+                actionLabel = stringResource(R.string.mode_standalone_action),
                 onClick = { onModeChosen(AppMode.STANDALONE) }
             )
 
             ModeCard(
                 icon = Icons.Default.CloudSync,
-                title = "Mit meiner Shelf",
-                description = "Sammlung mit deiner MovieShelf-Installation abgleichen — auf allen Geräten derselbe Bestand.",
-                actionLabel = "Shelf verbinden",
+                title = stringResource(R.string.mode_shelf),
+                description = stringResource(R.string.mode_shelf_sub),
+                actionLabel = stringResource(R.string.mode_shelf_action),
                 onClick = { onModeChosen(AppMode.SHELF) }
             )
         }

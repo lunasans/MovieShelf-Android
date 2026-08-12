@@ -1,5 +1,6 @@
 package info.movieshelf.ui.profile
 
+import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -36,6 +37,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import android.os.Build
+import info.movieshelf.R
 import info.movieshelf.data.local.DataStoreManager
 import info.movieshelf.data.local.ThemeMode
 import info.movieshelf.ui.theme.PillShape
@@ -91,10 +93,10 @@ fun ProfileScreen(
         topBar = {
             TopAppBar(
                 // Ohne Konto gibt es kein Profil, nur Einstellungen.
-                title = { Text(if (isStandalone) "Einstellungen" else "Profil") },
+                title = { Text(if (isStandalone) stringResource(R.string.profile_settings) else stringResource(R.string.profile_title)) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Zurück")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.common_back))
                     }
                 }
             )
@@ -125,50 +127,50 @@ fun ProfileScreen(
                 AccountSection(viewModel = viewModel)
             }
 
-            SectionTitle("Sammlung")
+            SectionTitle(stringResource(R.string.section_collection))
             SettingsCard {
                 SettingsRow(
                     icon = Icons.AutoMirrored.Filled.PlaylistPlay,
-                    title = "Meine Listen",
-                    subtitle = "Eigene Listen und Wunschliste",
+                    title = stringResource(R.string.profile_my_lists),
+                    subtitle = stringResource(R.string.profile_my_lists_sub),
                     onClick = onListsClick
                 )
                 if (!isStandalone) {
                     HorizontalDivider(Modifier.padding(start = 56.dp))
                     SettingsRow(
                         icon = Icons.Default.Sync,
-                        title = "Synchronisation",
-                        subtitle = "Lokale Sammlung mit deiner MovieShelf abgleichen",
+                        title = stringResource(R.string.sync_title),
+                        subtitle = stringResource(R.string.profile_sync_sub),
                         onClick = onSyncClick
                     )
                 }
             }
 
             if (!isStandalone) {
-                SectionTitle("Sicherheit")
+                SectionTitle(stringResource(R.string.section_security))
                 SettingsCard {
                     SettingsRow(
                         icon = Icons.Default.Security,
-                        title = "Zwei-Faktor-Authentifizierung",
+                        title = stringResource(R.string.twofactor_title),
                         subtitle = if (viewModel.twoFactorEnabled) {
-                            "Aktiv – tippen zum Verwalten"
+                            stringResource(R.string.twofactor_active_tap)
                         } else {
-                            "Nicht aktiv – tippen zum Einrichten"
+                            stringResource(R.string.twofactor_inactive_tap)
                         },
                         onClick = onTwoFactorClick
                     )
                 }
             }
 
-            SectionTitle("Darstellung")
+            SectionTitle(stringResource(R.string.section_appearance))
             SettingsCard {
                 Column(Modifier.padding(16.dp)) {
                     RowHeader(
                         icon = Icons.Default.DarkMode,
-                        title = "Erscheinungsbild",
+                        title = stringResource(R.string.appearance_theme),
                         // Standard ist dunkel wie die Web-Oberfläche;
-                        // "System" bleibt für alle, die es Android-üblich wollen.
-                        subtitle = "MovieShelf ist auf den dunklen Look ausgelegt"
+                        // stringResource(R.string.appearance_system) bleibt für alle, die es Android-üblich wollen.
+                        subtitle = stringResource(R.string.appearance_hint)
                     )
                     Spacer(Modifier.height(12.dp))
                     SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
@@ -194,11 +196,11 @@ fun ProfileScreen(
                     Box(Modifier.weight(1f)) {
                         RowHeader(
                             icon = Icons.Default.Palette,
-                            title = "Material You",
+                            title = stringResource(R.string.appearance_material_you),
                             subtitle = if (supportsDynamic) {
-                                "Systemfarben verwenden"
+                                stringResource(R.string.appearance_use_system_colors)
                             } else {
-                                "Erst ab Android 12 verfügbar"
+                                stringResource(R.string.appearance_android12_only)
                             }
                         )
                     }
@@ -210,12 +212,12 @@ fun ProfileScreen(
                 }
             }
 
-            SectionTitle("App")
+            SectionTitle(stringResource(R.string.section_app))
             SettingsCard {
                 SettingsRow(
                     icon = Icons.Default.Info,
-                    title = "Über MovieShelf",
-                    subtitle = "Fassung, Lizenzen und Hinweise",
+                    title = stringResource(R.string.about_title),
+                    subtitle = stringResource(R.string.about_subtitle),
                     onClick = onAboutClick
                 )
             }

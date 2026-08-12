@@ -26,6 +26,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.compose.ui.res.stringResource
 import info.movieshelf.R
 import info.movieshelf.data.api.RetrofitClient
 import info.movieshelf.data.local.DataStoreManager
@@ -147,7 +148,7 @@ fun SetupScreen(
                     title = { },
                     navigationIcon = {
                         IconButton(onClick = onSetupComplete) {
-                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Zurück")
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.common_back))
                         }
                     },
                     colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent)
@@ -170,7 +171,7 @@ fun SetupScreen(
             ) {
                 Image(
                     painter = painterResource(id = R.drawable.logo),
-                    contentDescription = "MovieShelf Logo",
+                    contentDescription = stringResource(R.string.login_logo_description),
                     modifier = Modifier
                         .height(120.dp)
                         .padding(bottom = 32.dp)
@@ -206,8 +207,8 @@ fun SetupScreen(
                                 viewModel.connectionSuccess = false
                                 viewModel.connectionError = null
                             },
-                            label = { Text("Server URL") },
-                            placeholder = { Text("z.B. 10.0.2.2:8000") },
+                            label = { Text(stringResource(R.string.setup_server_url)) },
+                            placeholder = { Text(stringResource(R.string.setup_server_hint)) },
                             modifier = Modifier.fillMaxWidth(),
                             singleLine = true,
                             leadingIcon = { Icon(Icons.Default.Link, contentDescription = null) },
@@ -215,7 +216,7 @@ fun SetupScreen(
                             isError = viewModel.connectionError != null,
                             supportingText = {
                                 if (viewModel.showEmulatorHint) {
-                                    Text("Tipp: Nutze '10.0.2.2' für den Emulator.")
+                                    Text(stringResource(R.string.setup_emulator_tip))
                                 }
                             }
                         )
@@ -238,7 +239,7 @@ fun SetupScreen(
                             ) {
                                 Icon(Icons.Default.CheckCircle, contentDescription = null, tint = Color(0xFF4CAF50), modifier = Modifier.size(16.dp))
                                 Spacer(Modifier.width(8.dp))
-                                Text("Verbindung erfolgreich!", color = Color(0xFF4CAF50), style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Bold)
+                                Text(stringResource(R.string.setup_connection_ok), color = Color(0xFF4CAF50), style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Bold)
                             }
                         }
 
@@ -253,7 +254,7 @@ fun SetupScreen(
                                 if (viewModel.isTesting) {
                                     CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
                                 } else {
-                                    Text("Testen")
+                                    Text(stringResource(R.string.setup_test))
                                 }
                             }
                             Spacer(Modifier.width(12.dp))
@@ -265,7 +266,7 @@ fun SetupScreen(
                                 if (viewModel.isSaving) {
                                     CircularProgressIndicator(modifier = Modifier.size(18.dp), color = MaterialTheme.colorScheme.onPrimary, strokeWidth = 2.dp)
                                 } else {
-                                    Text("Speichern")
+                                    Text(stringResource(R.string.common_save))
                                 }
                             }
                         }
@@ -281,7 +282,7 @@ fun SetupScreen(
                 ) {
                     Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null, modifier = Modifier.size(18.dp))
                     Spacer(Modifier.width(8.dp))
-                    Text("Andere Betriebsart wählen")
+                    Text(stringResource(R.string.login_change_mode))
                 }
 
                 Spacer(Modifier.height(32.dp))

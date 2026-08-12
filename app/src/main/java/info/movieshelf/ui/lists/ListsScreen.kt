@@ -22,6 +22,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
+import info.movieshelf.R
 import info.movieshelf.MovieShelfApplication
 import info.movieshelf.data.model.MovieListSummary
 
@@ -43,17 +46,17 @@ fun ListsScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Meine Listen") },
+                title = { Text(stringResource(R.string.lists_title)) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Zurück")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.common_back))
                     }
                 }
             )
         },
         floatingActionButton = {
             FloatingActionButton(onClick = { showCreateDialog = true }) {
-                Icon(Icons.Default.Add, contentDescription = "Liste anlegen")
+                Icon(Icons.Default.Add, contentDescription = stringResource(R.string.lists_create))
             }
         }
     ) { padding ->
@@ -75,7 +78,7 @@ fun ListsScreen(
                     ) {
                         items(viewModel.lists, key = { it.id }) { list ->
                             ListCard(
-                                name = list.name ?: "Unbenannte Liste",
+                                name = list.name ?: stringResource(R.string.lists_unnamed),
                                 count = list.movieCount,
                                 onClick = { onListClick(list.id) },
                                 onRename = { renameTarget = list },
@@ -90,9 +93,9 @@ fun ListsScreen(
 
     if (showCreateDialog) {
         NameDialog(
-            title = "Neue Liste",
+            title = stringResource(R.string.lists_new),
             initialName = "",
-            confirmLabel = "Anlegen",
+            confirmLabel = stringResource(R.string.common_create),
             onConfirm = { name ->
                 viewModel.createList(name)
                 showCreateDialog = false
@@ -103,9 +106,9 @@ fun ListsScreen(
 
     renameTarget?.let { target ->
         NameDialog(
-            title = "Liste umbenennen",
+            title = stringResource(R.string.lists_rename),
             initialName = target.name ?: "",
-            confirmLabel = "Speichern",
+            confirmLabel = stringResource(R.string.common_save),
             onConfirm = { name ->
                 viewModel.renameList(target, name)
                 renameTarget = null
@@ -117,16 +120,16 @@ fun ListsScreen(
     deleteTarget?.let { target ->
         AlertDialog(
             onDismissRequest = { deleteTarget = null },
-            title = { Text("Liste löschen") },
-            text = { Text("\"${target.name ?: "Unbenannte Liste"}\" wirklich löschen?") },
+            title = { Text(stringResource(R.string.lists_delete)) },
+            text = { Text(stringResource(R.string.lists_delete_question, target.name ?: stringResource(R.string.lists_unnamed))) },
             confirmButton = {
                 TextButton(onClick = {
                     viewModel.deleteList(target.id)
                     deleteTarget = null
-                }) { Text("Löschen") }
+                }) { Text(stringResource(R.string.common_delete)) }
             },
             dismissButton = {
-                TextButton(onClick = { deleteTarget = null }) { Text("Abbrechen") }
+                TextButton(onClick = { deleteTarget = null }) { Text(stringResource(R.string.common_cancel)) }
             }
         )
     }
@@ -149,7 +152,7 @@ private fun NameDialog(
             OutlinedTextField(
                 value = name,
                 onValueChange = { name = it },
-                label = { Text("Name") },
+                label = { Text(stringResource(R.string.common_name)) },
                 singleLine = true
             )
         },
@@ -160,7 +163,7 @@ private fun NameDialog(
             ) { Text(confirmLabel) }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) { Text("Abbrechen") }
+            TextButton(onClick = onDismiss) { Text(stringResource(R.string.common_cancel)) }
         }
     )
 }
@@ -188,7 +191,7 @@ private fun ListCard(
             Column(Modifier.weight(1f)) {
                 Text(name, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleMedium)
                 Text(
-                    "$count ${if (count == 1) "Film" else "Filme"}",
+                    pluralStringResource(R.plurals.film_count, count, count),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -197,7 +200,7 @@ private fun ListCard(
                 IconButton(onClick = { menuExpanded = true }) {
                     Icon(
                         Icons.Default.MoreVert,
-                        contentDescription = "Optionen",
+                        contentDescription = stringResource(R.string.common_options),
                         tint = MaterialTheme.colorScheme.outline
                     )
                 }
@@ -213,7 +216,7 @@ private fun ListCard(
                         }
                     )
                     DropdownMenuItem(
-                        text = { Text("Löschen") },
+                        text = { Text(stringResource(R.string.common_delete)) },
                         onClick = {
                             menuExpanded = false
                             onDelete()
