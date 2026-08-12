@@ -49,10 +49,11 @@ Die Anwendungs-ID ist `info.movieshelf`. Weil eine geänderte ID für Google ein
 komplett neue App bedeutet, gilt vor dem ersten Tag-Push:
 
 1. App mit dem Package-Namen `info.movieshelf` anlegen
-2. **Erste AAB von Hand hochladen** (Internal Testing) — die API kann eine App nicht
-   initialisieren. Genau dafür trägt der Play-Schritt im Workflow vorerst
-   `continue-on-error: true`; **nach dem ersten erfolgreichen Upload entfernen**,
-   sonst verdeckt er auch echte Fehler.
+2. **Erste AAB von Hand hochladen** (Internal Testing), falls die API die frisch
+   angelegte App noch nicht annimmt. Das Bundle liegt danach nicht mehr als
+   Workflow-Artefakt bereit — in einem öffentlichen Repository könnte es sonst
+   jeder herunterladen. Für einen Notfall lässt es sich lokal bauen
+   (`gradlew bundleRelease` mit gesetzten `ANDROID_*`-Variablen).
 3. Play App Signing aktivieren. Der **bestehende Keystore kann weiterverwendet
    werden** — er ist nur der Upload-Key und nicht an eine Anwendungs-ID gebunden.
    Es müssen also keine Secrets neu erzeugt werden.
