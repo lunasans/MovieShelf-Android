@@ -1,16 +1,42 @@
-# Play-Store-Release (CI)
+# Release (CI)
 
 Der Workflow [`play-release.yml`](.github/workflows/play-release.yml) baut bei einem
 Tag-Push `v*` (oder manuell über *Run workflow*) ein signiertes App Bundle und lädt es
 in den **Internal-Track** der Play Console hoch. Die Promotion zu Beta/Produktion
 bleibt ein manueller Schritt in der Play Console.
 
+Zusätzlich entsteht ein **GitHub-Release mit einem signierten APK**. Ein App Bundle
+lässt sich nicht installieren; Tester können sich das APK also direkt herunterladen,
+ohne auf die Play-Freigabe zu warten.
+
 ## Ablauf pro Release
 
 1. `versionCode` erhöhen und `versionName` setzen in `app/build.gradle.kts`
 2. Committen, Tag `vX.Y.Z` setzen und pushen
-3. CI: Unit-Tests → `bundleRelease` (signiert) → Upload in den Internal-Track
+3. CI: Unit-Tests → `bundleRelease` (signiert) → Upload in den Internal-Track →
+   `assembleRelease` → GitHub-Release mit `MovieShelf-X.Y.Z.apk`
 4. In der Play Console testen und manuell promoten
+
+Die Reihenfolge im Workflow ist kein Zufall: Bundle und APK schreiben beide nach
+`mapping/release/mapping.txt`, der letzte Lauf gewinnt. Deshalb wird erst das Bundle
+samt Mapping hochgeladen und danach das APK gebaut — sonst deobfuskiert Play
+Abstürze mit dem falschen Mapping.
+
+## Neue App in der Play Console (einmalig)
+
+Die Anwendungs-ID ist `info.movieshelf`. Weil eine geänderte ID für Google eine
+komplett neue App bedeutet, gilt vor dem ersten Tag-Push:
+
+1. App mit dem Package-Namen `info.movieshelf` anlegen
+2. **Erste AAB von Hand hochladen** (Internal Testing) — die API kann eine App nicht
+   initialisieren. Genau dafür trägt der Play-Schritt im Workflow vorerst
+   `continue-on-error: true`; **nach dem ersten erfolgreichen Upload entfernen**,
+   sonst verdeckt er auch echte Fehler.
+3. Play App Signing aktivieren. Der **bestehende Keystore kann weiterverwendet
+   werden** — er ist nur der Upload-Key und nicht an eine Anwendungs-ID gebunden.
+   Es müssen also keine Secrets neu erzeugt werden.
+4. Den Service-Account in der neuen App berechtigen (siehe unten) — Berechtigungen
+   vererben sich nicht.
 
 ## Einmalige Einrichtung (GitHub-Secrets)
 
