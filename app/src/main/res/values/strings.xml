@@ -1,3 +1,50 @@
 <resources>
     <string name="app_name">MovieShelf</string>
+
+    <!-- Anmeldung -->
+    <string name="login_logo_description">MovieShelf-Logo</string>
+    <string name="login_title">Anmelden</string>
+    <string name="login_title_2fa">Zwei-Faktor-Check</string>
+    <string name="login_hint_2fa">Bitte gib den 6-stelligen Code aus deiner Authenticator-App ein.</string>
+    <string name="login_email">E-Mail</string>
+    <string name="login_password">Passwort</string>
+    <string name="login_password_show">Passwort anzeigen</string>
+    <string name="login_password_hide">Passwort ausblenden</string>
+    <string name="login_with_movieshelf">Mit MovieShelf anmelden</string>
+    <string name="login_submit">Anmelden</string>
+    <string name="login_submit_2fa">Code verifizieren</string>
+    <string name="login_change_server">Server-URL ändern</string>
+    <string name="login_change_mode">Andere Betriebsart wählen</string>
+
+    <!-- Anmeldung: Meldungen -->
+    <string name="error_login_empty">E-Mail und Passwort dürfen nicht leer sein.</string>
+    <string name="error_login_invalid">Anmeldedaten ungültig.</string>
+    <string name="error_2fa_invalid">Ungültiger Code.</string>
+    <string name="error_2fa_no_secret">Server-Fehler: Kein Schlüssel erhalten.</string>
+
+    <!-- Anmeldung: weitere Meldungen -->
+    <string name="error_connection">Verbindungsfehler: %1$s</string>
+    <string name="error_server_code">Serverfehler: %1$d</string>
+    <string name="error_no_token">Server-Fehler: Kein Token erhalten.</string>
+    <string name="error_code_missing">Bitte gib den Code ein.</string>
+
+    <!-- Allgemeine Fehler -->
+    <string name="error_timeout">Zeitüberschreitung. Zeige zwischengespeicherte Daten.</string>
+    <string name="error_server">Serverfehler. Bitte später erneut versuchen.</string>
+    <string name="error_invalid_input">Eingaben ungültig. Bitte prüfe die Felder.</string>
+    <string name="error_year_invalid">Bitte ein gültiges Jahr eingeben.</string>
+    <string name="error_type_missing">Bitte einen Typ wählen.</string>
+    <string name="error_no_id_returned">Film wurde angelegt, aber es wurde keine ID zurückgegeben.</string>
+    <string name="error_no_permission_delete">Keine Berechtigung zum Löschen.</string>
+    <string name="error_delete_failed">Löschen fehlgeschlagen (Fehler %1$d).</string>
+    <string name="error_image_invalid">Bild ungültig oder zu groß.</string>
+    <string name="error_season_change_failed">Staffel-Änderung fehlgeschlagen: %1$s</string>
+    <string name="error_list_add_failed">Konnte nicht zur Liste hinzufügen.</string>
+    <string name="error_list_delete_failed">Liste konnte nicht gelöscht werden.</string>
+    <string name="error_no_tmdb_key">Kein TMDb-Schlüssel hinterlegt. Du kannst ihn im Profil eintragen.</string>
+
+    <!-- Erfolgsmeldungen -->
+    <string name="message_added_to_list">Zu \"%1$s\" hinzugefügt.</string>
+    <string name="message_image_saved">Bild gespeichert — wird beim nächsten Abgleich hochgeladen.</string>
+    <string name="fallback_list_name">Liste</string>
 </resources>

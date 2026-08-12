@@ -1,0 +1,47 @@
+<resources>
+
+    <!-- Sign in -->
+    <string name="login_logo_description">MovieShelf logo</string>
+    <string name="login_title">Sign in</string>
+    <string name="login_title_2fa">Two-factor check</string>
+    <string name="login_hint_2fa">Enter the 6-digit code from your authenticator app.</string>
+    <string name="login_email">Email</string>
+    <string name="login_password">Password</string>
+    <string name="login_password_show">Show password</string>
+    <string name="login_password_hide">Hide password</string>
+    <string name="login_with_movieshelf">Sign in with MovieShelf</string>
+    <string name="login_submit">Sign in</string>
+    <string name="login_submit_2fa">Verify code</string>
+    <string name="login_change_server">Change server URL</string>
+    <string name="login_change_mode">Choose a different mode</string>
+
+    <!-- Sign in: messages -->
+    <string name="error_login_empty">Email and password must not be empty.</string>
+    <string name="error_login_invalid">Invalid credentials.</string>
+    <string name="error_2fa_invalid">Invalid code.</string>
+    <string name="error_2fa_no_secret">Server error: no key received.</string>
+    <string name="error_connection">Connection error: %1$s</string>
+    <string name="error_server_code">Server error: %1$d</string>
+    <string name="error_no_token">Server error: no token received.</string>
+    <string name="error_code_missing">Please enter the code.</string>
+
+    <!-- General errors -->
+    <string name="error_timeout">Timed out. Showing cached data.</string>
+    <string name="error_server">Server error. Please try again later.</string>
+    <string name="error_invalid_input">Invalid input. Please check the fields.</string>
+    <string name="error_year_invalid">Please enter a valid year.</string>
+    <string name="error_type_missing">Please choose a type.</string>
+    <string name="error_no_id_returned">The film was created, but no ID was returned.</string>
+    <string name="error_no_permission_delete">Not allowed to delete.</string>
+    <string name="error_delete_failed">Deleting failed (error %1$d).</string>
+    <string name="error_image_invalid">Image invalid or too large.</string>
+    <string name="error_season_change_failed">Season update failed: %1$s</string>
+    <string name="error_list_add_failed">Could not add to the list.</string>
+    <string name="error_list_delete_failed">The list could not be deleted.</string>
+    <string name="error_no_tmdb_key">No TMDb key stored. You can add one in your profile.</string>
+
+    <!-- Confirmations -->
+    <string name="message_added_to_list">Added to \"%1$s\".</string>
+    <string name="message_image_saved">Image saved — it will be uploaded on the next sync.</string>
+    <string name="fallback_list_name">List</string>
+</resources>

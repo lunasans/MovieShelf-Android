@@ -7,10 +7,12 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import info.movieshelf.R
 import info.movieshelf.data.SessionManager
 import info.movieshelf.data.api.RetrofitClient
 import info.movieshelf.data.local.DataStoreManager
 import info.movieshelf.data.model.LoginResponse
+import info.movieshelf.ui.util.UiText
 import info.movieshelf.data.model.User
 import kotlinx.coroutines.launch
 import retrofit2.HttpException
@@ -27,12 +29,12 @@ class LoginViewModel : ViewModel() {
     private var userIdFor2fa: Int? = null
     private var deviceNameFor2fa: String? = null
     
-    var error by mutableStateOf<String?>(null)
+    var error by mutableStateOf<UiText?>(null)
     var loginSuccess by mutableStateOf(false)
 
     fun onLoginClick(dataStoreManager: DataStoreManager) {
         if (email.isBlank() || password.isBlank()) {
-            error = "Email und Passwort dürfen nicht leer sein."
+            error = UiText.of(R.string.error_login_empty)
             return
         }
 
@@ -63,7 +65,7 @@ class LoginViewModel : ViewModel() {
                 handleHttpError(e)
             } catch (e: Exception) {
                 Log.e("MovieShelf_Login", "Fehler in Schritt 1", e)
-                error = "Verbindungsfehler: ${e.message}"
+                error = UiText.of(R.string.error_connection, e.message ?: "")
             } finally {
                 isLoading = false
             }
@@ -72,7 +74,7 @@ class LoginViewModel : ViewModel() {
 
     fun onVerify2faClick(dataStoreManager: DataStoreManager) {
         if (code2fa.isBlank() || userIdFor2fa == null) {
-            error = "Bitte gib den Code ein."
+            error = UiText.of(R.string.error_code_missing)
             return
         }
 
@@ -92,13 +94,13 @@ class LoginViewModel : ViewModel() {
             } catch (e: HttpException) {
                 Log.e("MovieShelf_Login", "Fehler in Schritt 2: ${e.code()}")
                 if (e.code() == 422 || e.code() == 401) {
-                    error = "Ungültiger 2FA-Code."
+                    error = UiText.of(R.string.error_2fa_invalid)
                 } else {
                     handleHttpError(e)
                 }
             } catch (e: Exception) {
                 Log.e("MovieShelf_Login", "Verbindungsfehler in Schritt 2", e)
-                error = "Verbindungsfehler: ${e.message}"
+                error = UiText.of(R.string.error_connection, e.message ?: "")
             } finally {
                 isLoading = false
             }
@@ -108,7 +110,7 @@ class LoginViewModel : ViewModel() {
     private suspend fun completeLogin(response: LoginResponse, dataStoreManager: DataStoreManager) {
         val token = response.token
         if (token.isNullOrBlank()) {
-            error = "Server-Fehler: Kein Token erhalten."
+            error = UiText.of(R.string.error_no_token)
             return
         }
         
@@ -123,8 +125,8 @@ class LoginViewModel : ViewModel() {
     private fun handleHttpError(e: HttpException) {
         val errorBody = e.response()?.errorBody()?.string()
         error = when (e.code()) {
-            422 -> parseServerMessage(errorBody) ?: "Anmeldedaten ungültig."
-            else -> "Serverfehler: ${e.code()}"
+            422 -> parseServerMessage(errorBody)?.let { UiText.Raw(it) } ?: UiText.of(R.string.error_login_invalid)
+            else -> UiText.of(R.string.error_server_code, e.code())
         }
     }
 
