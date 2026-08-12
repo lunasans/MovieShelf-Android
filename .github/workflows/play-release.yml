@@ -1,8 +1,9 @@
 name: Play Store Release
 
 # Ausgelöst durch Tag "v*" (analog zum Desktop-Release-Flow) oder manuell.
-# Baut ein signiertes App Bundle und lädt es in den Internal-Track hoch;
-# die Promotion zu Beta/Produktion passiert bewusst manuell in der Play Console.
+# Baut ein signiertes App Bundle und lädt es in den geschlossenen Test (Alpha)
+# hoch — dort sitzen die Tester. Die Promotion zu Beta/Produktion passiert
+# bewusst manuell in der Play Console.
 on:
   push:
     tags: ['v*']
@@ -43,17 +44,16 @@ jobs:
           ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: ./gradlew bundleRelease --console=plain
 
-      # Reihenfolge beachten: bundleRelease und assembleRelease schreiben beide
-      # nach mapping/release/mapping.txt, der letzte Lauf gewinnt. Deshalb erst
-      # das Bundle hochladen (mit seinem Mapping), danach das APK bauen - sonst
-      # bekommt Play das Mapping des APK und deobfuskiert Abstuerze falsch.
-      - name: In Play Store hochladen (Internal-Track)
+      # "alpha" ist der API-Name des geschlossenen Tests; einen Track "closed"
+      # gibt es nicht. Anders als der interne Test durchläuft er Googles
+      # Prüfung — jeder Tag-Push zieht sie also nach sich.
+      - name: In Play Store hochladen (geschlossener Test)
         uses: r0adkll/upload-google-play@v1
         with:
           serviceAccountJsonPlainText: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
           packageName: info.movieshelf
           releaseFiles: app/build/outputs/bundle/release/app-release.aab
-          tracks: internal
+          tracks: alpha
           status: completed
           mappingFile: app/build/outputs/mapping/release/mapping.txt
           # Versionshinweise je Sprache: eine Datei "whatsnew-<locale>" pro
