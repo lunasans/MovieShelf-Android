@@ -40,9 +40,8 @@ object RetrofitClient {
 
         // Abgelaufenes/ungültiges Token erkennen und Session beenden.
         // Login-/OAuth-Endpunkte ausnehmen (dort ist 401 = falsche Credentials),
-        // ebenso den lokalen Demo-Modus.
         val isAuthEndpoint = path.contains("/login") || path.contains("/oauth")
-        if (isApiRequest && hadToken && !isAuthEndpoint && !SessionManager.isDemo && response.code == 401) {
+        if (isApiRequest && hadToken && !isAuthEndpoint && response.code == 401) {
             SessionManager.invalidateSession()
         }
 

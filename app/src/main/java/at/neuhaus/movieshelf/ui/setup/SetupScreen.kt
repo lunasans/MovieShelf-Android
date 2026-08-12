@@ -8,6 +8,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import at.neuhaus.movieshelf.ui.theme.PillShape
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Link
 import androidx.compose.material.icons.filled.Warning
@@ -124,7 +125,13 @@ class SetupViewModel(private val dataStoreManager: DataStoreManager) : ViewModel
 @Composable
 fun SetupScreen(
     dataStoreManager: DataStoreManager,
-    onSetupComplete: () -> Unit
+    onSetupComplete: () -> Unit,
+    /**
+     * Zurueck zur Auswahl der Betriebsart. Ohne diesen Weg sitzt fest, wer
+     * "mit Shelf" gewaehlt hat und dann keine URL eintragen will oder kann —
+     * die Auswahl erscheint sonst nur, solange gar keine Betriebsart feststeht.
+     */
+    onChangeMode: () -> Unit = {}
 ) {
     val currentYear = Calendar.getInstance().get(Calendar.YEAR)
     val viewModel: SetupViewModel = viewModel(factory = SetupViewModel.Factory(dataStoreManager))
@@ -265,6 +272,18 @@ fun SetupScreen(
                     }
                 }
                 
+                Spacer(Modifier.height(20.dp))
+
+                OutlinedButton(
+                    onClick = onChangeMode,
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = PillShape
+                ) {
+                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Spacer(Modifier.width(8.dp))
+                    Text("Andere Betriebsart wählen")
+                }
+
                 Spacer(Modifier.height(32.dp))
                 Text(
                     text = "© $currentYear René Neuhaus",

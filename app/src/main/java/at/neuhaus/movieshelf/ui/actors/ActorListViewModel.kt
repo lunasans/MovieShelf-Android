@@ -4,14 +4,17 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
-import at.neuhaus.movieshelf.data.api.RetrofitClient
 import at.neuhaus.movieshelf.data.model.Actor
+import at.neuhaus.movieshelf.data.repository.ActorRepository
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
-class ActorListViewModel : ViewModel() {
+class ActorListViewModel(
+    private val repository: ActorRepository
+) : ViewModel() {
     var actors by mutableStateOf<List<Actor>>(emptyList())
     var isLoading by mutableStateOf(false)
     var isRefreshing by mutableStateOf(false)
@@ -29,8 +32,7 @@ class ActorListViewModel : ViewModel() {
             if (refresh) isRefreshing = true else isLoading = true
             error = null
             try {
-                val response = RetrofitClient.api.getActors(page = 1, perPage = 100)
-                actors = response.data ?: emptyList()
+                actors = repository.getActors(page = 1, perPage = 100)
             } catch (e: Exception) {
                 error = "Fehler beim Laden der Schauspieler: ${e.message}"
             } finally {
@@ -57,12 +59,20 @@ class ActorListViewModel : ViewModel() {
         isLoading = true
         error = null
         try {
-            val response = RetrofitClient.api.searchActors(query)
-            actors = response.data ?: emptyList()
+            actors = repository.searchActors(query)
         } catch (e: Exception) {
             error = "Suche fehlgeschlagen: ${e.message}"
         } finally {
             isLoading = false
+        }
+    }
+
+    class Factory(
+        private val repository: ActorRepository
+    ) : ViewModelProvider.Factory {
+        override fun <T : ViewModel> create(modelClass: Class<T>): T {
+            @Suppress("UNCHECKED_CAST")
+            return ActorListViewModel(repository) as T
         }
     }
 }

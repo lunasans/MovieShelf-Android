@@ -13,9 +13,6 @@ object SessionManager {
     /** Wird true, sobald der Server ein Token mit HTTP 401 ablehnt. */
     val sessionExpired: StateFlow<Boolean> = _sessionExpired.asStateFlow()
 
-    val isDemo: Boolean
-        get() = token == "demo_token_123456789"
-
     /** Vom Netzwerk-Layer aufgerufen, wenn ein Bearer-Token ungültig/abgelaufen ist. */
     fun invalidateSession() {
         token = null

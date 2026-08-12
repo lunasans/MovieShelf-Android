@@ -25,7 +25,9 @@ import androidx.navigation.compose.rememberNavController
 import at.neuhaus.movieshelf.ui.components.FloatingNavBar
 import at.neuhaus.movieshelf.data.SessionManager
 import at.neuhaus.movieshelf.data.api.RetrofitClient
+import androidx.compose.foundation.isSystemInDarkTheme
 import at.neuhaus.movieshelf.data.local.DataStoreManager
+import at.neuhaus.movieshelf.data.local.ThemeMode
 import at.neuhaus.movieshelf.data.model.Movie
 import at.neuhaus.movieshelf.ui.about.AboutScreen
 import at.neuhaus.movieshelf.ui.actors.ActorDetailScreen
@@ -39,8 +41,11 @@ import at.neuhaus.movieshelf.ui.lists.ListsScreen
 import at.neuhaus.movieshelf.ui.login.LoginScreen
 import at.neuhaus.movieshelf.ui.twofactor.TwoFactorScreen
 import at.neuhaus.movieshelf.ui.profile.ProfileScreen
+import at.neuhaus.movieshelf.data.local.db.AppMode
+import at.neuhaus.movieshelf.ui.setup.ModeChoiceScreen
 import at.neuhaus.movieshelf.ui.setup.SetupScreen
 import at.neuhaus.movieshelf.ui.stats.StatsScreen
+import at.neuhaus.movieshelf.ui.sync.SyncScreen
 import at.neuhaus.movieshelf.ui.theme.MovieShelfTheme
 import com.google.android.play.core.appupdate.AppUpdateManagerFactory
 import com.google.android.play.core.install.InstallStateUpdatedListener
@@ -48,6 +53,7 @@ import com.google.android.play.core.install.model.AppUpdateType
 import com.google.android.play.core.install.model.InstallStatus
 import com.google.android.play.core.install.model.UpdateAvailability
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
@@ -71,7 +77,15 @@ class MainActivity : ComponentActivity() {
         setContent {
             val dsm = remember { DataStoreManager(applicationContext) }
             val dynamicColor by dsm.dynamicColor.collectAsState(initial = false)
-            MovieShelfTheme(dynamicColor = dynamicColor) {
+            val themeMode by dsm.themeMode.collectAsState(initial = ThemeMode.DARK)
+            MovieShelfTheme(
+                darkTheme = when (themeMode) {
+                    ThemeMode.DARK -> true
+                    ThemeMode.LIGHT -> false
+                    ThemeMode.SYSTEM -> isSystemInDarkTheme()
+                },
+                dynamicColor = dynamicColor
+            ) {
                 MovieShelfApp(oauthCallbackUri)
             }
         }
@@ -142,11 +156,43 @@ private val slidePopExit = slideOutHorizontally(
 private val fadeEnter = fadeIn(animationSpec = tween(250))
 private val fadeExit = fadeOut(animationSpec = tween(200))
 
+/**
+ * Route zur Detailseite.
+ *
+ * Navigiert wird über die lokale ID. Filme, die direkt aus dem Netz stammen
+ * (Listen-Inhalte, Darsteller-Filmografie, Boxset-Kinder), haben noch keine —
+ * für sie wird die Server-ID mitgegeben, damit die Detailseite die lokale Zeile
+ * nachschlagen oder den Film nachladen kann.
+ */
+private fun movieDetailsRoute(movie: Movie, allLocalIds: List<Long> = emptyList()): String {
+    val query = buildList {
+        if (allLocalIds.isNotEmpty()) add("allIds=${allLocalIds.joinToString(",")}")
+        if (movie.localId == 0L && movie.id != 0) add("remoteId=${movie.id}")
+    }.joinToString("&")
+    return "movie_details/${movie.localId}" + if (query.isEmpty()) "" else "?$query"
+}
+
 @Composable
 fun MovieShelfApp(oauthCallbackUri: MutableState<Uri?> = mutableStateOf(null)) {
     val context = LocalContext.current
     val dataStoreManager = remember { DataStoreManager(context) }
-    val serverUrl by dataStoreManager.serverUrl.collectAsState(initial = null)
+    val app = context.applicationContext as MovieShelfApplication
+
+    // Beide Quellen liefern erst verzoegert. Bis dahin ist ihr Wert unbekannt —
+    // und "unbekannt" darf nicht wie "nicht eingerichtet" behandelt werden,
+    // sonst blitzt die Einrichtungsseite auf, waehrend die Werte noch laden.
+    var serverUrlLoaded by remember { mutableStateOf(false) }
+    val serverUrl by remember {
+        dataStoreManager.serverUrl.onEach { serverUrlLoaded = true }
+    }.collectAsState(initial = null)
+
+    var modeLoaded by remember { mutableStateOf(false) }
+    // null = noch nicht gewaehlt, dann kommt die Moduswahl.
+    val appMode by remember {
+        app.appMode.onEach { modeLoaded = true }
+    }.collectAsState(initial = null)
+
+    val bootstrapping = !modeLoaded || !serverUrlLoaded
     val navController = rememberNavController()
     val scope = rememberCoroutineScope()
 
@@ -203,7 +249,18 @@ fun MovieShelfApp(oauthCallbackUri: MutableState<Uri?> = mutableStateOf(null)) {
         }
     }
 
-    LaunchedEffect(serverUrl) {
+    LaunchedEffect(serverUrl, appMode, bootstrapping) {
+        // Solange die Werte nicht feststehen, nichts entscheiden.
+        if (bootstrapping) return@LaunchedEffect
+
+        // Eigenstaendig: kein Server, kein Token, direkt in die Sammlung.
+        if (appMode == AppMode.STANDALONE) {
+            startDestination = "dashboard"
+            isInitialized = true
+            initializationError = false
+            isLoadingAuth = false
+            return@LaunchedEffect
+        }
         if (serverUrl.isNullOrBlank()) {
             isInitialized = false
             isLoadingAuth = false
@@ -232,10 +289,19 @@ fun MovieShelfApp(oauthCallbackUri: MutableState<Uri?> = mutableStateOf(null)) {
         isLoadingAuth = false
     }
 
-    if (serverUrl.isNullOrBlank() || initializationError) {
+    if (bootstrapping) {
+        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            CircularProgressIndicator()
+        }
+    } else if (appMode == null) {
+        ModeChoiceScreen(onModeChosen = { chosen ->
+            scope.launch { app.setAppMode(chosen) }
+        })
+    } else if (appMode == AppMode.SHELF && (serverUrl.isNullOrBlank() || initializationError)) {
         SetupScreen(
             dataStoreManager = dataStoreManager,
-            onSetupComplete = { initializationError = false }
+            onSetupComplete = { initializationError = false },
+            onChangeMode = { scope.launch { app.clearAppMode() } }
         )
     } else if (!isInitialized || isLoadingAuth) {
         Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -270,6 +336,7 @@ fun MovieShelfApp(oauthCallbackUri: MutableState<Uri?> = mutableStateOf(null)) {
                                 dataStoreManager.saveAuthToken(null)
                             }
                         },
+                        onChangeMode = { scope.launch { app.clearAppMode() } },
                         oauthCallbackUri = oauthCallbackUri.value,
                         onOAuthCallbackConsumed = { oauthCallbackUri.value = null }
                     )
@@ -288,19 +355,30 @@ fun MovieShelfApp(oauthCallbackUri: MutableState<Uri?> = mutableStateOf(null)) {
 
                     DashboardScreen(
                         reloadKey = refreshKey,
-                        onMovieClick = { movie: Movie, allIds: List<Int> ->
-                            val idsString = allIds.joinToString(",")
-                            navController.navigate("movie_details/${movie.id}?allIds=$idsString")
-                        },
-                        onAboutClick = { navController.navigate("about") }
+                        isShelfMode = appMode == AppMode.SHELF,
+                        onSyncClick = { navController.navigate("sync") },
+                        onMovieClick = { movie: Movie, allIds: List<Long> ->
+                            navController.navigate(movieDetailsRoute(movie, allIds))
+                        }
                     )
                 }
                 composable("profile") {
                     ProfileScreen(
                         onBack = { navController.popBackStack() },
                         onListsClick = { navController.navigate("lists") },
-                        onTwoFactorClick = { navController.navigate("twofactor") }
+                        onTwoFactorClick = { navController.navigate("twofactor") },
+                        onSyncClick = { navController.navigate("sync") },
+                        isStandalone = appMode == AppMode.STANDALONE,
+                        onConnectShelfClick = {
+                            scope.launch {
+                                app.setAppMode(AppMode.SHELF)
+                            }
+                        },
+                        onAboutClick = { navController.navigate("about") }
                     )
+                }
+                composable("sync") {
+                    SyncScreen(onBack = { navController.popBackStack() })
                 }
                 composable("twofactor") {
                     TwoFactorScreen(onBack = { navController.popBackStack() })
@@ -308,8 +386,8 @@ fun MovieShelfApp(oauthCallbackUri: MutableState<Uri?> = mutableStateOf(null)) {
                 composable("create_movie") {
                     CreateMovieScreen(
                         onBack = { navController.popBackStack() },
-                        onCreated = { newId ->
-                            navController.navigate("movie_details/$newId") {
+                        onCreated = { newLocalId ->
+                            navController.navigate("movie_details/$newLocalId") {
                                 popUpTo("create_movie") { inclusive = true }
                             }
                         }
@@ -334,36 +412,42 @@ fun MovieShelfApp(oauthCallbackUri: MutableState<Uri?> = mutableStateOf(null)) {
                     ListDetailScreen(
                         listId = listId,
                         onBack = { navController.popBackStack() },
-                        onMovieClick = { movie: Movie -> navController.navigate("movie_details/${movie.id}") }
+                        onMovieClick = { movie: Movie -> navController.navigate(movieDetailsRoute(movie)) }
                     )
                 }
                 composable(
-                    "movie_details/{movieId}?allIds={allIds}",
+                    "movie_details/{localId}?allIds={allIds}&remoteId={remoteId}",
                     arguments = listOf(
-                        androidx.navigation.navArgument("movieId") { type = androidx.navigation.NavType.IntType },
+                        androidx.navigation.navArgument("localId") { type = androidx.navigation.NavType.LongType },
                         androidx.navigation.navArgument("allIds") {
                             type = androidx.navigation.NavType.StringType
                             nullable = true
                             defaultValue = null
+                        },
+                        androidx.navigation.navArgument("remoteId") {
+                            type = androidx.navigation.NavType.IntType
+                            defaultValue = 0
                         }
                     )
                 ) { backStackEntry ->
-                    val movieId = backStackEntry.arguments?.getInt("movieId") ?: 0
+                    val localId = backStackEntry.arguments?.getLong("localId") ?: 0L
+                    val remoteId = backStackEntry.arguments?.getInt("remoteId") ?: 0
                     val allIdsString = backStackEntry.arguments?.getString("allIds")
-                    val allMovieIds = allIdsString?.split(",")?.mapNotNull { it.toIntOrNull() } ?: emptyList()
+                    val allMovieIds = allIdsString?.split(",")?.mapNotNull { it.toLongOrNull() } ?: emptyList()
                     // Signal vom Edit-Screen: hochgezählt, sobald ein Film bearbeitet wurde
                     val reloadKey by backStackEntry.savedStateHandle
                         .getStateFlow("movie_edited", 0)
                         .collectAsState()
 
                     MovieDetailScreen(
-                        movieId = movieId,
+                        movieLocalId = localId,
+                        movieRemoteId = remoteId,
                         allMovieIds = allMovieIds,
                         reloadKey = reloadKey,
                         onBack = { navController.popBackStack() },
-                        onEditClick = { id -> navController.navigate("edit_movie/$id") },
+                        onEditClick = { editLocalId -> navController.navigate("edit_movie/$editLocalId") },
                         onMovieClick = { movie: Movie ->
-                            navController.navigate("movie_details/${movie.id}")
+                            navController.navigate(movieDetailsRoute(movie))
                         },
                         onActorClick = { actorId ->
                             navController.navigate("actor_details/$actorId")
@@ -392,7 +476,7 @@ fun MovieShelfApp(oauthCallbackUri: MutableState<Uri?> = mutableStateOf(null)) {
                             actorId = actorId,
                             onBack = { navController.popBackStack() },
                             onMovieClick = { movie: Movie ->
-                                navController.navigate("movie_details/${movie.id}")
+                                navController.navigate(movieDetailsRoute(movie))
                             }
                         )
                     }
@@ -405,14 +489,14 @@ fun MovieShelfApp(oauthCallbackUri: MutableState<Uri?> = mutableStateOf(null)) {
                     )
                 }
                 composable(
-                    "edit_movie/{movieId}",
+                    "edit_movie/{localId}",
                     arguments = listOf(
-                        androidx.navigation.navArgument("movieId") { type = androidx.navigation.NavType.IntType }
+                        androidx.navigation.navArgument("localId") { type = androidx.navigation.NavType.LongType }
                     )
                 ) { backStackEntry ->
-                    val movieId = backStackEntry.arguments?.getInt("movieId") ?: 0
+                    val localId = backStackEntry.arguments?.getLong("localId") ?: 0L
                     EditMovieScreen(
-                        movieId = movieId,
+                        movieLocalId = localId,
                         onBack = { navController.popBackStack() },
                         onSaved = {
                             // Detail-Screen über die Bearbeitung informieren, damit er neu lädt
@@ -444,6 +528,7 @@ fun MovieShelfApp(oauthCallbackUri: MutableState<Uri?> = mutableStateOf(null)) {
                 exit = slideOutVertically(targetOffsetY = { it }) + fadeOut()
             ) {
                 FloatingNavBar(
+                    showLogout = appMode == AppMode.SHELF,
                     currentRoute = currentRoute,
                     onHomeClick = {
                         if (currentRoute != "dashboard") {

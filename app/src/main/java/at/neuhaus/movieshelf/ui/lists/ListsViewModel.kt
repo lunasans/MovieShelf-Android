@@ -4,13 +4,15 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
-import at.neuhaus.movieshelf.data.api.RetrofitClient
-import at.neuhaus.movieshelf.data.model.ListMutationRequest
+import at.neuhaus.movieshelf.data.repository.ListRepository
 import at.neuhaus.movieshelf.data.model.MovieListSummary
 import kotlinx.coroutines.launch
 
-class ListsViewModel : ViewModel() {
+class ListsViewModel(
+    private val repository: ListRepository
+) : ViewModel() {
 
     var lists by mutableStateOf<List<MovieListSummary>>(emptyList())
         private set
@@ -28,7 +30,7 @@ class ListsViewModel : ViewModel() {
             isLoading = true
             error = null
             try {
-                lists = RetrofitClient.api.getLists().lists ?: emptyList()
+                lists = repository.getLists()
             } catch (e: Exception) {
                 error = "Listen konnten nicht geladen werden."
             } finally {
@@ -41,7 +43,7 @@ class ListsViewModel : ViewModel() {
         viewModelScope.launch {
             error = null
             try {
-                RetrofitClient.api.createList(ListMutationRequest(name))
+                repository.createList(name)
                 load()
             } catch (e: Exception) {
                 error = "Liste konnte nicht angelegt werden."
@@ -53,10 +55,7 @@ class ListsViewModel : ViewModel() {
         viewModelScope.launch {
             error = null
             try {
-                RetrofitClient.api.updateList(
-                    summary.id,
-                    ListMutationRequest(newName, summary.items ?: emptyList())
-                )
+                repository.renameList(summary.id, newName, summary.items ?: emptyList())
                 load()
             } catch (e: Exception) {
                 error = "Liste konnte nicht umbenannt werden."
@@ -68,11 +67,20 @@ class ListsViewModel : ViewModel() {
         viewModelScope.launch {
             error = null
             try {
-                RetrofitClient.api.deleteList(id)
+                repository.deleteList(id)
                 load()
             } catch (e: Exception) {
                 error = "Liste konnte nicht gelöscht werden."
             }
+        }
+    }
+
+    class Factory(
+        private val repository: ListRepository
+    ) : ViewModelProvider.Factory {
+        override fun <T : ViewModel> create(modelClass: Class<T>): T {
+            @Suppress("UNCHECKED_CAST")
+            return ListsViewModel(repository) as T
         }
     }
 }

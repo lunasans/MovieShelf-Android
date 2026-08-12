@@ -26,6 +26,7 @@ import at.neuhaus.movieshelf.ui.theme.MediaFormatDigital
 import at.neuhaus.movieshelf.ui.theme.MediaFormatDvd
 import at.neuhaus.movieshelf.ui.theme.MediaFormatRental
 import at.neuhaus.movieshelf.ui.theme.MediaFormatStreaming
+import java.util.Locale
 
 /**
  * Medienformat einer Edition ("Shelf"-Look: kleine farbige Pill-Badges).
@@ -74,6 +75,24 @@ fun MediaFormatBadge(
     )
 }
 
+/**
+ * Bewertung fuer die Anzeige: immer genau eine Nachkommastelle, wie im Web
+ * (`number_format($movie->rating, 1)`).
+ *
+ * Noetig, weil der Rohwert je nach Herkunft anders aussieht: die Shelf haelt
+ * `decimal(3,1)`, ein TMDb-Import bringt dagegen den vollen Stimmenschnitt
+ * mit — "6.874" stand so in der Liste. Gerundet wird ueber [Locale.US], damit
+ * der Punkt nicht je nach Geraetesprache zum Komma wird; die Zahl steht neben
+ * einem Stern-Icon, nicht in einem Fliesstext.
+ *
+ * Laesst sich der Wert nicht als Zahl lesen, wird er unveraendert gezeigt —
+ * lieber der Rohwert als gar nichts.
+ */
+fun formatRating(rating: String): String {
+    val value = rating.trim().replace(',', '.').toDoubleOrNull() ?: return rating
+    return String.format(Locale.US, "%.1f", value)
+}
+
 /** Bewertungs-Pill mit Stern-Icon, z.B. oben links auf einer Poster-Karte. */
 @Composable
 fun RatingBadge(
@@ -94,7 +113,7 @@ fun RatingBadge(
             modifier = Modifier.size(13.dp)
         )
         Text(
-            text = rating,
+            text = formatRating(rating),
             modifier = Modifier.padding(start = 3.dp),
             color = Color.White,
             fontSize = 11.sp,

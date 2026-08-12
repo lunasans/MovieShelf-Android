@@ -49,6 +49,10 @@ data class Movie(
     val tag: String? = null,
     @SerializedName("collection_type") val collectionType: String? = null,
     @SerializedName("created_at") val createdAt: String? = null,
+    @SerializedName("updated_at") val updatedAt: String? = null,
+    // Nur im Export gesetzt: eine geloeschte Zeile kommt als Grabstein mit,
+    // damit der Client sie auch lokal entfernen kann.
+    @SerializedName("is_deleted") val isDeleted: Boolean? = false,
     @SerializedName("is_wishlisted") val isWishlisted: Boolean? = null,
     @SerializedName("in_collection") val inCollection: Boolean? = true,
     // Felder für Boxsets
@@ -59,7 +63,17 @@ data class Movie(
     val seasons: List<ApiSeason>? = null,
     // Nur in Listen-Items gesetzt ("movie" oder "external"), um beim Speichern
     // einer Liste den richtigen Item-Typ zurückzusenden (GET/PUT /api/lists/{id}).
-    @SerializedName("item_type") val itemType: String? = null
+    @SerializedName("item_type") val itemType: String? = null,
+    /**
+     * ID der lokalen Zeile. Kommt nicht vom Server und geht nicht an ihn —
+     * [Transient] hält Gson davon ab, das Feld zu lesen oder zu schreiben.
+     *
+     * Gesetzt wird sie beim Übersetzen aus der Datenbank. Frisch aus dem Netz
+     * geholte Filme (TMDb-Suche, Listen-Items) haben hier 0, solange sie noch
+     * nicht lokal liegen. **Die Oberfläche navigiert ausschließlich hierüber**;
+     * [id] ist die Server-ID und gehört allein in Netzaufrufe.
+     */
+    @Transient val localId: Long = 0
 )
 
 data class ApiSeason(
@@ -80,7 +94,20 @@ data class ApiEpisode(
 
 // --- Staffeln nachladen (TMDb über die Shelf) ---
 data class TmdbTvDetails(
-    val seasons: List<TmdbSeasonOption>? = null
+    val seasons: List<TmdbSeasonOption>? = null,
+    // Nur beim direkten TMDb-Zugriff gefuellt; ueber den Shelf-Proxy kommen
+    // lediglich die Staffeln.
+    val id: Int? = null,
+    val name: String? = null,
+    val overview: String? = null,
+    @SerializedName("first_air_date") val firstAirDate: String? = null,
+    @SerializedName("poster_path") val posterPath: String? = null,
+    @SerializedName("backdrop_path") val backdropPath: String? = null,
+    @SerializedName("vote_average") val voteAverage: Double? = null,
+    @SerializedName("episode_run_time") val episodeRunTime: List<Int>? = null,
+    val genres: List<at.neuhaus.movieshelf.data.api.TmdbGenre>? = null,
+    val credits: at.neuhaus.movieshelf.data.api.TmdbCredits? = null,
+    val videos: at.neuhaus.movieshelf.data.api.TmdbVideos? = null
 )
 
 data class TmdbSeasonOption(
@@ -239,7 +266,13 @@ data class DecadeStats(
 data class TmdbImportRequest(
     @SerializedName("tmdb_id") val tmdbId: Int,
     val type: String = "movie",
-    @SerializedName("in_collection") val inCollection: Boolean = true
+    @SerializedName("in_collection") val inCollection: Boolean = true,
+    /**
+     * Nur fuer Serien. Ohne diese Angabe importiert der Server **alle** bei
+     * TMDb bekannten Staffeln — lokal liegen aber vielleicht nur einige. Dann
+     * haetten beide Seiten unterschiedliche Staende.
+     */
+    val seasons: List<Int>? = null
 )
 
 /**
@@ -294,6 +327,15 @@ data class MovieUpdateRequest(
     @SerializedName("purchase_price") val purchasePrice: Double? = null,
     val condition: String? = null,
     @SerializedName("in_collection") val inCollection: Boolean? = null
+)
+
+/** Antwort von GET api/admin/export. */
+data class ExportResponse(
+    @SerializedName("exported_at") val exportedAt: String? = null,
+    @SerializedName("is_delta") val isDelta: Boolean? = false,
+    val since: String? = null,
+    val count: Int? = null,
+    val movies: List<Movie>? = null
 )
 
 data class LoginResponse(

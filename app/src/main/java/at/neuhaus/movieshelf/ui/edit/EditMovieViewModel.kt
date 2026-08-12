@@ -7,15 +7,13 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import at.neuhaus.movieshelf.data.model.MovieUpdateRequest
+import at.neuhaus.movieshelf.data.local.db.UploadKind
 import at.neuhaus.movieshelf.data.repository.MovieRepository
 import kotlinx.coroutines.launch
-import okhttp3.MediaType.Companion.toMediaTypeOrNull
-import okhttp3.MultipartBody
-import okhttp3.RequestBody.Companion.toRequestBody
 import retrofit2.HttpException
 
 class EditMovieViewModel(
-    private val movieId: Int,
+    private val movieLocalId: Long,
     private val repository: MovieRepository
 ) : ViewModel() {
 
@@ -105,7 +103,7 @@ class EditMovieViewModel(
         viewModelScope.launch {
             isLoading = true
             val movie = try {
-                repository.getMovie(movieId)
+                repository.getMovieByLocalId(movieLocalId)
             } catch (e: Exception) {
                 null
             }
@@ -188,7 +186,7 @@ class EditMovieViewModel(
                     condition      = condition.trim().ifBlank { null },
                     inCollection   = inCollection
                 )
-                repository.updateMovie(movieId, request)
+                repository.updateMovieByLocalId(movieLocalId, request)
                 saved = true
             } catch (e: HttpException) {
                 error = when (e.code()) {
@@ -209,7 +207,7 @@ class EditMovieViewModel(
             isDeleting = true
             error = null
             try {
-                repository.deleteMovie(movieId)
+                repository.deleteMovieByLocalId(movieLocalId)
                 deleted = true
             } catch (e: HttpException) {
                 error = when (e.code()) {
@@ -233,13 +231,11 @@ class EditMovieViewModel(
             if (isCover) isUploadingCover = true else isUploadingBackdrop = true
             error = null
             try {
-                val mediaType = mime.toMediaTypeOrNull()
-                val body = bytes.toRequestBody(mediaType)
-                val ext = if (mime.contains("png")) "png" else "jpg"
-                val field = if (isCover) "cover" else "backdrop"
-                val part = MultipartBody.Part.createFormData(field, "$field.$ext", body)
-                if (isCover) repository.uploadCover(movieId, part) else repository.uploadBackdrop(movieId, part)
-                uploadMessage = if (isCover) "Cover aktualisiert." else "Backdrop aktualisiert."
+                val kind = if (isCover) UploadKind.COVER else UploadKind.BACKDROP
+                repository.setMovieImage(movieLocalId, bytes, mime, kind)
+                uploadMessage = if (repository.isOffline) {
+                    "Bild gespeichert — wird beim nächsten Abgleich hochgeladen."
+                } else if (isCover) "Cover aktualisiert." else "Backdrop aktualisiert."
             } catch (e: HttpException) {
                 error = when (e.code()) {
                     403 -> "Keine Berechtigung."
@@ -255,12 +251,12 @@ class EditMovieViewModel(
     }
 
     class Factory(
-        private val movieId: Int,
+        private val movieLocalId: Long,
         private val repository: MovieRepository
     ) : ViewModelProvider.Factory {
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
             @Suppress("UNCHECKED_CAST")
-            return EditMovieViewModel(movieId, repository) as T
+            return EditMovieViewModel(movieLocalId, repository) as T
         }
     }
 }

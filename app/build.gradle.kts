@@ -15,8 +15,8 @@ android {
         applicationId = "at.neuhaus.movieshelf"
         minSdk = 24
         targetSdk = 36
-        versionCode = 24
-        versionName = "1.11.1"
+        versionCode = 28
+        versionName = "2.0.2"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -59,6 +59,12 @@ android {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
     }
+    testOptions {
+        unitTests {
+            isIncludeAndroidResources = true
+        }
+    }
+
     buildFeatures {
         compose = true
         buildConfig = true
@@ -113,6 +119,14 @@ dependencies {
     implementation(libs.guava)
 
     testImplementation(libs.junit)
+    // Room gegen eine echte SQLite-Datenbank pruefen. Handgeschriebene
+    // Doubles koennen die Eigenheiten von SQLite nicht nachbilden - genau
+    // daran ist der Verlust der Besetzung durch INSERT OR REPLACE
+    // vorbeigelaufen.
+    testImplementation(libs.robolectric)
+    testImplementation(libs.androidx.room.testing)
+    testImplementation(libs.androidx.junit)
+    testImplementation(libs.kotlinx.coroutines.test)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(platform(libs.androidx.compose.bom))

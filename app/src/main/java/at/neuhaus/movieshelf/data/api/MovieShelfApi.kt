@@ -18,6 +18,13 @@ interface MovieShelfApi {
         @Query("tag") tag: String? = null
     ): MovieResponse
 
+    /**
+     * Vollstand oder Delta der Sammlung. Ohne `since` kommt alles, sonst nur
+     * seit diesem Zeitpunkt Geaendertes - inklusive geloeschter Zeilen.
+     */
+    @GET("api/admin/export")
+    suspend fun exportMovies(@Query("since") since: String? = null): ExportResponse
+
     @GET("api/movies/{id}")
     suspend fun getMovie(@Path("id") id: Int): SingleMovieResponse
 

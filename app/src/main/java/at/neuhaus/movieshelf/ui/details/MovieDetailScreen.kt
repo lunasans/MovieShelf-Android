@@ -51,6 +51,8 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import at.neuhaus.movieshelf.data.model.Actor
 import at.neuhaus.movieshelf.data.model.Movie
+import at.neuhaus.movieshelf.ui.components.ShelfFormSection
+import at.neuhaus.movieshelf.ui.components.formatRating
 import at.neuhaus.movieshelf.ui.theme.NavAccentRed
 import at.neuhaus.movieshelf.ui.util.resolveImageUrl
 import coil.compose.AsyncImage
@@ -58,11 +60,12 @@ import coil.compose.AsyncImage
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MovieDetailScreen(
-    movieId: Int,
-    allMovieIds: List<Int> = emptyList(),
+    movieLocalId: Long,
+    movieRemoteId: Int = 0,
+    allMovieIds: List<Long> = emptyList(),
     reloadKey: Int = 0,
     onBack: () -> Unit,
-    onEditClick: (Int) -> Unit = {},
+    onEditClick: (Long) -> Unit = {},
     onActorClick: (Int) -> Unit = {},
     onActorNameClick: (String) -> Unit = {},
     onMovieClick: (Movie) -> Unit
@@ -70,9 +73,11 @@ fun MovieDetailScreen(
     val context = LocalContext.current
     val app = context.applicationContext as at.neuhaus.movieshelf.MovieShelfApplication
 
-    if (allMovieIds.isNotEmpty()) {
+    // Wischen zwischen den Filmen einer Reihe gibt es nur für lokal bekannte
+    // Filme — ein per Server-ID geöffneter Film hat keine Nachbarn.
+    if (allMovieIds.isNotEmpty() && movieLocalId != 0L) {
         val pagerState = androidx.compose.foundation.pager.rememberPagerState(
-            initialPage = allMovieIds.indexOf(movieId).coerceAtLeast(0),
+            initialPage = allMovieIds.indexOf(movieLocalId).coerceAtLeast(0),
             pageCount = { allMovieIds.size }
         )
 
@@ -82,26 +87,30 @@ fun MovieDetailScreen(
             beyondViewportPageCount = 1
         ) { page ->
             MovieDetailContent(
-                movieId = allMovieIds[page],
+                movieLocalId = allMovieIds[page],
+                movieRemoteId = 0,
                 reloadKey = reloadKey,
                 onBack = onBack,
                 onEditClick = onEditClick,
                 onActorClick = onActorClick,
                 onActorNameClick = onActorNameClick,
                 onMovieClick = onMovieClick,
-                repository = app.movieRepository
+                repository = app.movieRepository,
+                listRepository = app.listRepository
             )
         }
     } else {
         MovieDetailContent(
-            movieId = movieId,
+            movieLocalId = movieLocalId,
+            movieRemoteId = movieRemoteId,
             reloadKey = reloadKey,
             onBack = onBack,
             onEditClick = onEditClick,
             onActorClick = onActorClick,
             onActorNameClick = onActorNameClick,
             onMovieClick = onMovieClick,
-            repository = app.movieRepository
+            repository = app.movieRepository,
+            listRepository = app.listRepository
         )
     }
 }
@@ -109,25 +118,27 @@ fun MovieDetailScreen(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun MovieDetailContent(
-    movieId: Int,
+    movieLocalId: Long,
+    movieRemoteId: Int,
     reloadKey: Int,
     onBack: () -> Unit,
-    onEditClick: (Int) -> Unit,
+    onEditClick: (Long) -> Unit,
     onActorClick: (Int) -> Unit,
     onActorNameClick: (String) -> Unit,
     onMovieClick: (Movie) -> Unit,
-    repository: at.neuhaus.movieshelf.data.repository.MovieRepository
+    repository: at.neuhaus.movieshelf.data.repository.MovieRepository,
+    listRepository: at.neuhaus.movieshelf.data.repository.ListRepository
 ) {
     val viewModel: MovieDetailViewModel = viewModel(
-        key = movieId.toString(),
-        factory = MovieDetailViewModel.Factory(movieId, repository)
+        key = "$movieLocalId-$movieRemoteId",
+        factory = MovieDetailViewModel.Factory(movieLocalId, movieRemoteId, repository, listRepository)
     )
     val movie = viewModel.movie
     val isAdmin = at.neuhaus.movieshelf.data.SessionManager.user?.isAdmin == true
 
     // Nach erfolgreicher Bearbeitung den Film neu laden
     LaunchedEffect(reloadKey) {
-        if (reloadKey > 0) viewModel.loadMovie(movieId)
+        if (reloadKey > 0) viewModel.reload()
     }
 
     val ctx = LocalContext.current
@@ -208,7 +219,7 @@ private fun MovieDetailContent(
                     }
                     if (movie != null && isAdmin) {
                         IconButton(
-                            onClick = { onEditClick(movieId) },
+                            onClick = { onEditClick(viewModel.localId) },
                             colors = IconButtonDefaults.iconButtonColors(
                                 containerColor = Color.Black.copy(alpha = 0.4f * (1f - toolbarAlpha)),
                                 contentColor = iconContentColor
@@ -673,7 +684,11 @@ private fun MovieHeader(
         movie.year?.let { MetadataItem(icon = Icons.Default.CalendarToday, text = it.toString()) }
         movie.runtime?.let { MetadataItem(icon = Icons.Default.AccessTime, text = "$it Min.") }
         if (!movie.rating.isNullOrBlank()) {
-            MetadataItem(icon = Icons.Default.Star, text = "${movie.rating}/10", iconColor = Color(0xFFFFC107))
+            MetadataItem(
+                icon = Icons.Default.Star,
+                text = "${formatRating(movie.rating)}/10",
+                iconColor = Color(0xFFFFC107)
+            )
         }
     }
 
@@ -698,37 +713,65 @@ private fun MovieHeader(
         )
     }
 
-    if (!movie.edition.isNullOrBlank()) {
-        Spacer(Modifier.height(8.dp))
-        MetadataItem(icon = Icons.Default.Album, text = "Edition: ${movie.edition}", modifier = fadeModifier)
+    PhysicalCollectionCard(movie = movie, modifier = fadeModifier)
+}
+
+/**
+ * Die physischen Sammlungs-Daten (Edition, Regalplatz, Kauf, Zustand) gehören
+ * inhaltlich zusammen und stehen deshalb auf einer eigenen "Regalbrett"-Karte
+ * statt als lose Metadaten-Zeilen zwischen den Filmdaten.
+ */
+@Composable
+private fun PhysicalCollectionCard(movie: Movie, modifier: Modifier = Modifier) {
+    val conditionLabel = when (movie.condition) {
+        "new" -> "Neu"
+        "like_new" -> "Wie neu"
+        "good" -> "Gut"
+        "acceptable" -> "Akzeptabel"
+        "damaged" -> "Beschädigt"
+        else -> movie.condition
     }
-    if (!movie.regionCode.isNullOrBlank()) {
-        Spacer(Modifier.height(8.dp))
-        MetadataItem(icon = Icons.Default.Public, text = "Region: ${movie.regionCode}", modifier = fadeModifier)
-    }
-    if (!movie.discLocation.isNullOrBlank()) {
-        Spacer(Modifier.height(8.dp))
-        MetadataItem(icon = Icons.Default.LocationOn, text = "Standort: ${movie.discLocation}", modifier = fadeModifier)
-    }
-    if (!movie.condition.isNullOrBlank()) {
-        val conditionLabel = when (movie.condition) {
-            "new" -> "Neu"
-            "like_new" -> "Wie neu"
-            "good" -> "Gut"
-            "acceptable" -> "Akzeptabel"
-            "damaged" -> "Beschädigt"
-            else -> movie.condition
+    val entries = listOfNotNull(
+        movie.edition?.takeIf { it.isNotBlank() }?.let { Triple(Icons.Default.Album, "Edition", it) },
+        movie.regionCode?.takeIf { it.isNotBlank() }?.let { Triple(Icons.Default.Public, "Region", it) },
+        movie.discLocation?.takeIf { it.isNotBlank() }?.let { Triple(Icons.Default.LocationOn, "Standort", it) },
+        conditionLabel?.takeIf { it.isNotBlank() }?.let { Triple(Icons.Default.Verified, "Zustand", it) },
+        movie.purchaseDate?.takeIf { it.isNotBlank() }?.let { Triple(Icons.Default.CalendarToday, "Gekauft", it) },
+        movie.purchasePrice?.let { Triple(Icons.Default.Euro, "Kaufpreis", "$it €") }
+    )
+    if (entries.isEmpty()) return
+
+    Spacer(Modifier.height(16.dp))
+    // Gleiche Glas-Karte wie im Formular, damit Detail- und Edit-Ansicht
+    // denselben Block zeigen.
+    ShelfFormSection(
+        title = "Physische Sammlung",
+        icon = Icons.Default.Collections,
+        modifier = modifier
+    ) {
+        entries.forEach { (icon, label, value) ->
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    modifier = Modifier.size(16.dp),
+                    tint = MaterialTheme.colorScheme.secondary
+                )
+                Spacer(Modifier.width(10.dp))
+                Text(
+                    text = label,
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.width(96.dp)
+                )
+                Text(
+                    text = value,
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+            }
         }
-        Spacer(Modifier.height(8.dp))
-        MetadataItem(icon = Icons.Default.Verified, text = "Zustand: $conditionLabel", modifier = fadeModifier)
-    }
-    if (!movie.purchaseDate.isNullOrBlank()) {
-        Spacer(Modifier.height(8.dp))
-        MetadataItem(icon = Icons.Default.CalendarToday, text = "Gekauft: ${movie.purchaseDate}", modifier = fadeModifier)
-    }
-    movie.purchasePrice?.let {
-        Spacer(Modifier.height(8.dp))
-        MetadataItem(icon = Icons.Default.Euro, text = "Kaufpreis: $it €", modifier = fadeModifier)
     }
 }
 

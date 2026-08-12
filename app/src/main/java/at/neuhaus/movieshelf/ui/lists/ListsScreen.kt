@@ -20,7 +20,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.viewmodel.compose.viewModel
+import at.neuhaus.movieshelf.MovieShelfApplication
 import at.neuhaus.movieshelf.data.model.MovieListSummary
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -29,7 +31,10 @@ fun ListsScreen(
     onBack: () -> Unit,
     onListClick: (Int) -> Unit
 ) {
-    val viewModel: ListsViewModel = viewModel()
+    val app = LocalContext.current.applicationContext as MovieShelfApplication
+    val viewModel: ListsViewModel = viewModel(
+        factory = ListsViewModel.Factory(app.listRepository)
+    )
 
     var showCreateDialog by remember { mutableStateOf(false) }
     var renameTarget by remember { mutableStateOf<MovieListSummary?>(null) }

@@ -12,9 +12,13 @@ import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
@@ -22,13 +26,18 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.fromHtml
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -36,9 +45,12 @@ import at.neuhaus.movieshelf.MovieShelfApplication
 import at.neuhaus.movieshelf.R
 import at.neuhaus.movieshelf.data.model.Movie
 import at.neuhaus.movieshelf.ui.components.FloatingNavBar
-import at.neuhaus.movieshelf.ui.components.HeadingText
 import at.neuhaus.movieshelf.ui.components.PosterCard
 import at.neuhaus.movieshelf.ui.components.RatingBadge
+import at.neuhaus.movieshelf.ui.theme.BackgroundDark
+import at.neuhaus.movieshelf.ui.theme.HeroBannerShape
+import at.neuhaus.movieshelf.ui.theme.NavAccentRed
+import kotlinx.coroutines.delay
 import at.neuhaus.movieshelf.ui.util.MovieCardSkeleton
 import at.neuhaus.movieshelf.ui.util.resolveImageUrl
 import coil.compose.AsyncImage
@@ -46,8 +58,10 @@ import coil.compose.AsyncImage
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun DashboardScreen(
-    onMovieClick: (Movie, List<Int>) -> Unit,
-    onAboutClick: () -> Unit,
+    onMovieClick: (Movie, List<Long>) -> Unit,
+    /** Fuehrt zum Abgleich — die Sammlung fuellt sich nur auf Knopfdruck. */
+    onSyncClick: () -> Unit = {},
+    isShelfMode: Boolean = false,
     reloadKey: Int = 0
 ) {
     val context = LocalContext.current
@@ -61,8 +75,6 @@ fun DashboardScreen(
         if (reloadKey > 0) viewModel.loadMovies(refresh = true)
     }
 
-    var showSortMenu by remember { mutableStateOf(false) }
-    var showFilterSheet by remember { mutableStateOf(false) }
     val gridState = rememberLazyGridState()
 
     // Pagination: lade mehr wenn nahe am Ende
@@ -76,158 +88,71 @@ fun DashboardScreen(
         if (shouldLoadMore) viewModel.loadMore()
     }
 
-    if (showFilterSheet) {
-        FilterBottomSheet(
-            viewModel = viewModel,
-            onDismiss = { showFilterSheet = false }
-        )
-    }
+    // Zufaellige Auswahl aus der ganzen Sammlung, wie im Web — nicht die
+    // Neuzugaenge, die stehen ohnehin gleich darunter in ihrer eigenen Reihe.
+    val heroMovies = viewModel.heroMovies
+    val isBrowsing = viewModel.searchQuery.isBlank() && viewModel.selectedShelf == null
+    // Der Hero reicht hinter die Kopfzeile, wie im Web. Solange er zu sehen ist,
+    // bekommt die Kopfzeile deshalb keinen eigenen Grund — das Logo liegt dann
+    // direkt auf dem oberen Scrim des Banners, der dort ohnehin dunkel ist.
+    val heroBehindTopBar = isBrowsing && heroMovies.isNotEmpty()
+
+    // Die Kopfzeile schiebt sich beim Scrollen mit nach oben aus dem Bild und
+    // kommt beim Zurückscrollen wieder. Ohne das bliebe das Logo stehen und
+    // laege auf Postern und Titeln, sobald der Hero durchgelaufen ist.
+    val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior(
+        rememberTopAppBarState()
+    )
 
     Scaffold(
+        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
-            Surface(tonalElevation = 2.dp) {
-                Column {
-                    CenterAlignedTopAppBar(
-                        navigationIcon = {
-                            IconButton(onClick = onAboutClick) {
-                                Icon(Icons.Default.Info, contentDescription = "Über MovieShelf")
-                            }
-                        },
-                        title = {
-                            Image(
-                                painter = painterResource(id = R.drawable.logo),
-                                contentDescription = "MovieShelf",
-                                modifier = Modifier.height(32.dp)
-                            )
-                        },
-                        actions = {
-                            // Filter-Button (hervorgehoben wenn aktiv)
-                            IconButton(onClick = { showFilterSheet = true }) {
-                                BadgedBox(
-                                    badge = {
-                                        if (viewModel.filterState.isActive) {
-                                            Badge()
-                                        }
-                                    }
-                                ) {
-                                    Icon(Icons.Default.FilterList, contentDescription = "Filter")
-                                }
-                            }
-                            // Sort-Dropdown
-                            Box {
-                                IconButton(onClick = { showSortMenu = true }) {
-                                    Icon(Icons.Default.SortByAlpha, contentDescription = "Sortierung")
-                                }
-                                DropdownMenu(
-                                    expanded = showSortMenu,
-                                    onDismissRequest = { showSortMenu = false }
-                                ) {
-                                    SortOption.entries.forEach { option ->
-                                        DropdownMenuItem(
-                                            text = {
-                                                Text(
-                                                    text = option.label,
-                                                    fontWeight = if (viewModel.sortOption == option) FontWeight.Bold else FontWeight.Normal
-                                                )
-                                            },
-                                            leadingIcon = {
-                                                if (viewModel.sortOption == option)
-                                                    Icon(Icons.Default.Check, null, modifier = Modifier.size(18.dp))
-                                                else
-                                                    Spacer(Modifier.size(18.dp))
-                                            },
-                                            onClick = {
-                                                viewModel.onSortSelected(option)
-                                                showSortMenu = false
-                                            }
-                                        )
-                                    }
-                                }
-                            }
-                        },
-                        colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
-                            containerColor = Color.Transparent
+            Column {
+                // Logo linksbündig wie im Web; "Über MovieShelf" sitzt
+                // jetzt in den Einstellungen und braucht hier keinen Platz.
+                TopAppBar(
+                    title = {
+                        Image(
+                            painter = painterResource(id = R.drawable.logo),
+                            contentDescription = "MovieShelf",
+                            modifier = Modifier.height(32.dp)
                         )
-                    )
+                    },
+                    // Über dem Hero durchsichtig, damit das Logo auf dem Bild
+                    // liegt; sobald Inhalt darunter durchläuft, bekommt sie
+                    // ihren Grund.
+                    colors = TopAppBarDefaults.topAppBarColors(
+                        containerColor = Color.Transparent,
+                        scrolledContainerColor = MaterialTheme.colorScheme
+                            .surfaceColorAtElevation(3.dp)
+                    ),
+                    scrollBehavior = scrollBehavior
+                )
 
-                    // Offline-Banner
-                    if (viewModel.isOffline) {
-                        Surface(
-                            color = MaterialTheme.colorScheme.errorContainer,
-                            modifier = Modifier.fillMaxWidth()
+                // Offline-Banner
+                if (viewModel.isOffline) {
+                    Surface(
+                        color = MaterialTheme.colorScheme.errorContainer,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
-                            Row(
-                                modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(8.dp)
-                            ) {
-                                Icon(
-                                    Icons.Default.WifiOff,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(16.dp),
-                                    tint = MaterialTheme.colorScheme.onErrorContainer
-                                )
-                                Text(
-                                    "Offline — zwischengespeicherte Daten",
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = MaterialTheme.colorScheme.onErrorContainer
-                                )
-                            }
+                            Icon(
+                                Icons.Default.WifiOff,
+                                contentDescription = null,
+                                modifier = Modifier.size(16.dp),
+                                tint = MaterialTheme.colorScheme.onErrorContainer
+                            )
+                            Text(
+                                "Offline — zwischengespeicherte Daten",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onErrorContainer
+                            )
                         }
                     }
-
-                    // Aktive Filter-Chips
-                    if (viewModel.filterState.isActive) {
-                        ActiveFilterChips(
-                            filterState = viewModel.filterState,
-                            onClearAll = { viewModel.clearFilters() },
-                            onRemoveGenre = { genre ->
-                                viewModel.onFilterChanged(
-                                    viewModel.filterState.copy(
-                                        selectedGenres = viewModel.filterState.selectedGenres - genre
-                                    )
-                                )
-                            },
-                            onRemoveDirector = { director ->
-                                viewModel.onFilterChanged(
-                                    viewModel.filterState.copy(
-                                        selectedDirectors = viewModel.filterState.selectedDirectors - director
-                                    )
-                                )
-                            },
-                            onClearYear = {
-                                viewModel.onFilterChanged(
-                                    viewModel.filterState.copy(yearFrom = null, yearTo = null)
-                                )
-                            }
-                        )
-                    }
-
-                    OutlinedTextField(
-                        value = viewModel.searchQuery,
-                        onValueChange = { viewModel.onSearchQueryChange(it) },
-                        placeholder = { Text("Filme suchen...") },
-                        leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
-                        trailingIcon = {
-                            if (viewModel.searchQuery.isNotEmpty()) {
-                                IconButton(onClick = { viewModel.onSearchQueryChange("") }) {
-                                    Icon(Icons.Default.Close, contentDescription = "Löschen")
-                                }
-                            }
-                        },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 16.dp)
-                            .padding(bottom = 8.dp),
-                        singleLine = true,
-                        shape = MaterialTheme.shapes.medium,
-                        colors = OutlinedTextFieldDefaults.colors(
-                            unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
-                            focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
-                            unfocusedBorderColor = Color.Transparent
-                        )
-                    )
-
                 }
             }
         }
@@ -235,11 +160,11 @@ fun DashboardScreen(
         PullToRefreshBox(
             isRefreshing = viewModel.isRefreshing,
             onRefresh = { viewModel.loadMovies(refresh = true) },
-            modifier = Modifier.padding(innerPadding)
+            modifier = Modifier.padding(
+                top = if (heroBehindTopBar) 0.dp else innerPadding.calculateTopPadding(),
+                bottom = innerPadding.calculateBottomPadding()
+            )
         ) {
-            val isBrowsing = !viewModel.filterState.isActive && viewModel.searchQuery.isBlank() &&
-                viewModel.selectedShelf == null
-
             if (isBrowsing) {
                 // "Shelf"-Gruppierung: vertikal gestapelte, horizontal scrollbare Reihen
                 // ("Neue Filme" / "Filme" / "Serien"), wie im Web-Dashboard.
@@ -252,10 +177,32 @@ fun DashboardScreen(
                     }
                 } else if (!hasAnyShelfContent && !viewModel.isLoading) {
                     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            modifier = Modifier.padding(horizontal = 32.dp)
+                        ) {
                             Icon(Icons.Default.SearchOff, null, Modifier.size(64.dp), tint = MaterialTheme.colorScheme.outline)
                             Spacer(Modifier.height(16.dp))
-                            Text("Keine Filme gefunden", style = MaterialTheme.typography.titleMedium)
+                            Text("Noch keine Filme", style = MaterialTheme.typography.titleMedium)
+                            Spacer(Modifier.height(8.dp))
+                            Text(
+                                text = if (isShelfMode) {
+                                    "Deine Sammlung wird beim Synchronisieren von der Shelf geholt."
+                                } else {
+                                    "Lege deinen ersten Film über das Plus an."
+                                },
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                            )
+                            if (isShelfMode) {
+                                Spacer(Modifier.height(16.dp))
+                                Button(onClick = onSyncClick, shape = at.neuhaus.movieshelf.ui.theme.PillShape) {
+                                    Icon(Icons.Default.Sync, contentDescription = null, modifier = Modifier.size(18.dp))
+                                    Spacer(Modifier.width(8.dp))
+                                    Text("Jetzt synchronisieren", fontWeight = FontWeight.Bold)
+                                }
+                            }
                         }
                     }
                 } else {
@@ -265,12 +212,31 @@ fun DashboardScreen(
                             .verticalScroll(rememberScrollState())
                             .padding(bottom = 100.dp)
                     ) {
+                        if (heroMovies.isNotEmpty()) {
+                            HeroSlider(
+                                movies = heroMovies,
+                                onClick = { movie ->
+                                    onMovieClick(movie, heroMovies.map { it.localId })
+                                },
+                                // Der Banner liegt unter der Kopfzeile und wächst
+                                // um deren Höhe, damit sichtbar so viel Bild
+                                // übrig bleibt wie zuvor.
+                                extraTopHeight = innerPadding.calculateTopPadding()
+                            )
+                            Spacer(Modifier.height(8.dp))
+                        }
+
+                        DashboardSearchField(
+                            viewModel = viewModel,
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                        )
+
                         if (viewModel.newMoviesShelf.isNotEmpty()) {
                             MovieShelfRow(
                                 title = "Neue Filme",
                                 movies = viewModel.newMoviesShelf,
                                 onClick = { movie ->
-                                    onMovieClick(movie, viewModel.newMoviesShelf.map { it.id })
+                                    onMovieClick(movie, viewModel.newMoviesShelf.map { it.localId })
                                 },
                                 onShowAll = { viewModel.onShelfSelected(ShelfCategory.NEW) }
                             )
@@ -280,9 +246,10 @@ fun DashboardScreen(
                                 title = "Filme",
                                 movies = viewModel.filmeShelf,
                                 onClick = { movie ->
-                                    onMovieClick(movie, viewModel.filmeShelf.map { it.id })
+                                    onMovieClick(movie, viewModel.filmeShelf.map { it.localId })
                                 },
-                                onShowAll = { viewModel.onShelfSelected(ShelfCategory.FILME) }
+                                onShowAll = { viewModel.onShelfSelected(ShelfCategory.FILME) },
+                                count = viewModel.collectionCounts?.films
                             )
                         }
                         if (viewModel.seriesShelf.isNotEmpty()) {
@@ -290,9 +257,10 @@ fun DashboardScreen(
                                 title = "Serien",
                                 movies = viewModel.seriesShelf,
                                 onClick = { movie ->
-                                    onMovieClick(movie, viewModel.seriesShelf.map { it.id })
+                                    onMovieClick(movie, viewModel.seriesShelf.map { it.localId })
                                 },
-                                onShowAll = { viewModel.onShelfSelected(ShelfCategory.SERIEN) }
+                                onShowAll = { viewModel.onShelfSelected(ShelfCategory.SERIEN) },
+                                count = viewModel.collectionCounts?.series
                             )
                         }
                     }
@@ -305,20 +273,27 @@ fun DashboardScreen(
                     items(6) { MovieCardSkeleton() }
                 }
             } else if (viewModel.movies.isEmpty() && !viewModel.isLoading) {
-                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Column(Modifier.fillMaxSize()) {
+                    // Ohne Feld liesse sich ein Tippfehler nicht mehr berichtigen:
+                    // die Trefferliste ist leer, das Feld waere verschwunden.
+                    DashboardSearchField(
+                        viewModel = viewModel,
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                    )
+                    Column(
+                        modifier = Modifier.fillMaxWidth().weight(1f),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center
+                    ) {
                         Icon(Icons.Default.SearchOff, null, Modifier.size(64.dp), tint = MaterialTheme.colorScheme.outline)
                         Spacer(Modifier.height(16.dp))
                         Text("Keine Filme gefunden", style = MaterialTheme.typography.titleMedium)
-                        if (viewModel.filterState.isActive || viewModel.searchQuery.isNotEmpty() ||
-                            viewModel.selectedShelf != null
-                        ) {
+                        if (viewModel.searchQuery.isNotEmpty() || viewModel.selectedShelf != null) {
                             TextButton(onClick = {
                                 viewModel.onSearchQueryChange("")
-                                viewModel.clearFilters()
                                 viewModel.clearShelf()
                             }) {
-                                Text("Filter zurücksetzen")
+                                Text("Auswahl aufheben")
                             }
                         }
                     }
@@ -330,6 +305,15 @@ fun DashboardScreen(
                     contentPadding = PaddingValues(top = 8.dp, start = 8.dp, end = 8.dp, bottom = 100.dp),
                     modifier = Modifier.fillMaxSize()
                 ) {
+                    // Auch hier, sonst verschwaende das Feld beim ersten Zeichen -
+                    // die Trefferliste ersetzt ja die Reihen, zwischen denen es steht.
+                    item(span = { GridItemSpan(maxLineSpan) }) {
+                        DashboardSearchField(
+                            viewModel = viewModel,
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                        )
+                    }
+
                     // "Alle anzeigen"-Modus: Kategorie-Chip als Rückweg zu den Shelf-Reihen
                     viewModel.selectedShelf?.let { shelf ->
                         item(span = { GridItemSpan(maxLineSpan) }) {
@@ -346,8 +330,8 @@ fun DashboardScreen(
                     items(viewModel.movies, key = { it.id }) { movie ->
                         MovieItem(
                             movie = movie,
-                            onClick = { onMovieClick(movie, viewModel.movies.map { it.id }) },
-                            onWatchedToggle = { viewModel.toggleWatched(movie.id) }
+                            onClick = { onMovieClick(movie, viewModel.movies.map { it.localId }) },
+                            onWatchedToggle = { viewModel.toggleWatched(movie.localId) }
                         )
                     }
                     if (viewModel.isLoadingMore) {
@@ -359,167 +343,280 @@ fun DashboardScreen(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
+/**
+ * Suchfeld des Dashboards.
+ *
+ * Sitzt zwischen Hero und der ersten Reihe statt in der Kopfzeile: dort nahm es
+ * dauerhaft Platz weg, obwohl gesucht selten wird — und der Hero soll das erste
+ * sein, was man sieht. Beim Tippen ersetzt die Trefferliste ohnehin die Reihen.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun FilterBottomSheet(
-    viewModel: DashboardViewModel,
-    onDismiss: () -> Unit
+private fun DashboardSearchField(viewModel: DashboardViewModel, modifier: Modifier = Modifier) {
+    OutlinedTextField(
+        value = viewModel.searchQuery,
+        onValueChange = { viewModel.onSearchQueryChange(it) },
+        placeholder = { Text("Filme suchen...") },
+        leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
+        trailingIcon = {
+            if (viewModel.searchQuery.isNotEmpty()) {
+                IconButton(onClick = { viewModel.onSearchQueryChange("") }) {
+                    Icon(Icons.Default.Close, contentDescription = "Löschen")
+                }
+            }
+        },
+        modifier = modifier.fillMaxWidth(),
+        singleLine = true,
+        shape = MaterialTheme.shapes.medium,
+        colors = OutlinedTextFieldDefaults.colors(
+            unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
+            focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
+            unfocusedBorderColor = Color.Transparent
+        )
+    )
+}
+
+/** Sichtbare Höhe des Hero-Banners unterhalb der Kopfzeile. */
+private val HERO_HEIGHT = 420.dp
+
+/** Wechselintervall des Hero-Sliders — wie im Web (`setInterval(..., 8000)`). */
+private const val HERO_AUTO_ADVANCE_MS = 8_000L
+
+/**
+ * Hero-Banner über den Shelf-Reihen, nachgebaut nach dem Slider im Web
+ * (`tenant/movies/partials/streaming-layout.blade.php`): Backdrop mit drei
+ * Gradient-Scrims nach `#0c0c0e`, "Featured"-Badge, großer Titel, Kurztext,
+ * heller Details-Button und Slider-Punkte. Wechselt automatisch, solange der
+ * Nutzer nicht selbst wischt.
+ *
+ * Die Scrims sind bewusst in beiden Themes dunkel: sie liegen auf einem Foto,
+ * die Schrift darauf ist immer weiß.
+ */
+@Composable
+fun HeroSlider(
+    movies: List<Movie>,
+    onClick: (Movie) -> Unit,
+    modifier: Modifier = Modifier,
+    /** Höhe der darüberliegenden Kopfzeile, hinter die der Banner reicht. */
+    extraTopHeight: Dp = 0.dp
 ) {
-    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-    var localFilter by remember { mutableStateOf(viewModel.filterState) }
+    if (movies.isEmpty()) return
+    val context = LocalContext.current
+    val pagerState = rememberPagerState(pageCount = { movies.size })
 
-    ModalBottomSheet(
-        onDismissRequest = onDismiss,
-        sheetState = sheetState
+    if (movies.size > 1) {
+        LaunchedEffect(pagerState) {
+            while (true) {
+                delay(HERO_AUTO_ADVANCE_MS)
+                // Ein laufender Wisch des Nutzers hat Vorrang.
+                if (!pagerState.isScrollInProgress) {
+                    pagerState.animateScrollToPage(
+                        page = (pagerState.currentPage + 1) % movies.size,
+                        animationSpec = tween(durationMillis = 900)
+                    )
+                }
+            }
+        }
+    }
+
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .height(HERO_HEIGHT + extraTopHeight)
+            .clip(HeroBannerShape)
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 20.dp)
-                .padding(bottom = 32.dp)
-        ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text("Filter", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
-                if (localFilter.isActive) {
-                    TextButton(onClick = { localFilter = FilterState() }) { Text("Zurücksetzen") }
+        HorizontalPager(state = pagerState, modifier = Modifier.fillMaxSize()) { page ->
+            val movie = movies[page]
+            Box(Modifier.fillMaxSize()) {
+                AsyncImage(
+                    model = resolveImageUrl(context, movie.backdropUrl ?: movie.coverUrl ?: ""),
+                    contentDescription = movie.title,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.fillMaxSize()
+                )
+                Box(
+                    Modifier
+                        .fillMaxSize()
+                        .background(
+                            Brush.verticalGradient(
+                                0f to BackgroundDark,
+                                0.25f to Color.Transparent,
+                                0.55f to BackgroundDark.copy(alpha = 0.6f),
+                                1f to BackgroundDark
+                            )
+                        )
+                )
+                Box(
+                    Modifier
+                        .fillMaxSize()
+                        .background(
+                            Brush.horizontalGradient(
+                                listOf(BackgroundDark, Color.Transparent, Color.Transparent)
+                            )
+                        )
+                )
+
+                Column(
+                    modifier = Modifier
+                        .align(Alignment.BottomStart)
+                        .padding(horizontal = 20.dp, vertical = 28.dp)
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            text = "Featured",
+                            style = MaterialTheme.typography.labelSmall.copy(letterSpacing = 1.5.sp),
+                            fontWeight = FontWeight.Black,
+                            color = Color.White,
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(6.dp))
+                                .background(NavAccentRed)
+                                .padding(horizontal = 8.dp, vertical = 3.dp)
+                        )
+                        Spacer(Modifier.width(10.dp))
+                        Text(
+                            text = listOfNotNull(movie.year?.toString(), movie.collectionType)
+                                .joinToString(" • "),
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White.copy(alpha = 0.6f)
+                        )
+                    }
+
+                    Spacer(Modifier.height(10.dp))
+
+                    Text(
+                        text = movie.title ?: "",
+                        style = MaterialTheme.typography.displaySmall.copy(
+                            fontWeight = FontWeight.Black,
+                            fontSize = 34.sp,
+                            lineHeight = 38.sp,
+                            letterSpacing = (-1).sp
+                        ),
+                        color = Color.White,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis
+                    )
+
+                    if (!movie.overview.isNullOrBlank()) {
+                        Spacer(Modifier.height(10.dp))
+                        Text(
+                            // Die Beschreibung kommt als HTML aus dem Quill-Editor.
+                            text = AnnotatedString.fromHtml(movie.overview).text,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = Color.White.copy(alpha = 0.7f),
+                            maxLines = 3,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
+
+                    Spacer(Modifier.height(18.dp))
+
+                    Button(
+                        onClick = { onClick(movie) },
+                        shape = RoundedCornerShape(16.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color.White,
+                            contentColor = Color.Black
+                        ),
+                        contentPadding = PaddingValues(horizontal = 24.dp, vertical = 12.dp)
+                    ) {
+                        Icon(Icons.Default.PlayArrow, contentDescription = null, modifier = Modifier.size(22.dp))
+                        Spacer(Modifier.width(8.dp))
+                        Text("Details", fontWeight = FontWeight.Black)
+                    }
                 }
             }
+        }
 
-            Spacer(Modifier.height(16.dp))
-
-            // Erscheinungsjahr
-            Text("Erscheinungsjahr", style = MaterialTheme.typography.labelLarge)
+        if (movies.size > 1) {
             Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                YearPicker(
-                    label = "Von",
-                    value = localFilter.yearFrom,
-                    onValueChange = { localFilter = localFilter.copy(yearFrom = it) }
-                )
-                Text("bis")
-                YearPicker(
-                    label = "Bis",
-                    value = localFilter.yearTo,
-                    onValueChange = { localFilter = localFilter.copy(yearTo = it) }
-                )
-            }
-
-            HorizontalDivider(Modifier.padding(vertical = 12.dp))
-
-            // Genre Multi-Select
-            Text("Genres", style = MaterialTheme.typography.labelLarge)
-            FlowRow(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .padding(end = 20.dp, bottom = 20.dp),
                 horizontalArrangement = Arrangement.spacedBy(6.dp)
             ) {
-                viewModel.availableGenres.forEach { genre ->
-                    val isSelected = localFilter.selectedGenres.contains(genre)
-                    FilterChip(
-                        selected = isSelected,
-                        onClick = {
-                            localFilter = localFilter.copy(
-                                selectedGenres = if (isSelected) localFilter.selectedGenres - genre else localFilter.selectedGenres + genre
-                            )
-                        },
-                        label = { Text(genre, fontSize = 12.sp) }
+                repeat(movies.size) { index ->
+                    val selected = pagerState.currentPage == index
+                    Box(
+                        Modifier
+                            .height(6.dp)
+                            .width(if (selected) 20.dp else 6.dp)
+                            .clip(CircleShape)
+                            .background(if (selected) Color.White else Color.White.copy(alpha = 0.35f))
                     )
                 }
-            }
-
-            HorizontalDivider(Modifier.padding(vertical = 12.dp))
-
-            // Regisseur Multi-Select
-            Text("Regisseure", style = MaterialTheme.typography.labelLarge)
-            FlowRow(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(6.dp)
-            ) {
-                viewModel.availableDirectors.take(15).forEach { director ->
-                    val isSelected = localFilter.selectedDirectors.contains(director)
-                    FilterChip(
-                        selected = isSelected,
-                        onClick = {
-                            localFilter = localFilter.copy(
-                                selectedDirectors = if (isSelected) localFilter.selectedDirectors - director else localFilter.selectedDirectors + director
-                            )
-                        },
-                        label = { Text(director, fontSize = 12.sp) }
-                    )
-                }
-            }
-
-            Spacer(Modifier.height(24.dp))
-
-            Button(
-                onClick = {
-                    viewModel.onFilterChanged(localFilter)
-                    onDismiss()
-                },
-                modifier = Modifier.fillMaxWidth(),
-                shape = MaterialTheme.shapes.medium
-            ) {
-                Text("Anwenden")
             }
         }
     }
 }
 
-@Composable
-fun YearPicker(label: String, value: Int?, onValueChange: (Int?) -> Unit) {
-    var text by remember(value) { mutableStateOf(value?.toString() ?: "") }
-    OutlinedTextField(
-        value = text,
-        onValueChange = {
-            if (it.isEmpty()) {
-                text = ""
-                onValueChange(null)
-            } else if (it.length <= 4 && it.all { char -> char.isDigit() }) {
-                text = it
-                if (it.length == 4) onValueChange(it.toInt())
-            }
-        },
-        label = { Text(label) },
-        modifier = Modifier.width(90.dp),
-        singleLine = true,
-        textStyle = MaterialTheme.typography.bodySmall
-    )
-}
-
 /**
  * "Shelf"-Gruppierung: eine horizontal scrollbare, betitelte Filmreihe
  * ("Neue Filme" / "Filme" / "Serien"), analog zu den Sektionen im Web-Dashboard.
+ * Der Header besteht aus fettem Titel und Anzahl, nicht aus dem gedimmten
+ * Versal-Header der Formulare.
  */
 @Composable
 fun MovieShelfRow(
     title: String,
     movies: List<Movie>,
     onClick: (Movie) -> Unit,
-    onShowAll: (() -> Unit)? = null
+    onShowAll: (() -> Unit)? = null,
+    /**
+     * Zahl neben dem Titel. Ohne Angabe die Laenge der Reihe — fuer eine
+     * Auswahl wie "Neue Filme" ist das die richtige Antwort. Die Kategorien
+     * geben stattdessen die Groesse der Sammlung mit: dort steht ein Boxset
+     * als ein Eintrag in der Reihe, gemeint sind aber die Filme darin.
+     */
+    count: Int? = null
 ) {
     val context = LocalContext.current
     Column(modifier = Modifier.padding(top = 8.dp, bottom = 4.dp)) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp),
+                .padding(horizontal = 16.dp, vertical = 4.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            HeadingText(
-                text = title,
-                modifier = Modifier.padding(vertical = 4.dp),
-                style = MaterialTheme.typography.titleMedium
-            )
+            Row(
+                modifier = Modifier.weight(1f),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.titleLarge.copy(
+                        fontWeight = FontWeight.Black,
+                        fontSize = 20.sp
+                    ),
+                    color = MaterialTheme.colorScheme.onBackground,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+                if (movies.isNotEmpty()) {
+                    Spacer(Modifier.width(8.dp))
+                    Text(
+                        text = (count ?: movies.size).toString(),
+                        style = MaterialTheme.typography.labelLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
             if (onShowAll != null) {
-                TextButton(onClick = onShowAll, contentPadding = PaddingValues(horizontal = 8.dp)) {
-                    Text("Alle anzeigen", style = MaterialTheme.typography.labelMedium)
-                    Icon(Icons.Default.KeyboardArrowRight, null, Modifier.size(16.dp))
+                TextButton(
+                    onClick = onShowAll,
+                    contentPadding = PaddingValues(horizontal = 8.dp),
+                    colors = ButtonDefaults.textButtonColors(
+                        contentColor = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                ) {
+                    Text(
+                        "Alle anzeigen".uppercase(),
+                        style = MaterialTheme.typography.labelSmall.copy(letterSpacing = 1.sp),
+                        fontWeight = FontWeight.Black
+                    )
+                    Icon(Icons.AutoMirrored.Filled.ArrowForward, null, Modifier.size(14.dp))
                 }
             }
         }
@@ -537,58 +634,6 @@ fun MovieShelfRow(
                     onClick = { onClick(movie) }
                 )
             }
-        }
-    }
-}
-
-@OptIn(ExperimentalLayoutApi::class, ExperimentalMaterial3Api::class)
-@Composable
-fun ActiveFilterChips(
-    filterState: FilterState,
-    onClearAll: () -> Unit,
-    onRemoveGenre: (String) -> Unit,
-    onRemoveDirector: (String) -> Unit,
-    onClearYear: () -> Unit
-) {
-    FlowRow(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 4.dp),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-        verticalArrangement = Arrangement.spacedBy(4.dp)
-    ) {
-        InputChip(
-            selected = true,
-            onClick = onClearAll,
-            label = { Text("Alle löschen") },
-            trailingIcon = { Icon(Icons.Default.Close, null, Modifier.size(14.dp)) }
-        )
-
-        filterState.selectedGenres.forEach { genre ->
-            InputChip(
-                selected = true,
-                onClick = { onRemoveGenre(genre) },
-                label = { Text(genre) },
-                trailingIcon = { Icon(Icons.Default.Close, null, Modifier.size(14.dp)) }
-            )
-        }
-
-        filterState.selectedDirectors.forEach { director ->
-            InputChip(
-                selected = true,
-                onClick = { onRemoveDirector(director) },
-                label = { Text(director) },
-                trailingIcon = { Icon(Icons.Default.Close, null, Modifier.size(14.dp)) }
-            )
-        }
-
-        if (filterState.yearFrom != null || filterState.yearTo != null) {
-            InputChip(
-                selected = true,
-                onClick = onClearYear,
-                label = { Text("${filterState.yearFrom ?: "..."}-${filterState.yearTo ?: "..."}") },
-                trailingIcon = { Icon(Icons.Default.Close, null, Modifier.size(14.dp)) }
-            )
         }
     }
 }

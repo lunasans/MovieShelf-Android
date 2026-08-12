@@ -4,15 +4,21 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
-import at.neuhaus.movieshelf.data.api.RetrofitClient
-import at.neuhaus.movieshelf.data.model.TmdbImportRequest
+import at.neuhaus.movieshelf.data.repository.TmdbRepository
 import at.neuhaus.movieshelf.data.model.TmdbSearchItem
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
-class AddMovieViewModel : ViewModel() {
+class AddMovieViewModel(
+    private val repository: TmdbRepository
+) : ViewModel() {
+
+    /** Ohne Shelf und ohne Schluessel gibt es nichts zu suchen. */
+    var searchUnavailable by mutableStateOf(false)
+        private set
     var searchQuery by mutableStateOf("")
     var searchResults by mutableStateOf<List<Map<String, Any>>>(emptyList())
     var isLoading by mutableStateOf(false)
@@ -20,6 +26,14 @@ class AddMovieViewModel : ViewModel() {
     var error by mutableStateOf<String?>(null)
     var successMessage by mutableStateOf<String?>(null)
     var importToCollection by mutableStateOf(true)
+
+    /** Suche nach Serien statt nach Filmen. */
+    var searchSeries by mutableStateOf(false)
+        private set
+
+    init {
+        viewModelScope.launch { searchUnavailable = !repository.isSearchAvailable() }
+    }
 
     private var searchJob: Job? = null
 
@@ -40,7 +54,7 @@ class AddMovieViewModel : ViewModel() {
         isLoading = true
         error = null
         try {
-            val response = RetrofitClient.api.searchTmdb(query)
+            val response = repository.search(query, searchSeries)
             searchResults = (response.results ?: emptyList()).map { it.toUiMap() }
         } catch (e: Exception) {
             error = "TMDb-Suche fehlgeschlagen: ${e.message}"
@@ -49,16 +63,23 @@ class AddMovieViewModel : ViewModel() {
         }
     }
 
+    fun onTypeChanged(series: Boolean) {
+        if (searchSeries == series) return
+        searchSeries = series
+        // Ergebnisse gehoeren zum alten Typ und waeren jetzt irrefuehrend.
+        searchResults = emptyList()
+        if (searchQuery.length >= 2) {
+            searchJob?.cancel()
+            searchJob = viewModelScope.launch { performTmdbSearch(searchQuery) }
+        }
+    }
+
     fun importMovie(tmdbId: Int, onComplete: () -> Unit) {
         viewModelScope.launch {
             isImporting = true
             error = null
             try {
-                RetrofitClient.api.importFromTmdb(TmdbImportRequest(
-                    tmdbId = tmdbId, 
-                    type = "movie",
-                    inCollection = importToCollection
-                ))
+                repository.import(tmdbId, importToCollection, searchSeries)
                 successMessage = "Film erfolgreich importiert!"
                 delay(1500)
                 onComplete()
@@ -67,6 +88,15 @@ class AddMovieViewModel : ViewModel() {
             } finally {
                 isImporting = false
             }
+        }
+    }
+
+    class Factory(
+        private val repository: TmdbRepository
+    ) : ViewModelProvider.Factory {
+        override fun <T : ViewModel> create(modelClass: Class<T>): T {
+            @Suppress("UNCHECKED_CAST")
+            return AddMovieViewModel(repository) as T
         }
     }
 }

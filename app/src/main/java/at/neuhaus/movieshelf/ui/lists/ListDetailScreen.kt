@@ -22,7 +22,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.viewmodel.compose.viewModel
+import at.neuhaus.movieshelf.MovieShelfApplication
 import at.neuhaus.movieshelf.data.model.Movie
 import at.neuhaus.movieshelf.ui.dashboard.MovieItem
 
@@ -33,9 +35,10 @@ fun ListDetailScreen(
     onBack: () -> Unit,
     onMovieClick: (Movie) -> Unit
 ) {
+    val app = LocalContext.current.applicationContext as MovieShelfApplication
     val viewModel: ListDetailViewModel = viewModel(
         key = "list_$listId",
-        factory = ListDetailViewModel.Factory(listId)
+        factory = ListDetailViewModel.Factory(listId, app.listRepository)
     )
 
     var removeTarget by remember { mutableStateOf<Movie?>(null) }

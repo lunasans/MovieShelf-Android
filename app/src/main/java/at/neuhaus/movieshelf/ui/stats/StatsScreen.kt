@@ -15,14 +15,20 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.viewmodel.compose.viewModel
+import at.neuhaus.movieshelf.MovieShelfApplication
 import at.neuhaus.movieshelf.data.model.Stats
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun StatsScreen(
     onBack: () -> Unit,
-    viewModel: StatsViewModel = viewModel()
+    viewModel: StatsViewModel = viewModel(
+        factory = StatsViewModel.Factory(
+            (LocalContext.current.applicationContext as MovieShelfApplication).movieRepository
+        )
+    )
 ) {
     val stats = viewModel.stats
     val isLoading = viewModel.isLoading

@@ -4,17 +4,21 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
-import at.neuhaus.movieshelf.data.api.RetrofitClient
 import at.neuhaus.movieshelf.data.model.MovieUpdateRequest
+import at.neuhaus.movieshelf.data.repository.MovieRepository
 import kotlinx.coroutines.launch
 import retrofit2.HttpException
 
-class CreateMovieViewModel : ViewModel() {
+class CreateMovieViewModel(
+    private val repository: MovieRepository
+) : ViewModel() {
 
     var isSaving by mutableStateOf(false)
         private set
-    var createdMovieId by mutableStateOf<Int?>(null)
+    /** Lokale ID des angelegten Films — damit navigiert der Screen weiter. */
+    var createdMovieId by mutableStateOf<Long?>(null)
         private set
     var error by mutableStateOf<String?>(null)
 
@@ -42,7 +46,16 @@ class CreateMovieViewModel : ViewModel() {
         val ratingNum = rating.trim().replace(',', '.').toDoubleOrNull()
 
         when {
-            title.isBlank() -> { error = "Titel darf nicht leer sein."; return }
+            title.isBlank() -> { error = "Titel darf nicht leer sein."; return 
+    class Factory(
+        private val repository: MovieRepository
+    ) : ViewModelProvider.Factory {
+        override fun <T : ViewModel> create(modelClass: Class<T>): T {
+            @Suppress("UNCHECKED_CAST")
+            return CreateMovieViewModel(repository) as T
+        }
+    }
+}
             yearInt == null -> { error = "Bitte ein gültiges Jahr eingeben."; return }
             collectionType.isBlank() -> { error = "Bitte einen Typ wählen."; return }
             rating.isNotBlank() && (ratingNum == null || ratingNum < 0 || ratingNum > 100) -> {
@@ -73,8 +86,7 @@ class CreateMovieViewModel : ViewModel() {
                     condition      = condition.trim().ifBlank { null },
                     inCollection   = inCollection
                 )
-                val response = RetrofitClient.api.createMovie(request)
-                createdMovieId = response.data?.id
+                createdMovieId = repository.createMovie(request)
                 if (createdMovieId == null) {
                     error = "Film wurde angelegt, aber es wurde keine ID zurückgegeben."
                 }
@@ -89,6 +101,15 @@ class CreateMovieViewModel : ViewModel() {
             } finally {
                 isSaving = false
             }
+        }
+    }
+
+    class Factory(
+        private val repository: MovieRepository
+    ) : ViewModelProvider.Factory {
+        override fun <T : ViewModel> create(modelClass: Class<T>): T {
+            @Suppress("UNCHECKED_CAST")
+            return CreateMovieViewModel(repository) as T
         }
     }
 }

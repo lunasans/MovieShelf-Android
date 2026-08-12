@@ -5,7 +5,6 @@ import androidx.compose.animation.AnimatedContent
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Login
 import androidx.compose.material.icons.filled.*
@@ -36,6 +35,12 @@ import at.neuhaus.movieshelf.data.local.DataStoreManager
 fun LoginScreen(
     onLoginSuccess: () -> Unit,
     onResetUrl: () -> Unit,
+    /**
+     * Zurueck zur Auswahl der Betriebsart. Ohne diesen Weg sitzt fest, wer
+     * sich abmeldet: die Betriebsart steht auf "mit Shelf" und der Login ist
+     * die einzige Tuer.
+     */
+    onChangeMode: () -> Unit = {},
     oauthCallbackUri: Uri? = null,
     onOAuthCallbackConsumed: () -> Unit = {}
 ) {
@@ -90,37 +95,7 @@ fun LoginScreen(
                     modifier = Modifier.padding(bottom = 8.dp)
                 )
                 
-                if (!viewModel.is2faRequired) {
-                    Card(
-                        modifier = Modifier.padding(bottom = 24.dp),
-                        colors = CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.5f)
-                        )
-                    ) {
-                        Column(
-                            modifier = Modifier.padding(16.dp),
-                            horizontalAlignment = Alignment.CenterHorizontally
-                        ) {
-                            Text(
-                                text = "Beta-Test / Demo-Zugang",
-                                style = MaterialTheme.typography.labelLarge,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.onSecondaryContainer
-                            )
-                            Spacer(Modifier.height(4.dp))
-                            SelectionContainer {
-                                Text(
-                                    text = "E-Mail: demo@movieshelf.info\nPasswort: playstore",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSecondaryContainer,
-                                    textAlign = TextAlign.Center
-                                )
-                            }
-                        }
-                    }
-                } else {
-                    Spacer(Modifier.height(16.dp))
-                }
+                Spacer(Modifier.height(16.dp))
 
                 AnimatedContent(targetState = viewModel.is2faRequired, label = "LoginMode") { is2fa ->
                     if (is2fa) {
@@ -278,6 +253,14 @@ fun LoginScreen(
                     Icon(Icons.Default.Refresh, contentDescription = null, modifier = Modifier.size(18.dp))
                     Spacer(Modifier.width(8.dp))
                     Text("Server-URL ändern")
+                }
+
+                OutlinedButton(
+                    onClick = onChangeMode,
+                    modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                    shape = at.neuhaus.movieshelf.ui.theme.PillShape
+                ) {
+                    Text("Andere Betriebsart wählen")
                 }
             }
         }
