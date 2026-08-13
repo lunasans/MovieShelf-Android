@@ -1,8 +1,8 @@
-The app now speaks English and German – it follows your device language.
-
 Fixed:
 
-• Without a shelf, the profile screen kept reporting that the profile could not be loaded. With no server there is nothing to load, so the app no longer tries.
-• The bottom bar stands out more clearly from the background. In front of light covers its labels were hard to read.
+• With a shelf connected, series were imported as a film. Instead of the series you got an error or an entirely different title.
+• The bottom bar reappeared at the slightest upward movement – even when your finger merely settled on the display. It now takes a deliberate swipe.
 
-New: the app now tells you where to get a shelf and a TMDb key.
+New:
+
+• After an import you land straight in the edit form. Format, shelf location, purchase date and condition go in right away, instead of hunting for the title again.

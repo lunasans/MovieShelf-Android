@@ -14,8 +14,8 @@ android {
         applicationId = "info.movieshelf"
         minSdk = 24
         targetSdk = 36
-        versionCode = 30
-        versionName = "2.0.3"
+        versionCode = 31
+        versionName = "2.1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
