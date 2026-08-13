@@ -18,6 +18,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.dp
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
@@ -206,14 +208,42 @@ fun MovieShelfApp(oauthCallbackUri: MutableState<Uri?> = mutableStateOf(null)) {
     // Steuert das Ein-/Ausblenden der unteren NavBar beim Scrollen.
     var bottomBarVisible by remember { mutableStateOf(true) }
 
-    val nestedScrollConnection = remember {
+    // Umgeschaltet wird erst, wenn eine Strecke zurückgelegt ist — vorher genügte
+    // ein einziges Pixel. Beim Lesen reicht dann schon das Nachfedern des Fingers
+    // auf dem Display, und die Leiste klappt ungefragt wieder auf.
+    //
+    // Die Schwellen sind bewusst ungleich: Ausblenden darf früh geschehen, das
+    // stört niemanden und gibt Platz. Einblenden verlangt eine bewusste Geste
+    // nach oben, weil genau dort das Aufploppen lästig war.
+    val density = LocalDensity.current
+    val hideThreshold = remember(density) { with(density) { 12.dp.toPx() } }
+    val showThreshold = remember(density) { with(density) { 56.dp.toPx() } }
+
+    val nestedScrollConnection = remember(hideThreshold, showThreshold) {
         object : androidx.compose.ui.input.nestedscroll.NestedScrollConnection {
+            /** Zurückgelegte Strecke seit dem letzten Richtungswechsel. */
+            var travelled = 0f
+
             override fun onPreScroll(
                 available: androidx.compose.ui.geometry.Offset,
                 source: androidx.compose.ui.input.nestedscroll.NestedScrollSource
             ): androidx.compose.ui.geometry.Offset {
-                if (available.y < -1f) bottomBarVisible = false
-                else if (available.y > 1f) bottomBarVisible = true
+                val dy = available.y
+                if (dy == 0f) return androidx.compose.ui.geometry.Offset.Zero
+
+                // Beim Richtungswechsel bei null anfangen. Ohne das zehrte eine
+                // lange Bewegung nach unten die Schwelle nach oben auf, und der
+                // erste Millimeter zurück würde wieder sofort umschalten.
+                if ((dy < 0f) != (travelled < 0f)) travelled = 0f
+                travelled += dy
+
+                if (travelled <= -hideThreshold) {
+                    bottomBarVisible = false
+                    travelled = 0f
+                } else if (travelled >= showThreshold) {
+                    bottomBarVisible = true
+                    travelled = 0f
+                }
                 return androidx.compose.ui.geometry.Offset.Zero
             }
         }
