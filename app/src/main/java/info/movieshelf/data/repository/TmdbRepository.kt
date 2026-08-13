@@ -37,13 +37,13 @@ class TmdbRepository(
     /**
      * Film aus TMDb übernehmen.
      *
-     * @return lokale ID des angelegten Films, oder `null` im Shelf-Betrieb —
-     *   dort legt der Server ihn an und der Abgleich holt ihn.
+     * @return lokale ID des angelegten Films. Im Shelf-Betrieb legt ihn der
+     *   Server an; seine Antwort wird sofort lokal eingespielt, damit der
+     *   Eintrag nicht erst nach dem nächsten Abgleich auftaucht.
      */
     suspend fun import(tmdbId: Int, inCollection: Boolean, series: Boolean = false): Long? {
         if (isShelfMode()) {
-            movieRepository.importFromTmdb(tmdbId, inCollection)
-            return null
+            return movieRepository.importFromTmdb(tmdbId, inCollection, series)
         }
 
         val key = apiKeyProvider() ?: throw MissingTmdbKeyException()

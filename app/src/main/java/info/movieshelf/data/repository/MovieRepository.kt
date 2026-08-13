@@ -554,14 +554,31 @@ class MovieRepository(
 
     suspend fun searchTmdb(query: String) = api.searchTmdb(query)
 
-    suspend fun importFromTmdb(tmdbId: Int, inCollection: Boolean) {
-        api.importFromTmdb(
+    /**
+     * Film oder Serie serverseitig importieren.
+     *
+     * Der Typ muss mitgehen: mit `movie` holt die Shelf eine Serien-ID bei
+     * TMDb unter `/movie/<id>` ab und landet entweder im Fehler oder bei einem
+     * fremden Film, der dieselbe Nummer traegt.
+     *
+     * Die Antwort traegt den fertigen Eintrag samt Server-ID. Ihn sofort
+     * einzuspielen erspart das Warten auf den naechsten Abgleich, und weil er
+     * seine Server-ID mitbringt, entsteht dabei keine zweite Zeile.
+     *
+     * @return lokale ID des eingespielten Eintrags, oder `null`, wenn die
+     *   Shelf keinen Film zurueckgibt.
+     */
+    suspend fun importFromTmdb(tmdbId: Int, inCollection: Boolean, series: Boolean = false): Long? {
+        val created = api.importFromTmdb(
             info.movieshelf.data.model.TmdbImportRequest(
                 tmdbId = tmdbId,
-                type = "movie",
+                type = if (series) "tv" else "movie",
                 inCollection = inCollection
             )
-        )
+        ).data ?: return null
+
+        movieDao.upsertFromServer(listOf(MovieEntity.fromServerMovie(created, SyncClock.now())))
+        return movieDao.findLocalIdByRemoteId(created.id)
     }
 
     /**
