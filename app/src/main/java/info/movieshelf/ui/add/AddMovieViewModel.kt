@@ -81,15 +81,23 @@ class AddMovieViewModel(
         }
     }
 
-    fun importMovie(tmdbId: Int, onComplete: () -> Unit) {
+    /**
+     * Treffer übernehmen.
+     *
+     * [onComplete] bekommt die lokale ID des angelegten Eintrags, damit der
+     * Aufrufer direkt in die Bearbeitung springen kann — TMDb liefert nicht
+     * alles, was man am Ende sehen will, und ohne diesen Schritt müsste man
+     * den Film erst in der Sammlung wiederfinden.
+     */
+    fun importMovie(tmdbId: Int, onComplete: (Long?) -> Unit) {
         viewModelScope.launch {
             isImporting = true
             error = null
             try {
-                repository.import(tmdbId, importToCollection, searchSeries)
+                val localId = repository.import(tmdbId, importToCollection, searchSeries)
                 successMessage = UiText.of(R.string.message_import_ok)
                 delay(1500)
-                onComplete()
+                onComplete(localId)
             } catch (e: Exception) {
                 error = UiText.of(R.string.error_import_failed, e.message ?: "")
             } finally {
