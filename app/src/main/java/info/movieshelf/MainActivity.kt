@@ -486,7 +486,16 @@ fun MovieShelfApp(oauthCallbackUri: MutableState<Uri?> = mutableStateOf(null)) {
                 composable("add_movie") {
                     AddMovieScreen(
                         onBack = { navController.popBackStack() },
-                        onMovieImported = { navController.popBackStack() },
+                        // Nach dem Import direkt in die Bearbeitung: TMDb liefert
+                        // nicht alles, was am Ende dranstehen soll - Format, Standort
+                        // im Regal, Kaufdatum. Ohne diesen Sprung muesste man den
+                        // frisch angelegten Film erst in der Sammlung wiederfinden.
+                        // Die Suche verlaesst der Weg in jedem Fall, sie ist nach
+                        // einem Treffer ohnehin zu Ende.
+                        onMovieImported = { localId ->
+                            navController.popBackStack()
+                            if (localId != null) navController.navigate("edit_movie/$localId")
+                        },
                         onCreateManual = { navController.navigate("create_movie") }
                     )
                 }

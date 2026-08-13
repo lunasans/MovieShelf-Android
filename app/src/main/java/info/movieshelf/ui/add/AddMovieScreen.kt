@@ -37,7 +37,8 @@ import coil.compose.AsyncImage
 @Composable
 fun AddMovieScreen(
     onBack: () -> Unit,
-    onMovieImported: () -> Unit,
+    /** Bekommt die lokale ID des angelegten Eintrags, sofern sie bekannt ist. */
+    onMovieImported: (Long?) -> Unit,
     onCreateManual: () -> Unit = {}
 ) {
     val app = LocalContext.current.applicationContext as MovieShelfApplication
