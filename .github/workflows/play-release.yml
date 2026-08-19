@@ -83,3 +83,64 @@ jobs:
       # Internal-Track, und in einem oeffentlichen Repository koennte es sonst
       # jeder angemeldete Nutzer herunterladen. Gebraucht wurde es nur fuer den
       # ersten Upload der neu angelegten App, den die API nicht uebernimmt.
+
+  # Forum-Ankuendigung: postet das fertige Release als Diskussion ins
+  # Support-Forum. Analog zum Schritt in forum-release-announcement.yml des
+  # SaaS-Repos - dort steht auch die Begruendung, warum Release-Erstellung und
+  # Post im selben Lauf passieren muessen: mit GITHUB_TOKEN erstellte Releases
+  # loesen absichtlich keine weiteren Workflows aus.
+  #
+  # Benoetigte Konfiguration (Settings -> Secrets and variables -> Actions):
+  #   - Secret   FORUM_API_KEY: Flarum-API-Key (derselbe wie im SaaS-Repo)
+  #   - Variable FORUM_TAG_ID:  "2,5" = Release Ankuendigungen + Android
+  forum:
+    name: Forum-Ankündigung
+    needs: [release]
+    if: needs.release.result == 'success'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Diskussion im Forum erstellen
+        env:
+          GH_TOKEN: ${{ github.token }}
+          FORUM_URL: https://forum.movieshelf.info
+          FORUM_API_KEY: ${{ secrets.FORUM_API_KEY }}
+          FORUM_TAG_ID: ${{ vars.FORUM_TAG_ID }}
+          # Ueber env statt direkt interpoliert: ein praepariertes Tag koennte
+          # sonst beliebige Befehle im Runner ausfuehren.
+          TAG: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+
+          if [ -z "$FORUM_API_KEY" ]; then
+            echo "::error::Secret FORUM_API_KEY fehlt - Ankuendigung uebersprungen."
+            exit 1
+          fi
+
+          gh release view "$TAG" --repo "$GITHUB_REPOSITORY" --json name,body,url > release.json
+          RELEASE_NAME=$(jq -r '.name // ""' release.json)
+          RELEASE_BODY=$(jq -r '.body // ""' release.json)
+          RELEASE_URL=$(jq -r '.url' release.json)
+
+          TITLE="MovieShelf Android ${RELEASE_NAME:-$TAG}"
+
+          CONTENT="${RELEASE_BODY:-Neue Version veroeffentlicht.}
+
+          ---
+          [Release auf GitHub ansehen]($RELEASE_URL)"
+
+          jq -n \
+            --arg title "$TITLE" \
+            --arg content "$CONTENT" \
+            --arg tagIds "${FORUM_TAG_ID:-}" \
+            '{ data: { type: "discussions", attributes: { title: $title, content: $content } } }
+             | ($tagIds | split(",") | map(gsub("\s"; "")) | map(select(. != ""))) as $ids
+             | if ($ids | length) > 0 then
+                 .data.relationships = { tags: { data: ($ids | map({ type: "tags", id: . })) } }
+               else . end' > payload.json
+
+          curl --fail-with-body -sS -X POST "$FORUM_URL/api/discussions" \
+            -H "Authorization: Token $FORUM_API_KEY; userId=2" \
+            -H "Content-Type: application/json" \
+            -d @payload.json
+
+          echo "Forum-Diskussion erstellt."
