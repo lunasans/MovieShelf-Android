@@ -29,6 +29,14 @@ auf `main`.
   Schreibt lokal in die Room-Datenbank; im Shelf-Modus geht das Ergebnis über den
   normalen Abgleich zum Server — genau wie in der Desktop-App.
 
+- [ ] 🔴 **Sortierung und Genre-Filter** — Desktop bietet fünf Sortierschlüssel
+  (Titel, Jahr, Bewertung, Laufzeit, Zugang), einen Richtungsumschalter und eine
+  Genre-Auswahl ([MoviesView.vue:74](../desktop/src/views/MoviesView.vue#L74)). Die App
+  sortiert fest: Reihen nach Titel, Trefferliste nach Zugangsdatum absteigend
+  ([DashboardViewModel.kt:334](app/src/main/java/info/movieshelf/ui/dashboard/DashboardViewModel.kt#L334)),
+  und einen Genre-Filter gibt es nicht. Rein lokal machbar, die Sortierung läuft
+  bereits auf `Dispatchers.Default`. *Aufwand: mittel.*
+
 - [ ] 🔴 **Massenbearbeitung** — Desktop kann mehrere Titel auswählen und gemeinsam
   ändern ([BulkActionBar.vue](../desktop/src/components/BulkActionBar.vue)). Im
   Dashboard fehlt jede Mehrfachauswahl. Sinnvoller Umfang: Long-Press startet den
@@ -84,6 +92,33 @@ auf `main`.
   Vollsync-Fehlers fiel auf, dass die Vorschau offene Bewertungen nicht mitzählt
   (`SyncPreview.toPushWatched` hat kein Gegenstück für Bewertungen). Kosmetisch,
   aber die Vorschau soll vollständig sein. *Aufwand: klein.*
+
+### Offen, unabhängig vom Desktop-Vergleich
+
+Im Code nachgeprüft, nicht aus dem Archiv übernommen — die 1.7.0-Liste dort ist
+teils überholt.
+
+- [ ] 🟡 **Wunschlisten-Ansicht** — die Wunschliste lässt sich im Detail per Herz
+  füllen, aber nirgends ansehen: eine Ansicht für `in_collection = false` fehlt.
+  Der Schalter füllt damit einen Topf, den niemand öffnen kann. Server ist
+  vollständig. *Aufwand: mittel.*
+
+- [ ] 🟡 **Fehler-/Retry-Zustand im Detail-Screen** — Stats und Actor haben ihn,
+  der Detail-Screen nicht (`common_retry` kommt dort nicht vor). Schlägt das Laden
+  fehl, bleibt die Ansicht ohne Weg zurück. *Aufwand: klein.*
+
+- [ ] 🟡 **Typisierte TMDb-DTOs im Anlegen-Weg** — `AddMovieScreen` und
+  `AddMovieViewModel` arbeiten weiter mit `Map<String, Any>` und ungeprüften Casts.
+  Für die Suche ist das erledigt, für den Import-Weg nicht. *Aufwand: klein–mittel.*
+
+- [ ] 🟡 **Tests für die Sortierlogik** — Sync, Medien und Jellyfin sind abgedeckt,
+  die Sortierung nicht: Collator-Verhalten, Artikel am Titelanfang, `parseRating`
+  mit Komma. Genau die Stellen, an denen ein Fehler still bleibt. *Aufwand: klein.*
+
+- [ ] ⚪ **Restliche Screens auf `PosterCard`** — nur Dashboard und Detail nutzen die
+  geteilte Karte; Lists, ActorDetail, Stats, Profile, Add und Edit bringen eigene
+  Poster-Darstellungen mit. Rein optisch, aber es hält den „Shelf"-Look zusammen.
+  *Aufwand: klein–mittel.*
 
 ### Bewusst nicht übernommen
 
