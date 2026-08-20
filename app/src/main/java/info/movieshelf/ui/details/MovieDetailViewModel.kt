@@ -136,6 +136,37 @@ class MovieDetailViewModel(
         }
     }
 
+    /**
+     * Gesehen-Stand einer Folge umschalten.
+     *
+     * Optimistisch wie die uebrigen Markierungen: das Haekchen steht sofort.
+     * Danach wird der Film neu geladen, damit die Staffelliste den Stand aus
+     * der Datenbank zeigt — der Server kann korrigiert haben.
+     */
+    fun toggleEpisodeWatched(episodeLocalId: Long, watched: Boolean) {
+        if (episodeLocalId == 0L) return
+        movie = movie?.let { current ->
+            current.copy(
+                seasons = current.seasons?.map { season ->
+                    season.copy(
+                        episodes = season.episodes?.map { episode ->
+                            if (episode.localId == episodeLocalId) {
+                                episode.copy(isWatched = watched)
+                            } else {
+                                episode
+                            }
+                        }
+                    )
+                }
+            )
+        }
+
+        viewModelScope.launch {
+            repository.toggleEpisodeWatched(episodeLocalId, watched)
+            movie = load()
+        }
+    }
+
     /** Trailer von TMDb holen & speichern (Admin). */
     fun fetchTrailer() {
         val current = movie ?: return

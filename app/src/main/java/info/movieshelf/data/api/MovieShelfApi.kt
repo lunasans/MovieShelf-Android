@@ -32,6 +32,10 @@ interface MovieShelfApi {
         @Body body: Map<String, Int>
     ): info.movieshelf.data.model.RateResponse
 
+    /** Gesehen-Stand einer Folge umschalten. Antwort traegt `watched`. */
+    @POST("api/episodes/{id}/watched")
+    suspend fun toggleEpisodeWatched(@Path("id") id: Int): Map<String, Any>
+
     @GET("api/admin/export")
     suspend fun exportMovies(@Query("since") since: String? = null): ExportResponse
 

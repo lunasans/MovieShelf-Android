@@ -80,10 +80,10 @@ auf `main`.
   Braucht zuerst API-Endpunkte zum Auflisten und Widerrufen — bisher gibt es nur
   `POST /api/logout` für den eigenen Token. *Aufwand: mittel (Server + App).*
 
-- [ ] 🟡 **Gesehen-Stand von Episoden** — `POST /api/episodes/{id}/watched` gibt es,
-  die App zeigt Episoden nur an. Betrifft dieselbe Sorte Feld wie die Bewertung:
-  benutzergebunden, eigener Endpunkt, also eigener bestätigter Stand und eigener
-  Push-Schritt (siehe [CLAUDE.md](CLAUDE.md), Abschnitt Abgleich). *Aufwand: mittel.*
+- [x] 🟡 **Gesehen-Stand von Episoden** — **umgesetzt.** Häkchen je Folge in der
+  Staffelliste, lokal gespeichert und über `POST /api/episodes/{id}/watched`
+  übertragen; eigener bestätigter Stand (`syncedWatched`) und eigener
+  Push-Schritt, wie bei Film und Bewertung. Room 12 → 13.
 
 - [ ] ⚪ **Anzeige der Zahl gesehener Titel im Delta-Abgleich** — beim Behandeln des
   Vollsync-Fehlers fiel auf, dass die Vorschau offene Bewertungen nicht mitzählt

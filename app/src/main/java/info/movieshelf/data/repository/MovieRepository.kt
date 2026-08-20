@@ -230,7 +230,9 @@ class MovieRepository(
                         id = episode.remoteId ?: -episode.localId.toInt(),
                         episodeNumber = episode.episodeNumber,
                         title = episode.title,
-                        overview = episode.overview
+                        overview = episode.overview,
+                        isWatched = episode.isWatched,
+                        localId = episode.localId
                     )
                 }
             )
@@ -439,6 +441,71 @@ class MovieRepository(
             // Bleibt als offene Bewertung stehen und geht beim Abgleich raus.
             isOffline = true
         }
+    }
+
+    /**
+     * Gesehen-Stand einer Folge umschalten.
+     *
+     * Wie bei Film und Bewertung zuerst lokal, damit das Haekchen sofort
+     * steht; der Versand wird gleich versucht und beim naechsten Abgleich
+     * nachgeholt, wenn er scheitert.
+     */
+    suspend fun toggleEpisodeWatched(episodeLocalId: Long, watched: Boolean) {
+        val episode = seriesDao.getEpisodeByLocalId(episodeLocalId) ?: return
+        seriesDao.updateEpisodeWatched(episodeLocalId, watched, SyncClock.now())
+
+        val remoteId = episode.remoteId?.takeIf { isShelfMode() } ?: return
+        try {
+            val answer = api.toggleEpisodeWatched(remoteId)
+            val serverState = answer["watched"] as? Boolean ?: watched
+            seriesDao.markEpisodeWatchedSynced(episodeLocalId, serverState)
+            if (serverState != watched) {
+                // Der Endpunkt ist ein Umschalter: stand der Server schon auf
+                // dem Zielwert, dreht der Aufruf davon weg. Dann gilt seiner.
+                seriesDao.updateEpisodeWatched(episodeLocalId, serverState, SyncClock.now())
+            }
+            isOffline = false
+        } catch (e: Exception) {
+            isOffline = true
+        }
+    }
+
+    /** Offene Folgen-Markierungen nachreichen. */
+    suspend fun pushEpisodeWatched(
+        onProgress: (Int, Int, String?) -> Unit = { _, _, _ -> }
+    ): Int {
+        if (!isShelfMode()) return 0
+        val pending = seriesDao.getPendingEpisodeWatched()
+        var pushed = 0
+        var done = 0
+        var failed = 0
+        var firstError: String? = null
+
+        for (episode in pending) {
+            onProgress(++done, pending.size, episode.title)
+            val remoteId = episode.remoteId ?: continue
+            try {
+                val answer = api.toggleEpisodeWatched(remoteId)
+                val serverState = answer["watched"] as? Boolean ?: episode.isWatched
+                seriesDao.markEpisodeWatchedSynced(episode.localId, serverState)
+                if (serverState != episode.isWatched) {
+                    seriesDao.updateEpisodeWatched(episode.localId, serverState, SyncClock.now())
+                }
+                pushed++
+                isOffline = false
+            } catch (e: Exception) {
+                isOffline = true
+                failed++
+                if (firstError == null) firstError = e.message ?: e::class.java.simpleName
+            }
+        }
+
+        if (failed > 0) {
+            throw IllegalStateException(
+                "$failed von ${pending.size} Folgen-Markierungen nicht uebertragen: $firstError"
+            )
+        }
+        return pushed
     }
 
     /**

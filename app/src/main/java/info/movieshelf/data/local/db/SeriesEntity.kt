@@ -62,6 +62,17 @@ data class EpisodeEntity(
     val episodeNumber: Int,
     val title: String? = null,
     val overview: String? = null,
+    /**
+     * Gesehen — haengt am Benutzer, nicht an der Folge, und hat einen eigenen
+     * Endpunkt (`POST /api/episodes/{id}/watched`).
+     */
+    val isWatched: Boolean = false,
+    /**
+     * Der Stand, den der Server zuletzt bestaetigt hat. Wie bei Filmen und
+     * Bewertungen ein eigener Vergleichswert: ohne ihn waere nach dem Pull
+     * nicht zu erkennen, ob die Markierung noch hochzuschicken ist.
+     */
+    val syncedWatched: Boolean = false,
     val createdAt: String? = null,
     val updatedAt: String? = null,
     val syncedAt: String? = null
