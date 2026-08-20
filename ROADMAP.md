@@ -95,10 +95,9 @@ auf `main`.
 Im Code nachgeprüft, nicht aus dem Archiv übernommen — die 1.7.0-Liste dort ist
 teils überholt.
 
-- [ ] 🟡 **Wunschlisten-Ansicht** — die Wunschliste lässt sich im Detail per Herz
-  füllen, aber nirgends ansehen: eine Ansicht für `in_collection = false` fehlt.
-  Der Schalter füllt damit einen Topf, den niemand öffnen kann. Server ist
-  vollständig. *Aufwand: mittel.*
+- [x] 🟡 **Wunschlisten-Ansicht** — **umgesetzt.** Profil → Wunschliste zeigt die
+  vorgemerkten Titel als Raster; das Herz im Detail füllt sie wie bisher. Ohne
+  Gesehen-Schalter: was man nicht besitzt, hat man nicht gesehen.
 
 - [ ] 🟡 **Fehler-/Retry-Zustand im Detail-Screen** — Stats und Actor haben ihn,
   der Detail-Screen nicht (`common_retry` kommt dort nicht vor). Schlägt das Laden

@@ -140,6 +140,14 @@ interface MovieDao {
      * Regel gilt: [LocalStats] wirft die Huellen weg und zaehlt die Teile.
      * Ein Film in einem Boxset zaehlt zur Sammlung, das Boxset selbst nicht.
      */
+    /**
+     * Die Wunschliste: alles, was vorgemerkt und noch nicht in der Sammlung
+     * ist. Die Shelf unterscheidet beides ueber `in_collection` — es sind
+     * dieselben Zeilen, nur ohne Besitz.
+     */
+    @Query("SELECT * FROM movies WHERE isDeleted = 0 AND inCollection = 0 ORDER BY title COLLATE NOCASE")
+    suspend fun getWishlist(): List<MovieEntity>
+
     @Query("SELECT * FROM movies WHERE isDeleted = 0")
     suspend fun getAllForStats(): List<MovieEntity>
 

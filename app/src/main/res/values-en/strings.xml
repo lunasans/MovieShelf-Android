@@ -480,4 +480,8 @@
     <string name="sort_descending">Descending</string>
     <string name="filter_genre">Genre</string>
     <string name="filter_genre_all">All genres</string>
+    <string name="wishlist_title">Wishlist</string>
+    <string name="wishlist_subtitle">Titles you noted down, not in the collection yet</string>
+    <string name="wishlist_empty">Nothing noted down yet</string>
+    <string name="wishlist_empty_hint">Tap the heart on a movie to add it to your wishlist.</string>
 </resources>

@@ -137,6 +137,9 @@ class MovieRepository(
     suspend fun randomMovie(collectionType: String? = null): Movie? =
         movieDao.randomMovie(collectionType)?.let { withLocalDetails(it) }
 
+    /** Vorgemerkte Titel — die Wunschliste. */
+    suspend fun getWishlist(): List<Movie> = movieDao.getWishlist().map { it.toMovie() }
+
     suspend fun getFeatured(limit: Int = 5): List<Movie> =
         movieDao.getFeatured(limit).map { it.toMovie() }
             .ifEmpty { movieDao.getNewest(1).map { it.toMovie() } }
