@@ -175,8 +175,24 @@ interface SeriesDao {
     @Update
     suspend fun updateSeason(season: SeasonEntity)
 
+    @Query("SELECT * FROM episodes WHERE localId = :localId LIMIT 1")
+    suspend fun getEpisodeByLocalId(localId: Long): EpisodeEntity?
+
     @Query("SELECT * FROM episodes WHERE seasonLocalId = :seasonLocalId ORDER BY episodeNumber")
     suspend fun getEpisodes(seasonLocalId: Long): List<EpisodeEntity>
+
+    @Query("UPDATE episodes SET isWatched = :watched, updatedAt = :now WHERE localId = :localId")
+    suspend fun updateEpisodeWatched(localId: Long, watched: Boolean, now: String)
+
+    /**
+     * Folgen-Markierungen, die noch zum Server sollen. Nur Folgen mit
+     * Server-ID: eine nur lokal bekannte Folge muss erst selbst dorthin.
+     */
+    @Query("SELECT * FROM episodes WHERE remoteId IS NOT NULL AND isWatched != syncedWatched")
+    suspend fun getPendingEpisodeWatched(): List<EpisodeEntity>
+
+    @Query("UPDATE episodes SET syncedWatched = :watched WHERE localId = :localId")
+    suspend fun markEpisodeWatchedSynced(localId: Long, watched: Boolean)
 
     @Query("SELECT localId FROM episodes WHERE seasonLocalId = :seasonLocalId AND episodeNumber = :number LIMIT 1")
     suspend fun findEpisodeLocalId(seasonLocalId: Long, number: Int): Long?
@@ -227,10 +243,24 @@ interface SeriesDao {
 
             for (episode in entry.episodes) {
                 val existingEpisodeId = findEpisodeLocalId(seasonId, episode.episodeNumber)
+                val existing = existingEpisodeId?.let { getEpisodeByLocalId(it) }
                 insertEpisode(
                     episode.copy(
                         localId = existingEpisodeId ?: 0,
-                        seasonLocalId = seasonId
+                        seasonLocalId = seasonId,
+                        // Eine offene Markierung ueberlebt den Pull — wie beim
+                        // Film. Sie haengt nicht an updatedAt, waere hier also
+                        // still verloren.
+                        isWatched = if (existing != null && existing.isWatched != existing.syncedWatched) {
+                            existing.isWatched
+                        } else {
+                            episode.isWatched
+                        },
+                        syncedWatched = if (existing != null && existing.isWatched != existing.syncedWatched) {
+                            existing.syncedWatched
+                        } else {
+                            episode.isWatched
+                        }
                     )
                 )
             }

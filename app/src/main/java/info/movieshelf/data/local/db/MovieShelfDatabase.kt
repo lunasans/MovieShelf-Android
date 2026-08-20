@@ -37,7 +37,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         SettingEntity::class,
         PendingUploadEntity::class
     ],
-    version = 12,
+    version = 13,
     exportSchema = false
 )
 abstract class MovieShelfDatabase : RoomDatabase() {
@@ -85,6 +85,21 @@ abstract class MovieShelfDatabase : RoomDatabase() {
             }
         }
 
+        /**
+         * Gesehen-Stand je Folge.
+         *
+         * Beide Spalten starten auf 0 und damit gleich: keine Folge gilt als
+         * offene Markierung, der naechste Abgleich schickt also nichts los,
+         * was der Nutzer nie angetippt hat. Der naechste Pull traegt den
+         * Serverstand ein.
+         */
+        private val MIGRATION_12_13 = object : Migration(12, 13) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE episodes ADD COLUMN isWatched INTEGER NOT NULL DEFAULT 0")
+                db.execSQL("ALTER TABLE episodes ADD COLUMN syncedWatched INTEGER NOT NULL DEFAULT 0")
+            }
+        }
+
         fun getInstance(context: Context): MovieShelfDatabase {
             return INSTANCE ?: synchronized(this) {
                 Room.databaseBuilder(
@@ -92,7 +107,7 @@ abstract class MovieShelfDatabase : RoomDatabase() {
                     MovieShelfDatabase::class.java,
                     "movieshelf.db"
                 )
-                    .addMigrations(MIGRATION_10_11, MIGRATION_11_12)
+                    .addMigrations(MIGRATION_10_11, MIGRATION_11_12, MIGRATION_12_13)
                     .fallbackToDestructiveMigration(true)
                     // Ohne diesen Schalter bleiben die Fremdschlüssel von
                     // Besetzung, Staffeln und Listeninhalten wirkungslos und

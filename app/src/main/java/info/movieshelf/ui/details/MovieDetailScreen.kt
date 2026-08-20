@@ -439,11 +439,44 @@ private fun MovieDetailContent(
                                             if (expanded) {
                                                 Spacer(Modifier.height(8.dp))
                                                 season.episodes?.forEach { ep ->
-                                                    Text(
-                                                        "E${ep.episodeNumber}  ${ep.title ?: "Folge ${ep.episodeNumber}"}",
-                                                        style = MaterialTheme.typography.bodyMedium,
-                                                        modifier = Modifier.padding(vertical = 2.dp)
-                                                    )
+                                                    val watched = ep.isWatched == true
+                                                    Row(
+                                                        modifier = Modifier
+                                                            .fillMaxWidth()
+                                                            .clickable(enabled = ep.localId != 0L) {
+                                                                viewModel.toggleEpisodeWatched(ep.localId, !watched)
+                                                            }
+                                                            .padding(vertical = 4.dp),
+                                                        verticalAlignment = Alignment.CenterVertically
+                                                    ) {
+                                                        Icon(
+                                                            imageVector = if (watched) {
+                                                                Icons.Default.CheckCircle
+                                                            } else {
+                                                                Icons.Default.RadioButtonUnchecked
+                                                            },
+                                                            contentDescription = stringResource(
+                                                                if (watched) R.string.detail_mark_unwatched
+                                                                else R.string.detail_mark_watched
+                                                            ),
+                                                            modifier = Modifier.size(18.dp),
+                                                            tint = if (watched) {
+                                                                MaterialTheme.colorScheme.primary
+                                                            } else {
+                                                                MaterialTheme.colorScheme.onSurfaceVariant
+                                                            }
+                                                        )
+                                                        Spacer(Modifier.width(10.dp))
+                                                        Text(
+                                                            "E${ep.episodeNumber}  ${ep.title ?: "Folge ${ep.episodeNumber}"}",
+                                                            style = MaterialTheme.typography.bodyMedium,
+                                                            color = if (watched) {
+                                                                MaterialTheme.colorScheme.onSurfaceVariant
+                                                            } else {
+                                                                MaterialTheme.colorScheme.onSurface
+                                                            }
+                                                        )
+                                                    }
                                                 }
                                             }
                                         }

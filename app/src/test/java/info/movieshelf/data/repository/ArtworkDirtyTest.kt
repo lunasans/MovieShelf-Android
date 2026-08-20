@@ -152,6 +152,10 @@ private class EmptySeriesDao : SeriesDao {
     override suspend fun insertEpisode(episode: EpisodeEntity): Long = 0
     override suspend fun deleteSeasonsOf(movieLocalId: Long) = Unit
     override suspend fun pruneSeasonsKeeping(movieLocalId: Long, keep: List<Int>) = Unit
+    override suspend fun getEpisodeByLocalId(localId: Long): EpisodeEntity? = null
+    override suspend fun updateEpisodeWatched(localId: Long, watched: Boolean, now: String) = Unit
+    override suspend fun getPendingEpisodeWatched() = emptyList<EpisodeEntity>()
+    override suspend fun markEpisodeWatchedSynced(localId: Long, watched: Boolean) = Unit
 }
 
 private class EmptyPendingUploadDao : PendingUploadDao {

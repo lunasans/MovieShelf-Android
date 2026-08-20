@@ -49,6 +49,8 @@ class SyncEngine(
     private val pushWatched: suspend ((Int, Int, String?) -> Unit) -> Int = { 0 },
     /** Offene eigene Bewertungen, eigener Endpunkt wie beim Gesehen-Stand. */
     private val pushUserRatings: suspend ((Int, Int, String?) -> Unit) -> Int = { 0 },
+    /** Offene Folgen-Markierungen, eigener Endpunkt wie die uebrigen. */
+    private val pushEpisodeWatched: suspend ((Int, Int, String?) -> Unit) -> Int = { 0 },
     /**
      * Staffeln und Episoden einer Serie einspielen. Wie [flushPendingUploads]
      * als Funktion hereingereicht, damit der Film-Abgleich nicht an der
@@ -329,7 +331,16 @@ class SyncEngine(
             0
         }
 
-        return PushResult(created, updated, deleted, errors, watched, ratings)
+        val episodes = try {
+            pushEpisodeWatched { current, total, subject ->
+                onProgress(SyncProgress(SyncPhase.PUSH, current, total, subject))
+            }
+        } catch (e: Exception) {
+            errors += SyncError("Folgen-Markierungen", e.message ?: "Unbekannter Fehler")
+            0
+        }
+
+        return PushResult(created, updated, deleted, errors, watched, ratings, episodes)
     }
 
     /**
@@ -561,7 +572,10 @@ class SyncEngine(
                         seasonLocalId = 0,
                         episodeNumber = episode.episodeNumber,
                         title = episode.title,
-                        overview = episode.overview
+                        overview = episode.overview,
+                        // Was vom Server kommt, gilt dort als bekannt.
+                        isWatched = episode.isWatched == true,
+                        syncedWatched = episode.isWatched == true
                     )
                 }
             )
@@ -676,9 +690,11 @@ data class PushResult(
     /** Uebertragene "gesehen"-Markierungen. */
     val watched: Int = 0,
     /** Uebertragene eigene Bewertungen. */
-    val userRatings: Int = 0
+    val userRatings: Int = 0,
+    /** Uebertragene Folgen-Markierungen. */
+    val episodesWatched: Int = 0
 ) {
-    val total: Int get() = created + updated + deleted + watched + userRatings
+    val total: Int get() = created + updated + deleted + watched + userRatings + episodesWatched
 }
 
 data class PullResult(

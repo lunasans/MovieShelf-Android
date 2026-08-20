@@ -94,7 +94,16 @@ data class ApiEpisode(
     @SerializedName("episode_number") val episodeNumber: Int,
     val title: String? = null,
     val overview: String? = null,
-    val runtime: Int? = null
+    val runtime: Int? = null,
+    /** Gesehen-Stand des angemeldeten Nutzers fuer diese Folge. */
+    @SerializedName("is_watched") val isWatched: Boolean? = null,
+    /**
+     * Lokale Kennung, ueber die die Oberflaeche die Markierung setzt.
+     *
+     * `transient`, weil sie nur innerhalb des Geraets gilt: der Server kennt
+     * sie nicht und soll sie weder senden noch empfangen.
+     */
+    @Transient val localId: Long = 0
 )
 
 // --- Staffeln nachladen (TMDb über die Shelf) ---
