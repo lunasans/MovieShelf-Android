@@ -484,4 +484,5 @@
     <string name="wishlist_subtitle">Titles you noted down, not in the collection yet</string>
     <string name="wishlist_empty">Nothing noted down yet</string>
     <string name="wishlist_empty_hint">Tap the heart on a movie to add it to your wishlist.</string>
+    <string name="error_movie_not_loaded_short">This movie could not be loaded.</string>
 </resources>

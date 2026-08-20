@@ -487,4 +487,5 @@
     <string name="wishlist_subtitle">Vorgemerkte Titel, noch nicht in der Sammlung</string>
     <string name="wishlist_empty">Noch nichts vorgemerkt</string>
     <string name="wishlist_empty_hint">Tippe in der Filmansicht auf das Herz, um einen Titel vorzumerken.</string>
+    <string name="error_movie_not_loaded_short">Der Film konnte nicht geladen werden.</string>
 </resources>

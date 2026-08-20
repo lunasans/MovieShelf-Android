@@ -99,9 +99,9 @@ teils überholt.
   vorgemerkten Titel als Raster; das Herz im Detail füllt sie wie bisher. Ohne
   Gesehen-Schalter: was man nicht besitzt, hat man nicht gesehen.
 
-- [ ] 🟡 **Fehler-/Retry-Zustand im Detail-Screen** — Stats und Actor haben ihn,
-  der Detail-Screen nicht (`common_retry` kommt dort nicht vor). Schlägt das Laden
-  fehl, bleibt die Ansicht ohne Weg zurück. *Aufwand: klein.*
+- [x] 🟡 **Fehler-/Retry-Zustand im Detail-Screen** — **umgesetzt.** Schlägt das Laden
+  fehl, steht jetzt ein Fehlerbild mit „Erneut versuchen" da statt einer leeren
+  Seite; die flüchtige Meldung bleibt für Fehler, bei denen der Film sichtbar ist.
 
 - [ ] 🟡 **Typisierte TMDb-DTOs im Anlegen-Weg** — `AddMovieScreen` und
   `AddMovieViewModel` arbeiten weiter mit `Map<String, Any>` und ungeprüften Casts.
