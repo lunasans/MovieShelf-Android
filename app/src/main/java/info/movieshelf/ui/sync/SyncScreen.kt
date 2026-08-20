@@ -158,7 +158,14 @@ fun SyncScreen(onBack: () -> Unit) {
                     // bestätigen, die er nicht gesehen hat.
                     enabled = !viewModel.isBusy && viewModel.preview != null
                 ) {
-                    Text(stringResource(R.string.sync_start), fontWeight = FontWeight.Bold)
+                    // Zeigt an, was der Lauf tun wird: nach einer vollen
+                    // Vorschau ist es ein voller Abgleich.
+                    Text(
+                        stringResource(
+                            if (viewModel.previewIsFull) R.string.sync_full else R.string.sync_start
+                        ),
+                        fontWeight = FontWeight.Bold
+                    )
                 }
             }
 
@@ -204,7 +211,7 @@ fun SyncScreen(onBack: () -> Unit) {
                 onClick = { viewModel.loadPreview(full = true) },
                 enabled = !viewModel.isBusy
             ) {
-                Text(stringResource(R.string.sync_full))
+                Text(stringResource(R.string.sync_full_preview))
             }
 
             Spacer(Modifier.height(32.dp))
