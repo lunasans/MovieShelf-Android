@@ -37,7 +37,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         SettingEntity::class,
         PendingUploadEntity::class
     ],
-    version = 11,
+    version = 12,
     exportSchema = false
 )
 abstract class MovieShelfDatabase : RoomDatabase() {
@@ -70,6 +70,21 @@ abstract class MovieShelfDatabase : RoomDatabase() {
             }
         }
 
+        /**
+         * Eigene Sternbewertung und ihr zuletzt bestaetigter Stand.
+         *
+         * Beide bleiben leer: vor dieser Fassung kannte die App keine
+         * Bewertungen, es gibt also nichts zu uebernehmen. Da beide Spalten
+         * gleich (naemlich `NULL`) sind, gilt keine Zeile als offene
+         * Bewertung und der naechste Abgleich schickt nichts Ungewolltes los.
+         */
+        private val MIGRATION_11_12 = object : Migration(11, 12) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE movies ADD COLUMN userRating INTEGER")
+                db.execSQL("ALTER TABLE movies ADD COLUMN syncedUserRating INTEGER")
+            }
+        }
+
         fun getInstance(context: Context): MovieShelfDatabase {
             return INSTANCE ?: synchronized(this) {
                 Room.databaseBuilder(
@@ -77,7 +92,7 @@ abstract class MovieShelfDatabase : RoomDatabase() {
                     MovieShelfDatabase::class.java,
                     "movieshelf.db"
                 )
-                    .addMigrations(MIGRATION_10_11)
+                    .addMigrations(MIGRATION_10_11, MIGRATION_11_12)
                     .fallbackToDestructiveMigration(true)
                     // Ohne diesen Schalter bleiben die Fremdschlüssel von
                     // Besetzung, Staffeln und Listeninhalten wirkungslos und

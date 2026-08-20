@@ -47,6 +47,8 @@ class SyncEngine(
      * es hat einen eigenen Endpunkt und steht nicht in [MovieEntity.toUpdateRequest].
      */
     private val pushWatched: suspend ((Int, Int, String?) -> Unit) -> Int = { 0 },
+    /** Offene eigene Bewertungen, eigener Endpunkt wie beim Gesehen-Stand. */
+    private val pushUserRatings: suspend ((Int, Int, String?) -> Unit) -> Int = { 0 },
     /**
      * Staffeln und Episoden einer Serie einspielen. Wie [flushPendingUploads]
      * als Funktion hereingereicht, damit der Film-Abgleich nicht an der
@@ -316,7 +318,18 @@ class SyncEngine(
             0
         }
 
-        return PushResult(created, updated, deleted, errors, watched)
+        // Nach dem Film-Push, damit ein soeben angelegter Film seine Server-ID
+        // schon hat — ohne sie liesse sich seine Bewertung nicht senden.
+        val ratings = try {
+            pushUserRatings { current, total, subject ->
+                onProgress(SyncProgress(SyncPhase.PUSH, current, total, subject))
+            }
+        } catch (e: Exception) {
+            errors += SyncError("Bewertungen", e.message ?: "Unbekannter Fehler")
+            0
+        }
+
+        return PushResult(created, updated, deleted, errors, watched, ratings)
     }
 
     /**
@@ -408,16 +421,27 @@ class SyncEngine(
                 val fromServer = MovieEntity.fromServerMovie(movie)
                 val entity = when {
                     existing == null -> fromServer
-                    // Die offene "gesehen"-Markierung ueberlebt den Pull. Sie
-                    // haengt nicht an updatedAt/syncedAt, also gilt die Zeile
-                    // nach dem Film-Push als sauber, obwohl sie es nicht ist —
-                    // ohne diese Ausnahme waere die Markierung hier still weg.
-                    existing.hasPendingWatched -> fromServer.copy(
-                        localId = existing.localId,
-                        isWatched = existing.isWatched,
-                        syncedWatched = existing.syncedWatched
-                    )
-                    else -> fromServer.copy(localId = existing.localId)
+                    else -> {
+                        var merged = fromServer.copy(localId = existing.localId)
+                        // Offene "gesehen"-Markierung und offene Bewertung
+                        // ueberleben den Pull. Beide haengen nicht an
+                        // updatedAt/syncedAt, also gilt die Zeile nach dem
+                        // Film-Push als sauber, obwohl sie es nicht ist — ohne
+                        // diese Ausnahme waeren sie hier still weg.
+                        if (existing.hasPendingWatched) {
+                            merged = merged.copy(
+                                isWatched = existing.isWatched,
+                                syncedWatched = existing.syncedWatched
+                            )
+                        }
+                        if (existing.hasPendingUserRating) {
+                            merged = merged.copy(
+                                userRating = existing.userRating,
+                                syncedUserRating = existing.syncedUserRating
+                            )
+                        }
+                        merged
+                    }
                 }
                 movieDao.upsertFromServer(listOf(entity))
                 applied++
@@ -650,9 +674,11 @@ data class PushResult(
     val deleted: Int = 0,
     val errors: List<SyncError> = emptyList(),
     /** Uebertragene "gesehen"-Markierungen. */
-    val watched: Int = 0
+    val watched: Int = 0,
+    /** Uebertragene eigene Bewertungen. */
+    val userRatings: Int = 0
 ) {
-    val total: Int get() = created + updated + deleted + watched
+    val total: Int get() = created + updated + deleted + watched + userRatings
 }
 
 data class PullResult(

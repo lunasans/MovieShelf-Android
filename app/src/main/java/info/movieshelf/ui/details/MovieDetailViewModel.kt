@@ -117,6 +117,25 @@ class MovieDetailViewModel(
         }
     }
 
+    /**
+     * Eigene Bewertung setzen — 1 bis 5 Sterne, erneutes Tippen auf denselben
+     * Stern entfernt sie wieder.
+     *
+     * Optimistisch wie der Wunschlisten-Schalter: die Sterne fuellen sich
+     * sofort. Das Repository schreibt lokal und versucht den Versand; scheitert
+     * er, bleibt die Bewertung als offen stehen und geht beim naechsten
+     * Abgleich raus — ein Rollback waere hier also falsch.
+     */
+    fun setUserRating(stars: Int) {
+        val current = movie ?: return
+        val next = if (current.userRating == stars) null else stars
+        movie = current.copy(userRating = next)
+
+        viewModelScope.launch {
+            repository.setUserRating(current.localId, next)
+        }
+    }
+
     /** Trailer von TMDb holen & speichern (Admin). */
     fun fetchTrailer() {
         val current = movie ?: return

@@ -45,6 +45,18 @@ class SyncViewModel(
         private set
     var error by mutableStateOf<UiText?>(null)
 
+    /**
+     * Ob die zuletzt geholte Vorschau eine vollstaendige war.
+     *
+     * Der Abgleich fuehrt aus, was die Vorschau gezeigt hat — sonst waere die
+     * Bestaetigung wertlos. Ohne dieses Merkmal lief nach einer Vollvorschau
+     * trotzdem ein Delta: alles, was sich seit dem letzten Lauf nicht geaendert
+     * hat, blieb dann aus. Genau daran kamen aeltere Bewertungen nie an, denn
+     * eine Bewertung ruehrt `movies.updated_at` nicht an.
+     */
+    var previewIsFull by mutableStateOf(false)
+        private set
+
     init {
         viewModelScope.launch {
             lastSyncAt = syncEngine.lastSyncAt()
@@ -66,6 +78,7 @@ class SyncViewModel(
             result = null
             try {
                 preview = syncEngine.preview(full)
+                previewIsFull = full
             } catch (e: Exception) {
                 error = UiText.of(R.string.error_preview_failed, e.message ?: "")
             } finally {
@@ -74,11 +87,14 @@ class SyncViewModel(
         }
     }
 
-    /** Abgleich starten. Erst nach einer gesehenen Vorschau erreichbar. */
-    fun runSync(full: Boolean = false) = run(SyncDirection.BOTH, full)
+    /**
+     * Abgleich starten. Erst nach einer gesehenen Vorschau erreichbar, und in
+     * derselben Weite wie diese Vorschau — siehe [previewIsFull].
+     */
+    fun runSync(full: Boolean = previewIsFull) = run(SyncDirection.BOTH, full)
 
     /** Nur laden: der Server bleibt unangetastet. */
-    fun runPullOnly(full: Boolean = false) = run(SyncDirection.PULL, full)
+    fun runPullOnly(full: Boolean = previewIsFull) = run(SyncDirection.PULL, full)
 
     /** Nur hochladen: der Serverstand wird nicht geholt. */
     fun runPushOnly() = run(SyncDirection.PUSH, false)

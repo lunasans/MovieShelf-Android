@@ -80,6 +80,23 @@ interface MovieDao {
     suspend fun findLocalIdByRemoteId(remoteId: Int): Long?
 
     /**
+     * Fuer die Duplikatpruefung beim Jellyfin-Import: die TMDb-ID ist der
+     * eindeutige Weg. Geloeschte Zeilen zaehlen mit — sie warten auf die
+     * Bestaetigung der Shelf und duerfen nicht ungefragt zurueckkehren.
+     */
+    @Query("SELECT * FROM movies WHERE tmdbId = :tmdbId LIMIT 1")
+    suspend fun findByTmdbId(tmdbId: String): MovieEntity?
+
+    /**
+     * Alle Titel eines Jahrgangs — der zweite Weg der Duplikatpruefung, wenn
+     * keine TMDb-ID vorliegt. Der Titelvergleich geschieht danach im Kotlin-Code,
+     * weil er normalisiert (Gross-/Kleinschreibung, Leerraum) und nicht als
+     * SQL-Vergleich ausgedrueckt werden kann.
+     */
+    @Query("SELECT * FROM movies WHERE (:year IS NULL AND year IS NULL) OR year = :year")
+    suspend fun findByYear(year: Int?): List<MovieEntity>
+
+    /**
      * Suche über die ganze Sammlung — anders als die Listen **mit** den
      * Boxset-Teilen.
      *
@@ -180,6 +197,33 @@ interface MovieDao {
     /** Den vom Server bestaetigten Stand festhalten — ohne updatedAt zu ruehren. */
     @Query("UPDATE movies SET syncedWatched = :isWatched WHERE localId = :localId")
     suspend fun markWatchedSynced(localId: Long, isWatched: Boolean)
+
+    /**
+     * Eigene Bewertung setzen. `null` entfernt sie wieder — der Server kennt
+     * dafuer die 0, lokal ist es die Abwesenheit eines Wertes.
+     *
+     * `updatedAt` wird bewusst mitgesetzt, damit die Zeile beim Abgleich
+     * ueberhaupt betrachtet wird; der eigentliche Versand laeuft danach ueber
+     * den eigenen Endpunkt.
+     */
+    @Query("UPDATE movies SET userRating = :rating, updatedAt = :now WHERE localId = :localId")
+    suspend fun updateUserRating(localId: Long, rating: Int?, now: String)
+
+    /**
+     * Bewertungen, die noch zum Server sollen — der Gegenpart zu
+     * [getPendingWatched]. Nur Zeilen mit Server-ID: ein Film, den die Shelf
+     * noch nicht kennt, bekommt seine Bewertung nach dem Anlegen.
+     */
+    @Query("""
+        SELECT * FROM movies
+        WHERE remoteId IS NOT NULL
+          AND isDeleted = 0
+          AND ((userRating IS NULL) != (syncedUserRating IS NULL) OR userRating != syncedUserRating)
+    """)
+    suspend fun getPendingUserRatings(): List<MovieEntity>
+
+    @Query("UPDATE movies SET syncedUserRating = :rating WHERE localId = :localId")
+    suspend fun markUserRatingSynced(localId: Long, rating: Int?)
 
     @Query("UPDATE movies SET coverUrl = :url, updatedAt = :now WHERE localId = :localId")
     suspend fun updateCoverUrl(localId: Long, url: String?, now: String)
