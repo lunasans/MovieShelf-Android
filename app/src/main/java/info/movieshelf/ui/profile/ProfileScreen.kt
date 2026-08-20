@@ -11,6 +11,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.automirrored.filled.PlaylistPlay
 import androidx.compose.material.icons.filled.CloudDownload
+import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.CloudOff
 import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.Email
@@ -62,6 +63,7 @@ fun ProfileScreen(
     onListsClick: () -> Unit = {},
     onTwoFactorClick: () -> Unit = {},
     onJellyfinClick: () -> Unit = {},
+    onWishlistClick: () -> Unit = {},
     onSyncClick: () -> Unit = {},
     /** Eigenstaendiger Betrieb: kein Konto, kein Abgleich, keine 2FA. */
     isStandalone: Boolean = false,
@@ -146,6 +148,13 @@ fun ProfileScreen(
                     title = stringResource(R.string.profile_my_lists),
                     subtitle = stringResource(R.string.profile_my_lists_sub),
                     onClick = onListsClick
+                )
+                HorizontalDivider(Modifier.padding(start = 56.dp))
+                SettingsRow(
+                    icon = Icons.Default.FavoriteBorder,
+                    title = stringResource(R.string.wishlist_title),
+                    subtitle = stringResource(R.string.wishlist_subtitle),
+                    onClick = onWishlistClick
                 )
                 if (!isStandalone) {
                     HorizontalDivider(Modifier.padding(start = 56.dp))

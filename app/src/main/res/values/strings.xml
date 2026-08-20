@@ -483,4 +483,8 @@
     <string name="sort_descending">Absteigend</string>
     <string name="filter_genre">Genre</string>
     <string name="filter_genre_all">Alle Genres</string>
+    <string name="wishlist_title">Wunschliste</string>
+    <string name="wishlist_subtitle">Vorgemerkte Titel, noch nicht in der Sammlung</string>
+    <string name="wishlist_empty">Noch nichts vorgemerkt</string>
+    <string name="wishlist_empty_hint">Tippe in der Filmansicht auf das Herz, um einen Titel vorzumerken.</string>
 </resources>

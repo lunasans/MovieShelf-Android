@@ -33,6 +33,9 @@ open class FakeMovieDao : MovieDao {
     override suspend fun findLocalIdByRemoteId(remoteId: Int): Long? =
         rows.firstOrNull { it.remoteId == remoteId }?.localId
 
+    override suspend fun getWishlist(): List<MovieEntity> =
+        rows.filter { !it.isDeleted && it.inCollection == false }
+
     override suspend fun randomMovie(collectionType: String?): MovieEntity? =
         rows.filter { !it.isDeleted && it.inCollection != false && it.isBoxset != true }
             .filter { collectionType == null || it.collectionType == collectionType }
