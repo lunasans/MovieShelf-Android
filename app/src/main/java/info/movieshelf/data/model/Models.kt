@@ -394,6 +394,26 @@ data class ServerInfo(
     val version: String? = null
 )
 
+/**
+ * Ein Zugang zum Konto: ein angemeldetes Geraet oder eine verbundene App.
+ *
+ * Beides sind auf der Shelf dieselben Token; `type` sagt, worum es sich
+ * handelt — eine App-Zustimmung nimmt man aus anderen Gruenden zurueck als ein
+ * altes Geraet.
+ */
+data class AccessToken(
+    val id: Int,
+    val name: String? = null,
+    /** `device` oder `oauth`. */
+    val type: String? = null,
+    /** Der Zugang, mit dem dieses Geraet gerade angemeldet ist. */
+    @SerializedName("is_current") val isCurrent: Boolean = false,
+    @SerializedName("last_used_at") val lastUsedAt: String? = null,
+    @SerializedName("created_at") val createdAt: String? = null
+)
+
+data class AccessTokenListResponse(val data: List<AccessToken>? = null)
+
 data class OAuthTokenResponse(
     @SerializedName("access_token") val accessToken: String,
     @SerializedName("token_type")   val tokenType: String = "Bearer"

@@ -36,6 +36,17 @@ interface MovieShelfApi {
     @POST("api/episodes/{id}/watched")
     suspend fun toggleEpisodeWatched(@Path("id") id: Int): Map<String, Any>
 
+    // --- Zugaenge des eigenen Kontos (Shelf ab 2.43.0) ---
+
+    @GET("api/user/tokens")
+    suspend fun getAccessTokens(): AccessTokenListResponse
+
+    @DELETE("api/user/tokens/{id}")
+    suspend fun revokeAccessToken(@Path("id") id: Int): Map<String, Any>
+
+    @DELETE("api/user/tokens/others")
+    suspend fun revokeOtherAccessTokens(): Map<String, Any>
+
     @GET("api/admin/export")
     suspend fun exportMovies(@Query("since") since: String? = null): ExportResponse
 

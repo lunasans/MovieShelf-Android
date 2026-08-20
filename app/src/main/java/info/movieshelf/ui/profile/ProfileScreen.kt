@@ -14,6 +14,7 @@ import androidx.compose.material.icons.filled.CloudDownload
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.CloudOff
 import androidx.compose.material.icons.filled.DarkMode
+import androidx.compose.material.icons.filled.Devices
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Key
@@ -64,6 +65,7 @@ fun ProfileScreen(
     onTwoFactorClick: () -> Unit = {},
     onJellyfinClick: () -> Unit = {},
     onWishlistClick: () -> Unit = {},
+    onAccessClick: () -> Unit = {},
     onSyncClick: () -> Unit = {},
     /** Eigenstaendiger Betrieb: kein Konto, kein Abgleich, keine 2FA. */
     isStandalone: Boolean = false,
@@ -188,6 +190,13 @@ fun ProfileScreen(
                             stringResource(R.string.twofactor_inactive_tap)
                         },
                         onClick = onTwoFactorClick
+                    )
+                    HorizontalDivider(Modifier.padding(start = 56.dp))
+                    SettingsRow(
+                        icon = Icons.Default.Devices,
+                        title = stringResource(R.string.access_title),
+                        subtitle = stringResource(R.string.access_subtitle),
+                        onClick = onAccessClick
                     )
                 }
             }

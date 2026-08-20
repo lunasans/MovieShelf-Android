@@ -486,4 +486,22 @@
     <string name="error_movie_not_loaded_short">This movie could not be loaded.</string>
     <string name="sync_ratings">Ratings</string>
     <string name="sync_episodes_watched">Episodes watched</string>
+    <string name="access_title">Signed-in devices</string>
+    <string name="access_subtitle">See and revoke access to your account</string>
+    <string name="access_devices">Devices</string>
+    <string name="access_apps">Connected apps</string>
+    <string name="access_no_devices">No other device is signed in.</string>
+    <string name="access_this_device">THIS DEVICE</string>
+    <string name="access_last_used">Last used: %1$s</string>
+    <string name="access_never_used">Never used</string>
+    <string name="access_revoke">Revoke</string>
+    <string name="access_revoke_title">Revoke access?</string>
+    <string name="access_revoke_question">“%1$s” will lose access to your collection.</string>
+    <string name="access_revoke_current_question">This is the current device. You will be signed out immediately and have to sign in again.</string>
+    <string name="access_revoke_others">Revoke all others</string>
+    <string name="access_revoke_others_question">Every device and app except this one loses access. This device stays signed in.</string>
+    <string name="access_revoke_failed">Could not revoke: %1$s</string>
+    <string name="access_load_failed">Could not load access list: %1$s</string>
+    <string name="access_needs_newer_shelf">This needs shelf version 2.43.0 or newer.</string>
+    <string name="access_hint">Browser sessions and share links are managed in the web interface.</string>
 </resources>

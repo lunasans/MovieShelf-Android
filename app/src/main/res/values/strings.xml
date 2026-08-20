@@ -489,4 +489,22 @@
     <string name="error_movie_not_loaded_short">Der Film konnte nicht geladen werden.</string>
     <string name="sync_ratings">Bewertungen</string>
     <string name="sync_episodes_watched">Folgen gesehen</string>
+    <string name="access_title">Angemeldete Geräte</string>
+    <string name="access_subtitle">Zugriffe auf dein Konto sehen und widerrufen</string>
+    <string name="access_devices">Geräte</string>
+    <string name="access_apps">Verbundene Apps</string>
+    <string name="access_no_devices">Kein weiteres Gerät angemeldet.</string>
+    <string name="access_this_device">DIESES GERÄT</string>
+    <string name="access_last_used">Zuletzt benutzt: %1$s</string>
+    <string name="access_never_used">Noch nicht benutzt</string>
+    <string name="access_revoke">Abmelden</string>
+    <string name="access_revoke_title">Zugang widerrufen?</string>
+    <string name="access_revoke_question">„%1$s“ verliert damit den Zugriff auf deine Sammlung.</string>
+    <string name="access_revoke_current_question">Das ist dieses Gerät. Du wirst sofort abgemeldet und musst dich neu anmelden.</string>
+    <string name="access_revoke_others">Alle anderen abmelden</string>
+    <string name="access_revoke_others_question">Alle Geräte und Apps außer diesem verlieren den Zugriff. Dieses Gerät bleibt angemeldet.</string>
+    <string name="access_revoke_failed">Widerruf fehlgeschlagen: %1$s</string>
+    <string name="access_load_failed">Die Zugriffe konnten nicht geladen werden: %1$s</string>
+    <string name="access_needs_newer_shelf">Dafür braucht deine Shelf mindestens Version 2.43.0.</string>
+    <string name="access_hint">Browser-Sitzungen und Freigabe-Links verwaltest du in der Weboberfläche.</string>
 </resources>

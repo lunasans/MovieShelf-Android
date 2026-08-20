@@ -73,12 +73,11 @@ auf `main`.
 
 ### Neu aufgenommen (aus der Arbeit an 2.2.0)
 
-- [ ] 🔴 **Zugriffe verwalten** — die Shelf bekommt einen Profil-Abschnitt, in dem
-  angemeldete Geräte, verbundene Apps, Browser-Sitzungen und Freigabe-Links
-  einsehbar und widerrufbar sind ([MovieShelf-SaaS#80](https://github.com/lunasans/MovieShelf-SaaS/pull/80)).
-  Nach dem Paritäts-Grundsatz gehört dasselbe in die App, neben die 2FA-Verwaltung.
-  Braucht zuerst API-Endpunkte zum Auflisten und Widerrufen — bisher gibt es nur
-  `POST /api/logout` für den eigenen Token. *Aufwand: mittel (Server + App).*
+- [x] 🔴 **Zugriffe verwalten** — **umgesetzt.** Server: `GET /api/user/tokens`,
+  `DELETE /api/user/tokens/{id}` und `/others` ([MovieShelf-SaaS#83](https://github.com/lunasans/MovieShelf-SaaS/pull/83)).
+  App: Profil → Angemeldete Geräte, mit getrennten Abschnitten für Geräte und
+  verbundene Apps, Kennzeichnung des eigenen Zugangs und „alle anderen abmelden".
+  Browser-Sitzungen und Freigabe-Links bleiben der Weboberfläche vorbehalten.
 
 - [x] 🟡 **Gesehen-Stand von Episoden** — **umgesetzt.** Häkchen je Folge in der
   Staffelliste, lokal gespeichert und über `POST /api/episodes/{id}/watched`

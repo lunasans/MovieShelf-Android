@@ -84,6 +84,10 @@ class MovieShelfApplication : Application(), ImageLoaderFactory {
         ListRepository { RetrofitClient.api }
     }
 
+    val accessRepository by lazy {
+        info.movieshelf.data.repository.AccessRepository { RetrofitClient.api }
+    }
+
     val actorRepository by lazy {
         ActorRepository { RetrofitClient.api }
     }
