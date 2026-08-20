@@ -30,18 +30,6 @@ import info.movieshelf.data.model.Stats
 import info.movieshelf.ui.theme.PillShape
 import kotlin.math.roundToInt
 
-/**
- * Farben der Auswertungen. Bewusst feste Werte statt Theme-Tokens: die
- * Abschnitte sollen sich voneinander abheben, und die Zuordnung Farbe->Thema
- * (blau = Sammlung, gruen = gesehen, orange = Zeit) soll ueber Theme-Wechsel
- * hinweg dieselbe bleiben.
- */
-private val AccentWatched = Color(0xFF4CAF50)
-private val AccentSeries = Color(0xFF7C4DFF)
-private val AccentTime = Color(0xFFFF9800)
-private val AccentGenre = Color(0xFF29B6F6)
-private val AccentAge = Color(0xFFEC407A)
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun StatsScreen(
@@ -131,8 +119,7 @@ private fun StatsContent(stats: Stats, contentPadding: PaddingValues) {
                 title = stringResource(R.string.stats_total),
                 value = stats.totalFilms.toString(),
                 subtitle = stringResource(R.string.shelf_movies),
-                icon = Icons.Default.Movie,
-                color = MaterialTheme.colorScheme.primary
+                icon = Icons.Default.Movie
             )
             // Serien stehen fuer sich: die Film-Zahlen schliessen sie nicht ein,
             // sonst wichen sie von Shelf und Desktop-App ab.
@@ -144,8 +131,7 @@ private fun StatsContent(stats: Stats, contentPadding: PaddingValues) {
                     subtitle = stringResource(
                         if (stats.totalSeries == 1) R.string.stats_series_one else R.string.stats_series_many
                     ),
-                    icon = Icons.Default.Tv,
-                    color = AccentSeries
+                    icon = Icons.Default.Tv
                 )
             } else {
                 StatCard(
@@ -153,8 +139,7 @@ private fun StatsContent(stats: Stats, contentPadding: PaddingValues) {
                     title = stringResource(R.string.stats_avg_runtime),
                     value = stringResource(R.string.stats_minutes, stats.avgRuntime.roundToInt()),
                     subtitle = stringResource(R.string.stats_per_film),
-                    icon = Icons.Default.Timer,
-                    color = AccentTime
+                    icon = Icons.Default.Timer
                 )
             }
         }
@@ -165,8 +150,7 @@ private fun StatsContent(stats: Stats, contentPadding: PaddingValues) {
                 title = stringResource(R.string.stats_total_runtime),
                 value = stringResource(R.string.stats_days, stats.totalRuntimeDays.roundToInt()),
                 subtitle = stringResource(R.string.stats_hours, stats.totalRuntimeHours.toInt()),
-                icon = Icons.Default.AccessTime,
-                color = AccentTime
+                icon = Icons.Default.AccessTime
             )
             if (stats.totalSeries > 0) {
                 StatCard(
@@ -174,8 +158,7 @@ private fun StatsContent(stats: Stats, contentPadding: PaddingValues) {
                     title = stringResource(R.string.stats_avg_runtime),
                     value = stringResource(R.string.stats_minutes, stats.avgRuntime.roundToInt()),
                     subtitle = stringResource(R.string.stats_per_film),
-                    icon = Icons.Default.Timer,
-                    color = AccentTime
+                    icon = Icons.Default.Timer
                 )
             } else {
                 Spacer(Modifier.weight(1f))
@@ -194,7 +177,7 @@ private fun StatsContent(stats: Stats, contentPadding: PaddingValues) {
                         text = watched.count.toString(),
                         fontSize = 32.sp,
                         fontWeight = FontWeight.ExtraBold,
-                        color = AccentWatched
+                        color = MaterialTheme.colorScheme.primary
                     )
                     Text(
                         text = "${watched.percentage.roundToInt()} %",
@@ -206,8 +189,8 @@ private fun StatsContent(stats: Stats, contentPadding: PaddingValues) {
                 LinearProgressIndicator(
                     progress = { (watched.percentage / 100.0).toFloat().coerceIn(0f, 1f) },
                     modifier = Modifier.fillMaxWidth().height(8.dp),
-                    color = AccentWatched,
-                    trackColor = AccentWatched.copy(alpha = 0.15f),
+                    color = MaterialTheme.colorScheme.primary,
+                    trackColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f),
                     strokeCap = StrokeCap.Round,
                     gapSize = 0.dp,
                     drawStopIndicator = {}
@@ -248,7 +231,7 @@ private fun StatsContent(stats: Stats, contentPadding: PaddingValues) {
                         label = genre.genre,
                         value = genre.count.toString(),
                         fraction = genre.count.toFloat() / max.toFloat(),
-                        color = AccentGenre
+                        color = MaterialTheme.colorScheme.primary
                     )
                 }
             }
@@ -274,7 +257,7 @@ private fun StatsContent(stats: Stats, contentPadding: PaddingValues) {
                         .mapNotNull { (year, count) -> year.toIntOrNull()?.let { it to count } }
                         .sortedBy { it.first }
                         .map { ChartEntry(label = it.first.toString(), count = it.second) },
-                    color = AccentTime,
+                    color = MaterialTheme.colorScheme.primary,
                     barWidth = 18.dp
                 )
             }
@@ -289,7 +272,7 @@ private fun StatsContent(stats: Stats, contentPadding: PaddingValues) {
                         label = stringResource(R.string.stats_fsk, rating.ratingAge),
                         value = rating.count.toString(),
                         fraction = rating.count.toFloat() / max.toFloat(),
-                        color = AccentAge
+                        color = MaterialTheme.colorScheme.primary
                     )
                 }
             }
@@ -413,42 +396,55 @@ private fun ColumnChart(
     }
 }
 
+/**
+ * Kennzahl-Karte.
+ *
+ * Bewusst ohne eigene Farbe: die Oberflaeche kennt genau einen Akzent
+ * (das Marken-Rose), und der gehoert hier dem Icon. Eine Karte je Kennzahl
+ * einzufaerben machte aus der Seite ein Farbmuster, in dem die Farbe nichts
+ * mehr bedeutet — und ueberginge zugleich Material You, wo der Akzent vom
+ * Nutzer kommt.
+ */
 @Composable
 fun StatCard(
     modifier: Modifier = Modifier,
     title: String,
     value: String,
     subtitle: String,
-    icon: ImageVector,
-    color: Color
+    icon: ImageVector
 ) {
     Card(
         modifier = modifier,
         shape = PillShape,
-        colors = CardDefaults.cardColors(containerColor = color.copy(alpha = 0.1f))
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
-            Icon(icon, contentDescription = null, tint = color, modifier = Modifier.size(20.dp))
+            Icon(
+                icon,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(20.dp)
+            )
             Spacer(Modifier.height(10.dp))
             Text(
                 value,
                 fontSize = 26.sp,
                 fontWeight = FontWeight.ExtraBold,
-                color = color,
+                color = MaterialTheme.colorScheme.onSurface,
                 maxLines = 1
             )
             Text(
                 title,
                 style = MaterialTheme.typography.labelMedium,
                 fontWeight = FontWeight.Bold,
-                color = color.copy(alpha = 0.8f),
+                color = MaterialTheme.colorScheme.onSurface,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
             Text(
                 subtitle,
                 style = MaterialTheme.typography.bodySmall,
-                color = color.copy(alpha = 0.6f),
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
