@@ -80,6 +80,23 @@ interface MovieDao {
     suspend fun findLocalIdByRemoteId(remoteId: Int): Long?
 
     /**
+     * Fuer die Duplikatpruefung beim Jellyfin-Import: die TMDb-ID ist der
+     * eindeutige Weg. Geloeschte Zeilen zaehlen mit — sie warten auf die
+     * Bestaetigung der Shelf und duerfen nicht ungefragt zurueckkehren.
+     */
+    @Query("SELECT * FROM movies WHERE tmdbId = :tmdbId LIMIT 1")
+    suspend fun findByTmdbId(tmdbId: String): MovieEntity?
+
+    /**
+     * Alle Titel eines Jahrgangs — der zweite Weg der Duplikatpruefung, wenn
+     * keine TMDb-ID vorliegt. Der Titelvergleich geschieht danach im Kotlin-Code,
+     * weil er normalisiert (Gross-/Kleinschreibung, Leerraum) und nicht als
+     * SQL-Vergleich ausgedrueckt werden kann.
+     */
+    @Query("SELECT * FROM movies WHERE (:year IS NULL AND year IS NULL) OR year = :year")
+    suspend fun findByYear(year: Int?): List<MovieEntity>
+
+    /**
      * Suche über die ganze Sammlung — anders als die Listen **mit** den
      * Boxset-Teilen.
      *

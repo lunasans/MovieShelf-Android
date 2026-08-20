@@ -40,6 +40,14 @@ enum class CollectionViewMode {
     LIST
 }
 
+/** Hinterlegter Jellyfin-Zugang. */
+data class JellyfinAccount(
+    val baseUrl: String,
+    val userName: String,
+    val token: String,
+    val userId: String
+)
+
 class DataStoreManager(private val context: Context) {
 
     companion object {
@@ -53,6 +61,11 @@ class DataStoreManager(private val context: Context) {
         private const val KEY_OAUTH_STATE     = "oauth_state"
         private const val KEY_OAUTH_VERIFIER  = "oauth_verifier"
         private const val KEY_TMDB_API        = "tmdb_api_key"
+        private const val KEY_JF_URL          = "jellyfin_url"
+        private const val KEY_JF_USER         = "jellyfin_user"
+        private const val KEY_JF_TOKEN        = "jellyfin_token"
+        private const val KEY_JF_USER_ID      = "jellyfin_user_id"
+        private const val KEY_JF_DEVICE_ID    = "jellyfin_device_id"
     }
 
     /**
@@ -130,6 +143,63 @@ class DataStoreManager(private val context: Context) {
             if (trimmed == null) remove(KEY_TMDB_API) else putString(KEY_TMDB_API, trimmed)
         }.apply()
         _tmdbApiKey.value = trimmed
+    }
+
+    // --- Jellyfin-Zugang (verschlüsselt) ---
+    // Der Token ist ein Dauerzugang zum Medienserver des Nutzers und liegt
+    // deshalb neben dem Shelf-Token im Keystore, nicht im normalen DataStore.
+    private val _jellyfin by lazy { MutableStateFlow(readJellyfinAccount()) }
+    val jellyfinAccount: Flow<JellyfinAccount?> get() = _jellyfin.asStateFlow()
+
+    private fun readJellyfinAccount(): JellyfinAccount? {
+        val url = securePrefs.getString(KEY_JF_URL, null) ?: return null
+        val token = securePrefs.getString(KEY_JF_TOKEN, null) ?: return null
+        val userId = securePrefs.getString(KEY_JF_USER_ID, null) ?: return null
+        return JellyfinAccount(
+            baseUrl = url,
+            userName = securePrefs.getString(KEY_JF_USER, null).orEmpty(),
+            token = token,
+            userId = userId
+        )
+    }
+
+    fun currentJellyfinAccount(): JellyfinAccount? = _jellyfin.value
+
+    fun saveJellyfinAccount(account: JellyfinAccount) {
+        securePrefs.edit()
+            .putString(KEY_JF_URL, account.baseUrl)
+            .putString(KEY_JF_USER, account.userName)
+            .putString(KEY_JF_TOKEN, account.token)
+            .putString(KEY_JF_USER_ID, account.userId)
+            .apply()
+        _jellyfin.value = account
+    }
+
+    /**
+     * Verbindung trennen. Entfernt auch Adresse und Benutzernamen: blieben sie
+     * stehen, tauchte der vermeintlich entfernte Server beim naechsten Oeffnen
+     * wieder im Formular auf.
+     */
+    fun clearJellyfinAccount() {
+        securePrefs.edit()
+            .remove(KEY_JF_URL)
+            .remove(KEY_JF_USER)
+            .remove(KEY_JF_TOKEN)
+            .remove(KEY_JF_USER_ID)
+            .apply()
+        _jellyfin.value = null
+    }
+
+    /**
+     * Kennung dieses Geraets fuer Jellyfin. Bleibt bestehen, damit der Server
+     * die App als dasselbe Geraet wiedererkennt und nicht bei jeder Anmeldung
+     * eine neue Sitzung fuehrt.
+     */
+    fun jellyfinDeviceId(): String {
+        securePrefs.getString(KEY_JF_DEVICE_ID, null)?.let { return it }
+        val generated = java.util.UUID.randomUUID().toString()
+        securePrefs.edit().putString(KEY_JF_DEVICE_ID, generated).apply()
+        return generated
     }
 
     // --- Auth-Token (verschlüsselt) ---

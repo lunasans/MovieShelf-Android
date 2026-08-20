@@ -10,6 +10,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.automirrored.filled.PlaylistPlay
+import androidx.compose.material.icons.filled.CloudDownload
 import androidx.compose.material.icons.filled.CloudOff
 import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.Email
@@ -60,6 +61,7 @@ fun ProfileScreen(
     onBack: () -> Unit,
     onListsClick: () -> Unit = {},
     onTwoFactorClick: () -> Unit = {},
+    onJellyfinClick: () -> Unit = {},
     onSyncClick: () -> Unit = {},
     /** Eigenstaendiger Betrieb: kein Konto, kein Abgleich, keine 2FA. */
     isStandalone: Boolean = false,
@@ -154,6 +156,15 @@ fun ProfileScreen(
                         onClick = onSyncClick
                     )
                 }
+                // In beiden Betriebsarten: der Import schreibt lokal, im
+                // Shelf-Modus geht das Ergebnis beim naechsten Abgleich raus.
+                HorizontalDivider(Modifier.padding(start = 56.dp))
+                SettingsRow(
+                    icon = Icons.Default.CloudDownload,
+                    title = stringResource(R.string.profile_jellyfin),
+                    subtitle = stringResource(R.string.profile_jellyfin_hint),
+                    onClick = onJellyfinClick
+                )
             }
 
             if (!isStandalone) {

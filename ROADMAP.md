@@ -16,21 +16,20 @@ Priorität: 🔴 hoch · 🟡 mittel · ⚪ optional.
 
 ### Funktionslücken gegenüber der Desktop-App
 
-- 🔴 **Jellyfin-Import** — größte Lücke. Desktop übernimmt ganze Bibliotheken vom
-  eigenen Jellyfin-Server samt Staffeln, Episoden, Covern, Besetzung, Trailern und
-  Gesehen-Status, optional mit TMDb-Abgleich ([JellyfinPanel.vue](../desktop/src/components/settings/JellyfinPanel.vue)).
-  In der App gibt es dazu bisher keine Zeile Code. Braucht: Server-Adresse +
-  Login (Token verschlüsselt ablegen), Bibliotheks-/Titelauswahl, Import in die
-  lokale Room-DB, danach regulärer Sync. *Aufwand: groß.*
+- [x] 🔴 **Jellyfin-Import** — **umgesetzt.** Anmeldung am Server (Token im Keystore),
+  Bibliotheksauswahl, Import von Filmen und Serien samt Staffeln, Episoden, Covern,
+  Backdrops, Besetzung, Trailern und Gesehen-Status, optional mit TMDb-Abgleich.
+  Schreibt lokal in die Room-Datenbank; im Shelf-Modus geht das Ergebnis über den
+  normalen Abgleich zum Server — genau wie in der Desktop-App.
 
-- 🔴 **Massenbearbeitung** — Desktop kann mehrere Titel auswählen und gemeinsam
+- [] 🔴 **Massenbearbeitung** — Desktop kann mehrere Titel auswählen und gemeinsam
   ändern ([BulkActionBar.vue](../desktop/src/components/BulkActionBar.vue)). Im
   Dashboard fehlt jede Mehrfachauswahl. Sinnvoller Umfang: Long-Press startet den
   Auswahlmodus, Sammelaktionen für Gesehen-Status, Genre/Tag, Regalstandort,
   Zustand, Löschen. **Server:** keinen Bulk-Endpunkt vorhanden — entweder n × 
   `PUT /api/admin/movies/{id}` oder ein neuer Sammel-Endpunkt. *Aufwand: mittel.*
 
-- 🔴 **Eigene Bewertung (`user_rating`)** — Desktop hat ein Sterne-Widget in der
+- [] 🔴 **Eigene Bewertung (`user_rating`)** — Desktop hat ein Sterne-Widget in der
   Detailansicht ([MovieDetailView.vue:125](../desktop/src/views/MovieDetailView.vue#L125)),
   speichert lokal und schiebt beim Sync per `POST /api/movies/{id}/rate` hoch
   ([useSyncEngine.ts:670](../desktop/src/composables/useSyncEngine.ts#L670)).
@@ -41,27 +40,27 @@ Priorität: 🔴 hoch · 🟡 mittel · ⚪ optional.
   Detail-Screen, Push-Schritt in der `SyncEngine` analog zum Gesehen-Status.
   *Aufwand: klein–mittel.*
 
-- 🟡 **Zufallsauswahl** — „Überrasch mich" wie [RandomPickerModal.vue](../desktop/src/components/RandomPickerModal.vue).
+- [] 🟡 **Zufallsauswahl** — „Überrasch mich" wie [RandomPickerModal.vue](../desktop/src/components/RandomPickerModal.vue).
   `RANDOM()` wird in [MovieDao.kt:71](app/src/main/java/info/movieshelf/data/local/db/MovieDao.kt#L71)
   schon für die Empfehlungen benutzt, es fehlt nur die Auslosung auf die aktuell
   gefilterte Menge plus ein Ergebnis-Sheet. Rein lokal, kein Server nötig.
   *Aufwand: klein.*
 
-- 🟡 **Besetzung manuell pflegen** — Desktop hat einen Schauspieler-Picker
+- [] 🟡 **Besetzung manuell pflegen** — Desktop hat einen Schauspieler-Picker
   ([ActorPickerModal.vue](../desktop/src/components/movies/ActorPickerModal.vue));
   der Android-Edit-Screen kennt keine Schauspieler-Zuordnung. Lesend ist alles da
   (`GET /api/actors`, `/api/actors/search`). **Server:** `AdminMovieController::update`
   schreibt die `actors`-Relation nicht — Endpunkt bzw. Feld muss ergänzt werden.
   *Aufwand: mittel (Server + App).*
 
-- 🟡 **Boxset-Zuordnung bearbeiten** — die App *zeigt* Boxset-Kinder im Detail
+- [] 🟡 **Boxset-Zuordnung bearbeiten** — die App *zeigt* Boxset-Kinder im Detail
   ([MovieDetailScreen.kt:324](app/src/main/java/info/movieshelf/ui/details/MovieDetailScreen.kt#L324)),
   kann sie aber nicht zuordnen oder entfernen; Desktop schon
   ([CollectionPartsSection.vue](../desktop/src/components/movies/CollectionPartsSection.vue)).
   **Server:** wie oben, die Eltern-/Kind-Beziehung ist im Admin-Update nicht
   schreibbar. *Aufwand: mittel (Server + App).*
 
-- ⚪ **Ansichtsmodi der Sammlung** — Desktop bietet Karten-, Zeilen- und
+- [x] ⚪ **Ansichtsmodi der Sammlung** — Desktop bietet Karten-, Zeilen- und
   Tabellenansicht (`MovieCard`/`MovieListRow`/`MovieTableRow`); Android hat nur das
   Poster-Grid. Auf dem Telefon lohnt am ehesten eine kompakte Zeilenansicht (Cover
   klein, Titel/Jahr/Regalstandort daneben) als Umschalter im Dashboard, gespeichert

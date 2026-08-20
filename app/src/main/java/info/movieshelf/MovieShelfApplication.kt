@@ -90,6 +90,9 @@ class MovieShelfApplication : Application(), ImageLoaderFactory {
 
     private val dataStoreManager by lazy { DataStoreManager(this) }
 
+    /** Fuer die Oberflaeche, die den Jellyfin-Zugang verwaltet. */
+    val dataStore: DataStoreManager get() = dataStoreManager
+
     val tmdbRepository by lazy {
         TmdbRepository(
             movieRepository = movieRepository,
@@ -97,6 +100,22 @@ class MovieShelfApplication : Application(), ImageLoaderFactory {
             shelfApiProvider = { RetrofitClient.api },
             isShelfMode = { isShelfMode() },
             apiKeyProvider = { dataStoreManager.currentTmdbApiKey() }
+        )
+    }
+
+    val jellyfinClient by lazy { info.movieshelf.data.jellyfin.JellyfinClient() }
+
+    val jellyfinImporter by lazy {
+        info.movieshelf.data.jellyfin.JellyfinImporter(
+            client = jellyfinClient,
+            movieDao = database.movieDao(),
+            actorDao = database.actorDao(),
+            seriesDao = database.seriesDao(),
+            mediaStore = mediaStore,
+            tmdbApi = TmdbApi.create(),
+            tmdbApiKeyProvider = { dataStoreManager.currentTmdbApiKey() },
+            setCast = { localId, cast -> movieRepository.setCast(localId, cast) },
+            downloadArtwork = { movieRepository.downloadMissingArtwork() }
         )
     }
 
