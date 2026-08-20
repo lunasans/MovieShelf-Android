@@ -47,6 +47,7 @@ import info.movieshelf.MovieShelfApplication
 import info.movieshelf.R
 import info.movieshelf.data.local.CollectionViewMode
 import info.movieshelf.data.local.DataStoreManager
+import androidx.compose.foundation.clickable
 import info.movieshelf.data.model.Movie
 import info.movieshelf.ui.components.FloatingNavBar
 import info.movieshelf.ui.components.MovieListRow
@@ -361,20 +362,35 @@ fun DashboardScreen(
                                 )
                             } ?: Spacer(Modifier.width(0.dp))
 
-                            ViewModeChip(
-                                viewMode = viewMode,
-                                onToggle = {
-                                    scope.launch {
-                                        dataStoreManager.saveCollectionViewMode(
-                                            if (viewMode == CollectionViewMode.GRID) {
-                                                CollectionViewMode.LIST
-                                            } else {
-                                                CollectionViewMode.GRID
-                                            }
-                                        )
-                                    }
+                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                SortChip(
+                                    sortKey = viewModel.sortKey,
+                                    ascending = viewModel.sortAscending,
+                                    onSelect = { viewModel.onSortKeyChange(it) },
+                                    onToggleDirection = { viewModel.toggleSortDirection() }
+                                )
+                                if (viewModel.availableGenres.isNotEmpty()) {
+                                    GenreChip(
+                                        genres = viewModel.availableGenres,
+                                        selected = viewModel.selectedGenre,
+                                        onSelect = { viewModel.onGenreSelected(it) }
+                                    )
                                 }
-                            )
+                                ViewModeChip(
+                                    viewMode = viewMode,
+                                    onToggle = {
+                                        scope.launch {
+                                            dataStoreManager.saveCollectionViewMode(
+                                                if (viewMode == CollectionViewMode.GRID) {
+                                                    CollectionViewMode.LIST
+                                                } else {
+                                                    CollectionViewMode.GRID
+                                                }
+                                            )
+                                        }
+                                    }
+                                )
+                            }
                         }
                     }
                     items(viewModel.movies, key = { it.id }) { movie ->
@@ -442,6 +458,131 @@ fun DashboardScreen(
                 }
             }
         )
+    }
+}
+
+/**
+ * Sortierung waehlen und die Richtung umschalten.
+ *
+ * Beides in einem Chip: der Pfeil rechts dreht die Reihenfolge um, ein Tippen
+ * auf die Beschriftung oeffnet die Auswahl. Zwei getrennte Bedienelemente
+ * waeren in dieser Zeile zu viel, und die Richtung ohne Schluessel ist sinnlos.
+ */
+@Composable
+private fun SortChip(
+    sortKey: SortKey,
+    ascending: Boolean,
+    onSelect: (SortKey) -> Unit,
+    onToggleDirection: () -> Unit
+) {
+    var expanded by remember { mutableStateOf(false) }
+
+    Box {
+        AssistChip(
+            onClick = { expanded = true },
+            label = {
+                Text(
+                    stringResource(R.string.sort_label, stringResource(sortKey.labelRes)),
+                    style = MaterialTheme.typography.labelMedium
+                )
+            },
+            trailingIcon = {
+                Icon(
+                    imageVector = if (ascending) Icons.Default.ArrowUpward else Icons.Default.ArrowDownward,
+                    contentDescription = stringResource(
+                        if (ascending) R.string.sort_ascending else R.string.sort_descending
+                    ),
+                    modifier = Modifier
+                        .size(16.dp)
+                        .clickable { onToggleDirection() }
+                )
+            },
+            shape = info.movieshelf.ui.theme.PillShape,
+            colors = AssistChipDefaults.assistChipColors(
+                labelColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                trailingIconContentColor = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        )
+
+        DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+            SortKey.entries.forEach { key ->
+                DropdownMenuItem(
+                    text = { Text(stringResource(key.labelRes)) },
+                    onClick = {
+                        onSelect(key)
+                        expanded = false
+                    },
+                    leadingIcon = if (key == sortKey) {
+                        { Icon(Icons.Default.Check, contentDescription = null, Modifier.size(18.dp)) }
+                    } else null
+                )
+            }
+        }
+    }
+}
+
+/** Genre-Filter. Die Auswahl entsteht aus dem, was in der Sammlung steht. */
+@Composable
+private fun GenreChip(genres: List<String>, selected: String?, onSelect: (String?) -> Unit) {
+    var expanded by remember { mutableStateOf(false) }
+
+    Box {
+        AssistChip(
+            onClick = { expanded = true },
+            label = {
+                Text(
+                    selected ?: stringResource(R.string.filter_genre),
+                    style = MaterialTheme.typography.labelMedium,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            },
+            leadingIcon = {
+                Icon(
+                    imageVector = Icons.Default.FilterList,
+                    contentDescription = null,
+                    modifier = Modifier.size(16.dp)
+                )
+            },
+            shape = info.movieshelf.ui.theme.PillShape,
+            colors = AssistChipDefaults.assistChipColors(
+                labelColor = if (selected != null) {
+                    MaterialTheme.colorScheme.primary
+                } else {
+                    MaterialTheme.colorScheme.onSurfaceVariant
+                },
+                leadingIconContentColor = if (selected != null) {
+                    MaterialTheme.colorScheme.primary
+                } else {
+                    MaterialTheme.colorScheme.onSurfaceVariant
+                }
+            )
+        )
+
+        DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+            DropdownMenuItem(
+                text = { Text(stringResource(R.string.filter_genre_all)) },
+                onClick = {
+                    onSelect(null)
+                    expanded = false
+                },
+                leadingIcon = if (selected == null) {
+                    { Icon(Icons.Default.Check, contentDescription = null, Modifier.size(18.dp)) }
+                } else null
+            )
+            genres.forEach { genre ->
+                DropdownMenuItem(
+                    text = { Text(genre) },
+                    onClick = {
+                        onSelect(genre)
+                        expanded = false
+                    },
+                    leadingIcon = if (genre == selected) {
+                        { Icon(Icons.Default.Check, contentDescription = null, Modifier.size(18.dp)) }
+                    } else null
+                )
+            }
+        }
     }
 }
 

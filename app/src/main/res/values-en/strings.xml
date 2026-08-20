@@ -470,4 +470,14 @@
     <string name="random_again">Roll again</string>
     <string name="random_open">Open</string>
     <string name="random_none">There is nothing in your collection to pick from.</string>
+    <string name="sort_title">Title</string>
+    <string name="sort_year">Year</string>
+    <string name="sort_rating">Rating</string>
+    <string name="sort_runtime">Runtime</string>
+    <string name="sort_added">Added</string>
+    <string name="sort_label">Sort: %1$s</string>
+    <string name="sort_ascending">Ascending</string>
+    <string name="sort_descending">Descending</string>
+    <string name="filter_genre">Genre</string>
+    <string name="filter_genre_all">All genres</string>
 </resources>

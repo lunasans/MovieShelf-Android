@@ -29,13 +29,10 @@ auf `main`.
   Schreibt lokal in die Room-Datenbank; im Shelf-Modus geht das Ergebnis über den
   normalen Abgleich zum Server — genau wie in der Desktop-App.
 
-- [ ] 🔴 **Sortierung und Genre-Filter** — Desktop bietet fünf Sortierschlüssel
-  (Titel, Jahr, Bewertung, Laufzeit, Zugang), einen Richtungsumschalter und eine
-  Genre-Auswahl ([MoviesView.vue:74](../desktop/src/views/MoviesView.vue#L74)). Die App
-  sortiert fest: Reihen nach Titel, Trefferliste nach Zugangsdatum absteigend
-  ([DashboardViewModel.kt:334](app/src/main/java/info/movieshelf/ui/dashboard/DashboardViewModel.kt#L334)),
-  und einen Genre-Filter gibt es nicht. Rein lokal machbar, die Sortierung läuft
-  bereits auf `Dispatchers.Default`. *Aufwand: mittel.*
+- [x] 🔴 **Sortierung und Genre-Filter** — **umgesetzt.** Fünf Sortierschlüssel
+  (Titel, Jahr, Bewertung, Laufzeit, Zugang) mit Richtungsumschalter und ein
+  Genre-Filter, beide als Chips über der Liste. Die Regeln liegen als reine
+  Funktionen in `MovieSorting.kt` und sind geprüft.
 
 - [ ] 🔴 **Massenbearbeitung** — Desktop kann mehrere Titel auswählen und gemeinsam
   ändern ([BulkActionBar.vue](../desktop/src/components/BulkActionBar.vue)). Im
@@ -111,9 +108,9 @@ teils überholt.
   `AddMovieViewModel` arbeiten weiter mit `Map<String, Any>` und ungeprüften Casts.
   Für die Suche ist das erledigt, für den Import-Weg nicht. *Aufwand: klein–mittel.*
 
-- [ ] 🟡 **Tests für die Sortierlogik** — Sync, Medien und Jellyfin sind abgedeckt,
-  die Sortierung nicht: Collator-Verhalten, Artikel am Titelanfang, `parseRating`
-  mit Komma. Genau die Stellen, an denen ein Fehler still bleibt. *Aufwand: klein.*
+- [x] 🟡 **Tests für die Sortierlogik** — **umgesetzt** zusammen mit der Sortierung:
+  Bewertungen mit Komma, fehlende Werte in beiden Richtungen, stabile Reihenfolge
+  bei Gleichstand, Genre-Vergleich der Einzelteile.
 
 - [ ] ⚪ **Restliche Screens auf `PosterCard`** — nur Dashboard und Detail nutzen die
   geteilte Karte; Lists, ActorDetail, Stats, Profile, Add und Edit bringen eigene

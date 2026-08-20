@@ -25,6 +25,19 @@ enum class ShelfCategory(@StringRes val labelRes: Int) {
     SERIEN(R.string.shelf_series)
 }
 
+/**
+ * Wonach die Sammlung sortiert wird. Dieselben Schluessel wie in der
+ * Desktop-App (`MoviesView.vue`), damit dieselbe Sammlung auf beiden Wegen
+ * dieselbe Reihenfolge ergibt.
+ */
+enum class SortKey(@StringRes val labelRes: Int) {
+    TITLE(R.string.sort_title),
+    YEAR(R.string.sort_year),
+    RATING(R.string.sort_rating),
+    RUNTIME(R.string.sort_runtime),
+    ADDED(R.string.sort_added)
+}
+
 class DashboardViewModel(private val repository: MovieRepository) : ViewModel() {
 
     var movies by mutableStateOf<List<Movie>>(emptyList())
@@ -66,6 +79,25 @@ class DashboardViewModel(private val repository: MovieRepository) : ViewModel() 
 
     // "Alle anzeigen" einer Shelf-Reihe: zeigt die Kategorie als Raster
     var selectedShelf by mutableStateOf<ShelfCategory?>(null)
+
+    /** Sortierung der Trefferliste. Standard ist der Titel, wie im Desktop. */
+    var sortKey by mutableStateOf(SortKey.TITLE)
+        private set
+    var sortAscending by mutableStateOf(true)
+        private set
+
+    /** Genre-Filter; `null` heisst "alle". */
+    var selectedGenre by mutableStateOf<String?>(null)
+        private set
+
+    /**
+     * Alle Genres der Sammlung, alphabetisch.
+     *
+     * Die Shelf legt sie als kommagetrennte Liste je Film ab ("Action, Drama"),
+     * es gibt also keine Genre-Tabelle, aus der sich das lesen liesse — die
+     * Auswahl entsteht aus dem, was tatsaechlich in der Sammlung steht.
+     */
+    var availableGenres by mutableStateOf<List<String>>(emptyList())
         private set
 
     private var allLoadedMovies: List<Movie> = emptyList()
@@ -291,6 +323,12 @@ class DashboardViewModel(private val repository: MovieRepository) : ViewModel() 
     }
 
     private fun recompute() {
+        availableGenres = genresOf(allLoadedMovies)
+
+        // Ein Genre, das es nach einem Abgleich nicht mehr gibt, darf nicht als
+        // Filter stehen bleiben — sonst waere die Liste dauerhaft leer.
+        if (selectedGenre != null && selectedGenre !in availableGenres) selectedGenre = null
+
         // Alphabetisch wie das Raster hinter "Alle anzeigen" — sonst stuenden
         // dieselben Titel in der Reihe und im Raster in anderer Folge. Ohne
         // eigene Sortierung kaeme hier die Reihenfolge der Datenbank heraus.
@@ -328,17 +366,33 @@ class DashboardViewModel(private val repository: MovieRepository) : ViewModel() 
             null -> {}
         }
 
-        return if (byDateAdded) {
-            // Nach Server-Datum (created_at, ISO-8601 sortiert lexikografisch),
-            // fehlendes Datum ans Ende, bei Gleichstand hoechste ID zuerst.
-            filtered.sortedWith(
+        // Regeln in MovieSorting.kt — dort sind sie ohne ViewModel pruefbar.
+        filtered = filterByGenre(filtered, selectedGenre)
+
+        // "Neue Filme" ist eine Auswahl nach Zugang; dort ist die Reihenfolge
+        // Teil der Bedeutung und nicht frei waehlbar.
+        if (byDateAdded) {
+            return filtered.sortedWith(
                 compareByDescending<Movie> { it.createdAt ?: "" }.thenByDescending { it.id }
             )
-        } else {
-            filtered.sortedWith(
-                compareBy(String.CASE_INSENSITIVE_ORDER) { it.title.orEmpty() }
-            )
         }
+
+        return sortMovies(filtered, sortKey, sortAscending)
+    }
+
+    fun onSortKeyChange(key: SortKey) {
+        sortKey = key
+        recompute()
+    }
+
+    fun toggleSortDirection() {
+        sortAscending = !sortAscending
+        recompute()
+    }
+
+    fun onGenreSelected(genre: String?) {
+        selectedGenre = genre
+        recompute()
     }
 
 
