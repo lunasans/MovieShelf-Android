@@ -506,6 +506,54 @@ class SyncEngineTest {
 
     // ── Hilfen ───────────────────────────────────────────────────────────────
 
+    // ── Bewertungen ──────────────────────────────────────────────────────────
+
+    @Test
+    fun `der Pull uebernimmt die Bewertung des Servers`() = runBlocking {
+        val dao = FakeMovieDao()
+        dao.rows += movie(localId = 1, remoteId = 10, title = "Arrival")
+            .copy(updatedAt = "2026-08-10T10:00:00Z", syncedAt = "2026-08-10T10:00:00Z")
+
+        val engine = engine(
+            dao,
+            FakeSettingDao(),
+            FakeSyncApi(export = ExportResponse(exportedAt = "2026-08-10T13:00:00Z", movies = listOf(
+                serverMovie(id = 10, title = "Arrival").copy(userRating = 4)
+            )))
+        )
+
+        engine.pull(full = true)
+
+        assertEquals(4, dao.rows.single().userRating)
+        assertEquals("Der Serverstand gilt als bestaetigt", 4, dao.rows.single().syncedUserRating)
+    }
+
+    @Test
+    fun `eine offene Bewertung ueberlebt den Pull`() = runBlocking {
+        val dao = FakeMovieDao()
+        // Lokal bewertet, noch nicht uebertragen — und sonst sauber, die Zeile
+        // wird vom Pull also angefasst.
+        dao.rows += movie(localId = 1, remoteId = 10, title = "Arrival")
+            .copy(
+                updatedAt = "2026-08-10T10:00:00Z",
+                syncedAt = "2026-08-10T10:00:00Z",
+                userRating = 5,
+                syncedUserRating = null
+            )
+
+        val engine = engine(
+            dao,
+            FakeSettingDao(),
+            FakeSyncApi(export = ExportResponse(exportedAt = "2026-08-10T13:00:00Z", movies = listOf(
+                serverMovie(id = 10, title = "Arrival").copy(userRating = null)
+            )))
+        )
+
+        engine.pull(full = true)
+
+        assertEquals("Die eigene Bewertung darf nicht verlorengehen", 5, dao.rows.single().userRating)
+    }
+
     private fun engine(dao: FakeMovieDao, settings: FakeSettingDao, api: FakeSyncApi) =
         SyncEngine(dao, settings, { api })
 
