@@ -1,8 +1,11 @@
-Fixed:
-
-• With a shelf connected, series were imported as a film. Instead of the series you got an error or an entirely different title.
-• The bottom bar reappeared at the slightest upward movement – even when your finger merely settled on the display. It now takes a deliberate swipe.
-
 New:
 
-• After an import you land straight in the edit form. Format, shelf location, purchase date and condition go in right away, instead of hunting for the title again.
+• Jellyfin import: bring in libraries from your own media server, with seasons, episodes, covers and cast.
+• Rate movies with five stars, tick off single episodes, view your wishlist.
+• Sort and filter by genre, list view, random pick.
+• Edit several titles at once.
+
+Fixed:
+
+• "Full sync" only fetched a preview – older ratings never arrived.
+• Reworked statistics.
