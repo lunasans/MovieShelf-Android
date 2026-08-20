@@ -906,8 +906,20 @@ class MovieRepository(
     suspend fun getMovie(id: Int): Movie? {
         return try {
             val response = api.getMovie(id)
-            response.data?.also { movie ->
-                movieDao.upsertFromServer(listOf(MovieEntity.fromServerMovie(movie, SyncClock.now())))
+            response.data?.let { movie ->
+                val existing = movieDao.getByRemoteId(id)
+                // `GET /api/movies/{id}` traegt die eigene Bewertung nicht: die
+                // Shelf laedt die Relation dort nicht mit, das Feld fehlt also
+                // in der Antwort und kaeme hier als "keine Bewertung" an. Ein
+                // ungepruefter Upsert loeschte damit eine vorhandene Bewertung.
+                // Deshalb bleibt der lokale Stand stehen; maßgeblich fuer
+                // Bewertungen ist der Abgleich, dessen Export sie mitliefert.
+                val entity = MovieEntity.fromServerMovie(movie, SyncClock.now()).copy(
+                    userRating = existing?.userRating,
+                    syncedUserRating = existing?.syncedUserRating
+                )
+                movieDao.upsertFromServer(listOf(entity))
+                movie.copy(userRating = existing?.userRating ?: movie.userRating)
             }
         } catch (e: Exception) {
             movieDao.getByRemoteId(id)?.toMovie()

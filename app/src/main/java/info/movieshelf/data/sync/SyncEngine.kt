@@ -421,16 +421,27 @@ class SyncEngine(
                 val fromServer = MovieEntity.fromServerMovie(movie)
                 val entity = when {
                     existing == null -> fromServer
-                    // Die offene "gesehen"-Markierung ueberlebt den Pull. Sie
-                    // haengt nicht an updatedAt/syncedAt, also gilt die Zeile
-                    // nach dem Film-Push als sauber, obwohl sie es nicht ist —
-                    // ohne diese Ausnahme waere die Markierung hier still weg.
-                    existing.hasPendingWatched -> fromServer.copy(
-                        localId = existing.localId,
-                        isWatched = existing.isWatched,
-                        syncedWatched = existing.syncedWatched
-                    )
-                    else -> fromServer.copy(localId = existing.localId)
+                    else -> {
+                        var merged = fromServer.copy(localId = existing.localId)
+                        // Offene "gesehen"-Markierung und offene Bewertung
+                        // ueberleben den Pull. Beide haengen nicht an
+                        // updatedAt/syncedAt, also gilt die Zeile nach dem
+                        // Film-Push als sauber, obwohl sie es nicht ist — ohne
+                        // diese Ausnahme waeren sie hier still weg.
+                        if (existing.hasPendingWatched) {
+                            merged = merged.copy(
+                                isWatched = existing.isWatched,
+                                syncedWatched = existing.syncedWatched
+                            )
+                        }
+                        if (existing.hasPendingUserRating) {
+                            merged = merged.copy(
+                                userRating = existing.userRating,
+                                syncedUserRating = existing.syncedUserRating
+                            )
+                        }
+                        merged
+                    }
                 }
                 movieDao.upsertFromServer(listOf(entity))
                 applied++
