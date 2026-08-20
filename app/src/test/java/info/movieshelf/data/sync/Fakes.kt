@@ -33,8 +33,21 @@ open class FakeMovieDao : MovieDao {
     override suspend fun findLocalIdByRemoteId(remoteId: Int): Long? =
         rows.firstOrNull { it.remoteId == remoteId }?.localId
 
+    override suspend fun updateWishlisted(localId: Long, wishlisted: Boolean, now: String) {
+        val index = rows.indexOfFirst { it.localId == localId }
+        if (index >= 0) rows[index] = rows[index].copy(isWishlisted = wishlisted, updatedAt = now)
+    }
+
+    override suspend fun markWishlistSynced(localId: Long, wishlisted: Boolean) {
+        val index = rows.indexOfFirst { it.localId == localId }
+        if (index >= 0) rows[index] = rows[index].copy(syncedWishlisted = wishlisted)
+    }
+
+    override suspend fun getPendingWishlist(): List<MovieEntity> =
+        rows.filter { it.remoteId != null && !it.isDeleted && it.isWishlisted != it.syncedWishlisted }
+
     override suspend fun getWishlist(): List<MovieEntity> =
-        rows.filter { !it.isDeleted && it.inCollection == false }
+        rows.filter { !it.isDeleted && it.isWishlisted }
 
     override suspend fun randomMovie(collectionType: String?): MovieEntity? =
         rows.filter { !it.isDeleted && it.inCollection != false && it.isBoxset != true }

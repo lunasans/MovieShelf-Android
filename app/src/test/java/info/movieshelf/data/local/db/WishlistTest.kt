@@ -12,9 +12,13 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
 /**
- * Die Wunschliste ist dieselbe Tabelle wie die Sammlung, nur ohne Besitz
- * (`in_collection = 0`). Genau deshalb ist die Abgrenzung heikel: ein zu
- * weiter Filter zeigte die halbe Sammlung als "vorgemerkt".
+ * Die Wunschliste.
+ *
+ * Sie hängt am **Benutzer** (`user_wishlist` auf der Shelf, `isWishlisted`
+ * lokal) — nicht an `inCollection`, das am Film hängt und sagt, ob er zur
+ * Sammlung gehört. Die erste Fassung dieser Ansicht las die falsche Spalte und
+ * zeigte damit alles, was *nicht* zur Sammlung gehört. Diese Tests halten die
+ * Unterscheidung fest.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34])
@@ -36,29 +40,44 @@ class WishlistTest {
     @Test
     fun `nur vorgemerkte Titel stehen auf der Wunschliste`() = runTest {
         val dao = db.movieDao()
-        dao.insert(row("In der Sammlung").copy(inCollection = true))
-        dao.insert(row("Vorgemerkt").copy(inCollection = false))
-        dao.insert(row("Geloescht").copy(inCollection = false, isDeleted = true))
+        dao.insert(row("Nur gesammelt").copy(isWishlisted = false))
+        dao.insert(row("Vorgemerkt").copy(isWishlisted = true))
+        dao.insert(row("Geloescht").copy(isWishlisted = true, isDeleted = true))
 
         assertEquals(listOf("Vorgemerkt"), dao.getWishlist().map { it.title })
     }
 
     @Test
-    fun `eine Zeile ohne Angabe gilt als Sammlung, nicht als Wunsch`() = runTest {
+    fun `ein Titel kann vorgemerkt und zugleich in der Sammlung sein`() = runTest {
         val dao = db.movieDao()
-        // Alte Zeilen und lokal angelegte Filme koennen inCollection = null
-        // tragen. Sie hier zu zeigen hiesse, die halbe Sammlung als vorgemerkt
-        // auszugeben.
-        dao.insert(row("Ohne Angabe").copy(inCollection = null))
+        // Genau der Fall, den die erste Fassung falsch machte: sie las
+        // inCollection und haette diesen Titel nie gezeigt — obwohl er
+        // vorgemerkt ist.
+        dao.insert(row("Beides").copy(isWishlisted = true, inCollection = true))
+        dao.insert(row("Weder noch").copy(isWishlisted = false, inCollection = false))
 
-        assertEquals(0, dao.getWishlist().size)
+        assertEquals(listOf("Beides"), dao.getWishlist().map { it.title })
+    }
+
+    @Test
+    fun `eine frisch gesetzte Vormerkung steht zur Uebertragung an`() = runTest {
+        val dao = db.movieDao()
+        val localId = dao.insert(row("Arrival").copy(remoteId = 1))
+
+        assertEquals(0, dao.getPendingWishlist().size)
+
+        dao.updateWishlisted(localId, true, "2026-08-20T10:00:00Z")
+        assertEquals(listOf("Arrival"), dao.getPendingWishlist().map { it.title })
+
+        dao.markWishlistSynced(localId, true)
+        assertEquals(0, dao.getPendingWishlist().size)
     }
 
     @Test
     fun `die Wunschliste ist alphabetisch`() = runTest {
         val dao = db.movieDao()
         listOf("Zulu", "arrival", "Matrix").forEach {
-            dao.insert(row(it).copy(inCollection = false))
+            dao.insert(row(it).copy(isWishlisted = true))
         }
 
         assertEquals(listOf("arrival", "Matrix", "Zulu"), dao.getWishlist().map { it.title })

@@ -37,7 +37,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         SettingEntity::class,
         PendingUploadEntity::class
     ],
-    version = 13,
+    version = 14,
     exportSchema = false
 )
 abstract class MovieShelfDatabase : RoomDatabase() {
@@ -100,6 +100,20 @@ abstract class MovieShelfDatabase : RoomDatabase() {
             }
         }
 
+        /**
+         * Vormerkung (Wunschliste) und ihr bestaetigter Stand.
+         *
+         * Beide starten auf 0 und damit gleich — keine Zeile gilt als offene
+         * Vormerkung. Den wahren Stand bringt der naechste Abgleich mit: die
+         * Shelf liefert `is_wishlisted` seit 2.44.0 im Export.
+         */
+        private val MIGRATION_13_14 = object : Migration(13, 14) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE movies ADD COLUMN isWishlisted INTEGER NOT NULL DEFAULT 0")
+                db.execSQL("ALTER TABLE movies ADD COLUMN syncedWishlisted INTEGER NOT NULL DEFAULT 0")
+            }
+        }
+
         fun getInstance(context: Context): MovieShelfDatabase {
             return INSTANCE ?: synchronized(this) {
                 Room.databaseBuilder(
@@ -107,7 +121,7 @@ abstract class MovieShelfDatabase : RoomDatabase() {
                     MovieShelfDatabase::class.java,
                     "movieshelf.db"
                 )
-                    .addMigrations(MIGRATION_10_11, MIGRATION_11_12, MIGRATION_12_13)
+                    .addMigrations(MIGRATION_10_11, MIGRATION_11_12, MIGRATION_12_13, MIGRATION_13_14)
                     .fallbackToDestructiveMigration(true)
                     // Ohne diesen Schalter bleiben die Fremdschlüssel von
                     // Besetzung, Staffeln und Listeninhalten wirkungslos und

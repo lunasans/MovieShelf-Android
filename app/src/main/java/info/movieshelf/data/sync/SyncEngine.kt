@@ -51,6 +51,8 @@ class SyncEngine(
     private val pushUserRatings: suspend ((Int, Int, String?) -> Unit) -> Int = { 0 },
     /** Offene Folgen-Markierungen, eigener Endpunkt wie die uebrigen. */
     private val pushEpisodeWatched: suspend ((Int, Int, String?) -> Unit) -> Int = { 0 },
+    /** Offene Vormerkungen, eigener Endpunkt wie die uebrigen. */
+    private val pushWishlist: suspend ((Int, Int, String?) -> Unit) -> Int = { 0 },
     /**
      * Wie viele Folgen-Markierungen offen sind — nur fuer die Vorschau.
      * Der Abgleich selbst zaehlt beim Senden.
@@ -234,11 +236,13 @@ class SyncEngine(
         val pendingWatched = movieDao.getPendingWatched().size
         val pendingRatings = movieDao.getPendingUserRatings().size
         val pendingEpisodes = pendingEpisodeWatchedCount()
+        val pendingWishlist = movieDao.getPendingWishlist().size
 
         return SyncPreview(
             toPushWatched = pendingWatched,
             toPushUserRatings = pendingRatings,
             toPushEpisodesWatched = pendingEpisodes,
+            toPushWishlist = pendingWishlist,
             items = items,
             overflow = maxOf(0, total - items.size),
             toCreate = toCreate,
@@ -349,7 +353,16 @@ class SyncEngine(
             0
         }
 
-        return PushResult(created, updated, deleted, errors, watched, ratings, episodes)
+        val wishlist = try {
+            pushWishlist { current, total, subject ->
+                onProgress(SyncProgress(SyncPhase.PUSH, current, total, subject))
+            }
+        } catch (e: Exception) {
+            errors += SyncError("Vormerkungen", e.message ?: "Unbekannter Fehler")
+            0
+        }
+
+        return PushResult(created, updated, deleted, errors, watched, ratings, episodes, wishlist)
     }
 
     /**
@@ -458,6 +471,12 @@ class SyncEngine(
                             merged = merged.copy(
                                 userRating = existing.userRating,
                                 syncedUserRating = existing.syncedUserRating
+                            )
+                        }
+                        if (existing.hasPendingWishlist) {
+                            merged = merged.copy(
+                                isWishlisted = existing.isWishlisted,
+                                syncedWishlisted = existing.syncedWishlisted
                             )
                         }
                         merged
@@ -681,17 +700,19 @@ data class SyncPreview(
      */
     val toPushWatched: Int = 0,
     /**
-     * Offene eigene Bewertungen und Folgen-Markierungen. Aus demselben Grund
-     * eigene Posten wie [toPushWatched]: sie gehen ueber eigene Endpunkte und
-     * tauchen in [toUpdate] nicht auf.
+     * Offene eigene Bewertungen, Folgen-Markierungen und Vormerkungen. Aus
+     * demselben Grund eigene Posten wie [toPushWatched]: sie gehen ueber
+     * eigene Endpunkte und tauchen in [toUpdate] nicht auf.
      */
     val toPushUserRatings: Int = 0,
     val toPushEpisodesWatched: Int = 0,
+    val toPushWishlist: Int = 0,
     val isDelta: Boolean = false,
     val lastSyncAt: String? = null
 ) {
     val outgoing: Int get() =
-        toCreate + toUpdate + toDeleteRemote + toPushWatched + toPushUserRatings + toPushEpisodesWatched
+        toCreate + toUpdate + toDeleteRemote + toPushWatched + toPushUserRatings +
+            toPushEpisodesWatched + toPushWishlist
     val incoming: Int get() = incomingNew + incomingUpdated + incomingDeleted
     val hasDeletions: Boolean get() = toDeleteRemote > 0 || incomingDeleted > 0
     val isEmpty: Boolean get() = outgoing == 0 && incoming == 0
@@ -709,9 +730,12 @@ data class PushResult(
     /** Uebertragene eigene Bewertungen. */
     val userRatings: Int = 0,
     /** Uebertragene Folgen-Markierungen. */
-    val episodesWatched: Int = 0
+    val episodesWatched: Int = 0,
+    /** Uebertragene Vormerkungen. */
+    val wishlist: Int = 0
 ) {
-    val total: Int get() = created + updated + deleted + watched + userRatings + episodesWatched
+    val total: Int get() =
+        created + updated + deleted + watched + userRatings + episodesWatched + wishlist
 }
 
 data class PullResult(

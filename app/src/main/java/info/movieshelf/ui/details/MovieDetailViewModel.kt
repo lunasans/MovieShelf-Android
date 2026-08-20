@@ -107,13 +107,12 @@ class MovieDetailViewModel(
         movie = currentMovie.copy(isWishlisted = newState)
 
         viewModelScope.launch {
-            try {
-                val wishlisted = repository.toggleWishlist(currentMovie.id)
-                movie = movie?.copy(isWishlisted = wishlisted ?: newState)
-            } catch (e: Exception) {
-                movie = currentMovie // Rollback bei Fehler
-                error = UiText.of(R.string.error_wishlist_failed, e.message ?: "")
-            }
+            // Kein Rollback mehr: die Vormerkung steht lokal und wartet als
+            // offene Aenderung auf den naechsten Abgleich. Sie hier
+            // zurueckzudrehen wuerde sie verwerfen, obwohl sie gilt — derselbe
+            // Grund wie beim Gesehen-Stand.
+            val wishlisted = repository.setWishlisted(currentMovie.localId, newState)
+            movie = movie?.copy(isWishlisted = wishlisted)
         }
     }
 
