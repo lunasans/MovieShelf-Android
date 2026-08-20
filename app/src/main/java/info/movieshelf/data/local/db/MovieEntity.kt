@@ -72,6 +72,24 @@ data class MovieEntity(
      * erkennen, ob die Markierung noch hochzuschicken ist.
      */
     val syncedWatched: Boolean? = null,
+    /**
+     * Eigene Sternbewertung, 1-5. `null` heisst "noch nicht bewertet" — das ist
+     * ein eigener Zustand und nicht dasselbe wie null Sterne, weshalb die
+     * Spalte nullable ist und nicht mit 0 vorbelegt wird.
+     *
+     * Nicht zu verwechseln mit [rating]: das ist die Bewertung des Films bei
+     * TMDb, diese hier gehoert dem Nutzer.
+     */
+    val userRating: Int? = null,
+    /**
+     * Die Bewertung, die der Server zuletzt bestaetigt hat.
+     *
+     * Wie [syncedWatched] ein eigener Vergleichswert, aus demselben Grund: die
+     * Bewertung haengt am Benutzer, hat einen eigenen Endpunkt und faehrt
+     * deshalb nicht im Film-Push mit. Ohne diesen Wert waere nicht zu erkennen,
+     * ob sie noch hochzuschicken ist.
+     */
+    val syncedUserRating: Int? = null,
     val tmdbId: String?,
     val ratingAge: Int?,
     val tag: String?,
@@ -111,6 +129,10 @@ data class MovieEntity(
     val hasPendingWatched: Boolean
         get() = (isWatched == true) != (syncedWatched == true)
 
+    /** Die eigene Bewertung ist lokal gesetzt, der Server weiss noch nichts davon. */
+    val hasPendingUserRating: Boolean
+        get() = userRating != syncedUserRating
+
     /**
      * In das Modell der Oberfläche übersetzen. [Movie.id] bleibt die Server-ID
      * für Netzaufrufe, [Movie.localId] trägt die lokale Identität — darüber
@@ -138,6 +160,7 @@ data class MovieEntity(
             condition = condition,
             viewCount = viewCount,
             isWatched = isWatched,
+            userRating = userRating,
             tmdbId = tmdbId,
             ratingAge = ratingAge,
             tag = tag,
@@ -275,6 +298,9 @@ data class MovieEntity(
                 condition = movie.condition,
                 viewCount = movie.viewCount,
                 isWatched = movie.isWatched,
+                userRating = movie.userRating,
+                // Wie beim Gesehen-Stand: was von dort kommt, ist dort bekannt.
+                syncedUserRating = movie.userRating,
                 // Kommt der Stand vom Server, ist er dort per Definition bekannt.
                 syncedWatched = movie.isWatched,
                 tmdbId = movie.tmdbId,

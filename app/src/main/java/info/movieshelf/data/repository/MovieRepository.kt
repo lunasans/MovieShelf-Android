@@ -408,6 +408,75 @@ class MovieRepository(
     }
 
     /**
+     * Eigene Bewertung setzen.
+     *
+     * Wie beim Gesehen-Stand zuerst lokal: die Sterne fuellen sich sofort,
+     * auch ohne Netz. Der Versand wird gleich versucht und beim naechsten
+     * Abgleich nachgeholt, wenn er scheitert.
+     *
+     * @param rating 1-5, oder `null` zum Entfernen.
+     */
+    suspend fun setUserRating(localId: Long, rating: Int?) {
+        val entity = movieDao.getByLocalId(localId) ?: return
+        movieDao.updateUserRating(localId, rating, SyncClock.now())
+
+        val remoteId = entity.remoteId?.takeIf { isShelfMode() } ?: return
+        try {
+            val answer = api.rateMovie(remoteId, mapOf("rating" to (rating ?: 0)))
+            movieDao.markUserRatingSynced(localId, answer.rating)
+            isOffline = false
+        } catch (e: Exception) {
+            // Bleibt als offene Bewertung stehen und geht beim Abgleich raus.
+            isOffline = true
+        }
+    }
+
+    /**
+     * Offene Bewertungen zum Server schieben.
+     *
+     * Eigener Schritt neben dem Film-Push, weil die Bewertung am Benutzer
+     * haengt und einen eigenen Endpunkt hat — der Film-Push setzt `syncedAt`
+     * und machte die Zeile sauber, waehrend die Bewertung noch ausstuende.
+     *
+     * Fehler werden gesammelt und nach dem Durchgang gemeldet, damit ein
+     * einzelner Fehlschlag die uebrigen nicht aufhaelt.
+     */
+    suspend fun pushUserRatings(
+        onProgress: (Int, Int, String?) -> Unit = { _, _, _ -> }
+    ): Int {
+        if (!isShelfMode()) return 0
+        val pending = movieDao.getPendingUserRatings()
+        var pushed = 0
+        var done = 0
+        var failed = 0
+        var firstError: String? = null
+
+        for (entity in pending) {
+            onProgress(++done, pending.size, entity.title)
+            val remoteId = entity.remoteId ?: continue
+            try {
+                val answer = api.rateMovie(remoteId, mapOf("rating" to (entity.userRating ?: 0)))
+                // Der Server antwortet mit dem Stand, den er nun fuehrt; er
+                // ist der Vergleichswert, nicht das, was wir geschickt haben.
+                movieDao.markUserRatingSynced(entity.localId, answer.rating)
+                pushed++
+                isOffline = false
+            } catch (e: Exception) {
+                isOffline = true
+                failed++
+                if (firstError == null) firstError = e.message ?: e::class.java.simpleName
+            }
+        }
+
+        if (failed > 0) {
+            throw IllegalStateException(
+                "$failed von ${pending.size} Bewertungen nicht uebertragen: $firstError"
+            )
+        }
+        return pushed
+    }
+
+    /**
      * Einmal umschalten und den neuen Stand der Shelf zurueckgeben.
      *
      * [assumed] ist der Wert, der gilt, wenn die Antwort kein `is_watched`

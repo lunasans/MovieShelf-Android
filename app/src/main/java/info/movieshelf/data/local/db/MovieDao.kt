@@ -198,6 +198,33 @@ interface MovieDao {
     @Query("UPDATE movies SET syncedWatched = :isWatched WHERE localId = :localId")
     suspend fun markWatchedSynced(localId: Long, isWatched: Boolean)
 
+    /**
+     * Eigene Bewertung setzen. `null` entfernt sie wieder — der Server kennt
+     * dafuer die 0, lokal ist es die Abwesenheit eines Wertes.
+     *
+     * `updatedAt` wird bewusst mitgesetzt, damit die Zeile beim Abgleich
+     * ueberhaupt betrachtet wird; der eigentliche Versand laeuft danach ueber
+     * den eigenen Endpunkt.
+     */
+    @Query("UPDATE movies SET userRating = :rating, updatedAt = :now WHERE localId = :localId")
+    suspend fun updateUserRating(localId: Long, rating: Int?, now: String)
+
+    /**
+     * Bewertungen, die noch zum Server sollen — der Gegenpart zu
+     * [getPendingWatched]. Nur Zeilen mit Server-ID: ein Film, den die Shelf
+     * noch nicht kennt, bekommt seine Bewertung nach dem Anlegen.
+     */
+    @Query("""
+        SELECT * FROM movies
+        WHERE remoteId IS NOT NULL
+          AND isDeleted = 0
+          AND ((userRating IS NULL) != (syncedUserRating IS NULL) OR userRating != syncedUserRating)
+    """)
+    suspend fun getPendingUserRatings(): List<MovieEntity>
+
+    @Query("UPDATE movies SET syncedUserRating = :rating WHERE localId = :localId")
+    suspend fun markUserRatingSynced(localId: Long, rating: Int?)
+
     @Query("UPDATE movies SET coverUrl = :url, updatedAt = :now WHERE localId = :localId")
     suspend fun updateCoverUrl(localId: Long, url: String?, now: String)
 

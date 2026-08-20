@@ -22,6 +22,16 @@ interface MovieShelfApi {
      * Vollstand oder Delta der Sammlung. Ohne `since` kommt alles, sonst nur
      * seit diesem Zeitpunkt Geaendertes - inklusive geloeschter Zeilen.
      */
+    /**
+     * Eigene Bewertung setzen. 0 entfernt sie wieder — der Endpunkt kennt
+     * dafuer keinen eigenen Weg, das ist die vereinbarte Loeschung.
+     */
+    @POST("api/movies/{id}/rate")
+    suspend fun rateMovie(
+        @Path("id") id: Int,
+        @Body body: Map<String, Int>
+    ): info.movieshelf.data.model.RateResponse
+
     @GET("api/admin/export")
     suspend fun exportMovies(@Query("since") since: String? = null): ExportResponse
 
