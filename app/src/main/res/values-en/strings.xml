@@ -511,4 +511,13 @@
     <string name="selection_mark_unwatched">Mark as unwatched</string>
     <string name="selection_delete">Delete</string>
     <string name="selection_delete_question">%1$d titles will be removed from the collection. This cannot be undone.</string>
+    <string name="form_section_cast">Cast</string>
+    <string name="form_section_boxset">Boxset</string>
+    <string name="form_role">Role</string>
+    <string name="form_main_role">Main role</string>
+    <string name="form_remove_actor">Remove</string>
+    <string name="form_add_actor">Search actors…</string>
+    <string name="form_add_actor_named">Add “%1$s” as new</string>
+    <string name="form_boxset_none">— Standalone title —</string>
+    <string name="form_boxset_is_boxset">This title is a boxset itself and cannot become part of another.</string>
 </resources>

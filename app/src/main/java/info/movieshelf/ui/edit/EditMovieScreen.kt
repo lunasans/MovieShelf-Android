@@ -10,6 +10,14 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Group
+import androidx.compose.material.icons.filled.Inventory
+import androidx.compose.material.icons.filled.PersonAdd
+import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.StarBorder
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Notes
 import androidx.compose.material.icons.filled.ArrowDropDown
@@ -253,6 +261,14 @@ fun EditMovieScreen(
                             modifier = Modifier.fillMaxWidth(),
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri, imeAction = ImeAction.Next)
                         )
+                    }
+
+                    ShelfFormSection(title = stringResource(R.string.form_section_cast), icon = Icons.Default.Group) {
+                        CastEditor(viewModel)
+                    }
+
+                    ShelfFormSection(title = stringResource(R.string.form_section_boxset), icon = Icons.Default.Inventory) {
+                        BoxsetPicker(viewModel)
                     }
 
                     ShelfFormSection(title = stringResource(R.string.form_section_physical), icon = Icons.Default.Collections) {
@@ -583,6 +599,153 @@ private fun TagDropdown(
                     text = { Text(option) },
                     onClick = {
                         onValueChange(option)
+                        expanded = false
+                    }
+                )
+            }
+        }
+    }
+}
+
+
+/**
+ * Besetzung bearbeiten.
+ *
+ * Suchen, hinzufügen, Rolle eintragen, Hauptrolle markieren, entfernen. Ein
+ * Name ohne Treffer lässt sich trotzdem aufnehmen — die Shelf legt die Person
+ * beim Speichern an, und wer gerade tippt, kennt keine Kennung.
+ */
+@Composable
+private fun CastEditor(viewModel: EditMovieViewModel) {
+    Column {
+        viewModel.cast.forEachIndexed { index, entry ->
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(Modifier.weight(1f)) {
+                    Text(
+                        text = entry.name.orEmpty(),
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontWeight = FontWeight.SemiBold,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    ShelfTextField(
+                        value = entry.role.orEmpty(),
+                        onValueChange = { viewModel.setRole(index, it) },
+                        label = stringResource(R.string.form_role),
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+                Spacer(Modifier.width(8.dp))
+                // Hauptrolle bestimmt, wer in der Detailansicht vorn steht.
+                IconButton(onClick = { viewModel.toggleMainRole(index) }) {
+                    Icon(
+                        imageVector = if (entry.isMainRole) Icons.Default.Star else Icons.Default.StarBorder,
+                        contentDescription = stringResource(R.string.form_main_role),
+                        tint = if (entry.isMainRole) {
+                            MaterialTheme.colorScheme.primary
+                        } else {
+                            MaterialTheme.colorScheme.onSurfaceVariant
+                        }
+                    )
+                }
+                IconButton(onClick = { viewModel.removeCastEntry(index) }) {
+                    Icon(
+                        Icons.Default.Close,
+                        contentDescription = stringResource(R.string.form_remove_actor),
+                        tint = MaterialTheme.colorScheme.error
+                    )
+                }
+            }
+        }
+
+        Spacer(Modifier.height(8.dp))
+        ShelfTextField(
+            value = viewModel.actorQuery,
+            onValueChange = { viewModel.onActorQueryChange(it) },
+            label = stringResource(R.string.form_add_actor),
+            modifier = Modifier.fillMaxWidth()
+        )
+
+        viewModel.actorSuggestions.take(5).forEach { actor ->
+            TextButton(
+                onClick = { viewModel.addActor(actor) },
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Icon(Icons.Default.PersonAdd, contentDescription = null, modifier = Modifier.size(16.dp))
+                Spacer(Modifier.width(8.dp))
+                Text(actor.name.orEmpty(), modifier = Modifier.weight(1f))
+            }
+        }
+
+        // Kein Treffer, aber ein Name: aufnehmen lassen. Sonst haenge das
+        // Eintragen einer Person davon ab, dass die Shelf sie schon kennt.
+        if (viewModel.actorQuery.trim().length >= 2 && viewModel.actorSuggestions.isEmpty()) {
+            TextButton(
+                onClick = { viewModel.addActorByName(viewModel.actorQuery) },
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp))
+                Spacer(Modifier.width(8.dp))
+                Text(stringResource(R.string.form_add_actor_named, viewModel.actorQuery.trim()))
+            }
+        }
+    }
+}
+
+/**
+ * Zugehörigkeit zu einem Boxset.
+ *
+ * Ist der Titel selbst ein Boxset, steht statt der Auswahl ein Satz: er kann
+ * nicht Teil eines anderen werden, und ein gesperrtes Feld ohne Begründung
+ * wäre nur ärgerlich.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun BoxsetPicker(viewModel: EditMovieViewModel) {
+    var expanded by remember { mutableStateOf(false) }
+
+    if (viewModel.isBoxsetItself) {
+        Text(
+            stringResource(R.string.form_boxset_is_boxset),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        return
+    }
+
+    val gewaehlt = viewModel.boxsetCandidates.firstOrNull { it.id == viewModel.boxsetParent }
+
+    ExposedDropdownMenuBox(expanded = expanded, onExpandedChange = { expanded = !expanded }) {
+        OutlinedTextField(
+            value = gewaehlt?.title ?: stringResource(R.string.form_boxset_none),
+            onValueChange = {},
+            readOnly = true,
+            label = { Text(stringResource(R.string.form_section_boxset)) },
+            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+            modifier = Modifier.fillMaxWidth().menuAnchor(MenuAnchorType.PrimaryNotEditable)
+        )
+        ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+            DropdownMenuItem(
+                text = { Text(stringResource(R.string.form_boxset_none)) },
+                onClick = {
+                    viewModel.onBoxsetSelected(null)
+                    expanded = false
+                }
+            )
+            viewModel.boxsetCandidates.forEach { kandidat ->
+                DropdownMenuItem(
+                    text = {
+                        Text(
+                            kandidat.title.orEmpty() + (kandidat.year?.let { " (" + it + ")" } ?: ""),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    },
+                    onClick = {
+                        viewModel.onBoxsetSelected(kandidat.id)
                         expanded = false
                     }
                 )
