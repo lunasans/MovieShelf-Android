@@ -107,10 +107,12 @@ teils überholt.
   Bewertungen mit Komma, fehlende Werte in beiden Richtungen, stabile Reihenfolge
   bei Gleichstand, Genre-Vergleich der Einzelteile.
 
-- [ ] ⚪ **Restliche Screens auf `PosterCard`** — nur Dashboard und Detail nutzen die
-  geteilte Karte; Lists, ActorDetail, Stats, Profile, Add und Edit bringen eigene
-  Poster-Darstellungen mit. Rein optisch, aber es hält den „Shelf"-Look zusammen.
-  *Aufwand: klein–mittel.*
+- [x] ⚪ **Geteilte Bausteine statt eigener Kacheln** — **umgesetzt.** `MovieRowItem`
+  (Filmografie) und `BoxsetMovieItem` (Teile eines Boxsets) waren derselbe
+  Baustein, zweimal geschrieben — und beide dasselbe wie `MovieListRow`. Jetzt
+  eine Fassung; der Gesehen-Schalter ist optional, weil er nicht überall
+  hingehört. Bewusst nicht angetastet: Schauspieler-Portraits, TMDb-Suchtreffer
+  und die Backdrop-Banner — das sind keine Poster-Karten.
 
 ### Bewusst nicht übernommen
 

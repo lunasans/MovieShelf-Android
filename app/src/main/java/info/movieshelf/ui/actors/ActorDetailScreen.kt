@@ -28,6 +28,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.compose.ui.res.stringResource
 import info.movieshelf.R
+import info.movieshelf.ui.components.MovieListRow
 import info.movieshelf.MovieShelfApplication
 import info.movieshelf.data.model.Movie
 import info.movieshelf.ui.dashboard.MovieItem
@@ -158,52 +159,14 @@ fun ActorDetailScreen(
                     
                     // Wir nutzen hier eine Column statt Grid, da wir uns in einem vertikalen Scrollview befinden
                     actor.movies.forEach { movie ->
-                        MovieRowItem(movie = movie, onClick = { onMovieClick(movie) })
+                        MovieListRow(
+                            movie = movie,
+                            imageUrl = resolveImageUrl(context, movie.coverUrl ?: ""),
+                            onClick = { onMovieClick(movie) }
+                        )
                         Spacer(Modifier.height(8.dp))
                     }
                 }
-            }
-        }
-    }
-}
-
-@Composable
-fun MovieRowItem(movie: Movie, onClick: () -> Unit) {
-    val context = LocalContext.current
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(100.dp)
-            .clickable(onClick = onClick),
-        shape = MaterialTheme.shapes.medium
-    ) {
-        Row(modifier = Modifier.fillMaxSize()) {
-            if (movie.coverUrl != null) {
-                val model: Any? = remember(movie.coverUrl) { resolveImageUrl(context, movie.coverUrl) }
-                AsyncImage(
-                    model = model,
-                    contentDescription = movie.title,
-                    modifier = Modifier.width(70.dp).fillMaxHeight(),
-                    contentScale = ContentScale.Crop
-                )
-            }
-            Column(
-                modifier = Modifier
-                    .padding(12.dp)
-                    .fillMaxSize(),
-                verticalArrangement = Arrangement.Center
-            ) {
-                Text(
-                    text = movie.title ?: stringResource(R.string.common_unknown),
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-                Text(
-                    text = movie.year?.toString() ?: "",
-                    style = MaterialTheme.typography.bodySmall
-                )
             }
         }
     }

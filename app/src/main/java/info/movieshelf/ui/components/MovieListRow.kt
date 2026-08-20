@@ -55,7 +55,12 @@ fun MovieListRow(
     movie: Movie,
     imageUrl: Any?,
     onClick: () -> Unit,
-    onWatchedToggle: () -> Unit,
+    /**
+     * `null` blendet den Schalter aus — fuer Zusammenhaenge, in denen er nicht
+     * hingehoert: die Teile eines Boxsets etwa haben ihren eigenen Weg, und in
+     * einer Filmografie geht es um den Schauspieler, nicht um den Bestand.
+     */
+    onWatchedToggle: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
     /** Langes Tippen — startet die Mehrfachauswahl. */
     onLongClick: (() -> Unit)? = null,
@@ -149,6 +154,8 @@ fun MovieListRow(
             )
             return@Row
         }
+
+        if (onWatchedToggle == null) return@Row
 
         IconButton(
             onClick = onWatchedToggle,
