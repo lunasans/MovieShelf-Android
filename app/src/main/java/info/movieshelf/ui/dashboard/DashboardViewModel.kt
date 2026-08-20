@@ -234,6 +234,82 @@ class DashboardViewModel(private val repository: MovieRepository) : ViewModel() 
     }
 
     /** "Alle anzeigen" einer Shelf-Reihe: Kategorie als Raster öffnen. */
+    // ── Mehrfachauswahl ──────────────────────────────────────────────────────
+
+    /**
+     * Ausgewaehlte Titel. Leer heisst: kein Auswahlmodus.
+     *
+     * Ueber die lokale ID, nicht ueber die Server-ID: nur sie gilt fuer jeden
+     * Titel, auch fuer einen, den die Shelf noch nicht kennt.
+     */
+    var selection by mutableStateOf<Set<Long>>(emptySet())
+        private set
+
+    /** Laeuft gerade eine Sammelaktion? Solange bleiben die Knoepfe gesperrt. */
+    var isBulkRunning by mutableStateOf(false)
+        private set
+
+    val selectionActive: Boolean get() = selection.isNotEmpty()
+
+    fun toggleSelection(localId: Long) {
+        selection = if (localId in selection) selection - localId else selection + localId
+    }
+
+    fun clearSelection() {
+        selection = emptySet()
+    }
+
+    /** Alles auswaehlen, was gerade in der Liste steht — nicht die ganze Sammlung. */
+    fun selectAllVisible() {
+        selection = movies.map { it.localId }.toSet()
+    }
+
+    /**
+     * Gesehen-Stand fuer die Auswahl setzen.
+     *
+     * Gesetzt, nicht umgeschaltet: bei gemischter Auswahl waere ein Umschalter
+     * sinnlos, weil die Haelfte in die falsche Richtung liefe. Titel, die schon
+     * richtig stehen, werden uebergangen.
+     */
+    fun bulkSetWatched(watched: Boolean) = runBulk(
+        // Regel in MovieSorting.kt — dort ohne ViewModel pruefbar.
+        auswahl = { moviesNeedingWatchedChange(it, watched) }
+    ) { movie ->
+        repository.toggleWatchedByLocalId(movie.localId, movie.isWatched == true)
+    }
+
+    // Eine Sammelaktion fuer die Wunschliste fehlt bewusst: das lokale Setzen
+    // der Vormerkung kommt erst mit PR #41. Ueber den blossen Server-Aufruf
+    // waere sie ohne Netz wirkungslos.
+
+    fun bulkDelete() = runBulk { movie -> repository.deleteMovieByLocalId(movie.localId) }
+
+    /**
+     * Eine Aktion auf jeden ausgewaehlten Titel anwenden.
+     *
+     * Nacheinander statt nebenlaeufig: die Shelf kennt keinen Sammelaufruf, und
+     * fuenfzig gleichzeitige Anfragen waeren fuer sie nur eine Last mehr. Ein
+     * Fehler bei einem Titel haelt die uebrigen nicht auf — er steht danach
+     * weiterhin als abweichende Zeile da und geht beim naechsten Abgleich raus.
+     */
+    private fun runBulk(
+        auswahl: (List<Movie>) -> List<Movie> = { it },
+        action: suspend (Movie) -> Unit
+    ) {
+        if (isBulkRunning || selection.isEmpty()) return
+        val betroffen = auswahl(movies.filter { it.localId in selection })
+        isBulkRunning = true
+
+        viewModelScope.launch {
+            for (movie in betroffen) {
+                runCatching { action(movie) }
+            }
+            clearSelection()
+            isBulkRunning = false
+            loadMovies(refresh = true)
+        }
+    }
+
     // ── Zufallsauswahl ───────────────────────────────────────────────────────
 
     /** Der gezogene Titel, solange das Blatt offen ist. */

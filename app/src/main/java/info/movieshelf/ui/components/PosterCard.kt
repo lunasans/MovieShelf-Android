@@ -3,7 +3,7 @@ package info.movieshelf.ui.components
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Box
@@ -49,6 +49,8 @@ fun PosterCard(
     modifier: Modifier = Modifier,
     subtitle: String? = null,
     onClick: (() -> Unit)? = null,
+    /** Langes Tippen — startet in der Sammlung die Mehrfachauswahl. */
+    onLongClick: (() -> Unit)? = null,
     topStart: (@Composable BoxScope.() -> Unit)? = null,
     topEnd: (@Composable BoxScope.() -> Unit)? = null,
 ) {
@@ -68,7 +70,7 @@ fun PosterCard(
             .clip(PosterCardShape)
             .then(
                 if (onClick != null) {
-                    Modifier.clickableWithoutRipple(interactionSource, onClick)
+                    Modifier.clickableWithoutRipple(interactionSource, onClick, onLongClick)
                 } else Modifier
             )
     ) {
@@ -137,11 +139,14 @@ fun PosterCard(
     }
 }
 
+@OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
 private fun Modifier.clickableWithoutRipple(
     interactionSource: MutableInteractionSource,
-    onClick: () -> Unit
-): Modifier = this.clickable(
+    onClick: () -> Unit,
+    onLongClick: (() -> Unit)? = null
+): Modifier = this.combinedClickable(
     interactionSource = interactionSource,
     indication = null,
-    onClick = onClick
+    onClick = onClick,
+    onLongClick = onLongClick
 )

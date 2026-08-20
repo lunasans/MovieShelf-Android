@@ -504,4 +504,11 @@
     <string name="access_load_failed">Could not load access list: %1$s</string>
     <string name="access_needs_newer_shelf">This needs shelf version 2.43.0 or newer.</string>
     <string name="access_hint">Browser sessions and share links are managed in the web interface.</string>
+    <string name="selection_count">%1$d selected</string>
+    <string name="selection_end">End selection</string>
+    <string name="selection_all">Select all</string>
+    <string name="selection_mark_watched">Mark as watched</string>
+    <string name="selection_mark_unwatched">Mark as unwatched</string>
+    <string name="selection_delete">Delete</string>
+    <string name="selection_delete_question">%1$d titles will be removed from the collection. This cannot be undone.</string>
 </resources>

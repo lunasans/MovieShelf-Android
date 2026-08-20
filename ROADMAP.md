@@ -34,12 +34,12 @@ auf `main`.
   Genre-Filter, beide als Chips über der Liste. Die Regeln liegen als reine
   Funktionen in `MovieSorting.kt` und sind geprüft.
 
-- [ ] 🔴 **Massenbearbeitung** — Desktop kann mehrere Titel auswählen und gemeinsam
-  ändern ([BulkActionBar.vue](../desktop/src/components/BulkActionBar.vue)). Im
-  Dashboard fehlt jede Mehrfachauswahl. Sinnvoller Umfang: Long-Press startet den
-  Auswahlmodus, Sammelaktionen für Gesehen-Status, Genre/Tag, Regalstandort,
-  Zustand, Löschen. **Server:** keinen Bulk-Endpunkt vorhanden — entweder n × 
-  `PUT /api/admin/movies/{id}` oder ein neuer Sammel-Endpunkt. *Aufwand: mittel.*
+- [x] 🔴 **Massenbearbeitung** — **umgesetzt.** Langes Tippen startet die Auswahl,
+  danach wählt ein Tippen aus. Sammelaktionen: gesehen/ungesehen setzen, alle
+  auswählen, löschen (Admin). Ohne Sammel-Endpunkt — jeder Titel geht einzeln
+  über den bestehenden Weg, nacheinander statt nebenläufig.
+  *Offen: Wunschliste als Sammelaktion (braucht PR #41) und Sammelfelder wie
+  Regalstandort oder Zustand.*
 
 - [x] 🔴 **Eigene Bewertung (`user_rating`)** — **umgesetzt.** Fünf Sterne in der
   Detailansicht, erneutes Tippen nimmt die Bewertung zurück. Liegt lokal in

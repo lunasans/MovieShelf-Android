@@ -99,3 +99,14 @@ private fun <T : Comparable<T>> nullsLastBy(
         else -> right.compareTo(left)
     }
 }
+
+/**
+ * Welche Titel eine Sammelaktion tatsächlich anfassen muss.
+ *
+ * Gesetzt wird ein Zielzustand, nicht umgeschaltet: bei gemischter Auswahl
+ * liefe ein Umschalter für die Hälfte in die falsche Richtung. Was schon
+ * richtig steht, bleibt unberührt — jeder überflüssige Aufruf ginge einzeln an
+ * die Shelf, die keinen Sammelaufruf kennt.
+ */
+fun moviesNeedingWatchedChange(movies: List<Movie>, target: Boolean): List<Movie> =
+    movies.filter { (it.isWatched == true) != target }

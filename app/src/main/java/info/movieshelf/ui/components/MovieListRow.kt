@@ -1,7 +1,7 @@
 package info.movieshelf.ui.components
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -14,7 +14,9 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Movie
+import androidx.compose.material.icons.filled.RadioButtonUnchecked
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.Icon
@@ -47,18 +49,30 @@ private val ROW_COVER_HEIGHT = 78.dp
  * suchen. Das Cover bleibt klein, damit acht bis zehn Titel auf den Schirm
  * passen statt vier.
  */
+@OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
 @Composable
 fun MovieListRow(
     movie: Movie,
     imageUrl: Any?,
     onClick: () -> Unit,
     onWatchedToggle: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    /** Langes Tippen — startet die Mehrfachauswahl. */
+    onLongClick: (() -> Unit)? = null,
+    /** `null` heisst: kein Auswahlmodus. */
+    selected: Boolean? = null
 ) {
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .clickable(onClick = onClick)
+            .combinedClickable(onClick = onClick, onLongClick = onLongClick)
+            .background(
+                if (selected == true) {
+                    MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)
+                } else {
+                    androidx.compose.ui.graphics.Color.Transparent
+                }
+            )
             .padding(horizontal = 12.dp, vertical = 6.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp)
@@ -120,6 +134,20 @@ fun MovieListRow(
 
         if (!movie.rating.isNullOrBlank()) {
             RatingBadge(rating = movie.rating)
+        }
+
+        if (selected != null) {
+            Icon(
+                imageVector = if (selected) Icons.Default.CheckCircle else Icons.Default.RadioButtonUnchecked,
+                contentDescription = null,
+                tint = if (selected) {
+                    MaterialTheme.colorScheme.primary
+                } else {
+                    MaterialTheme.colorScheme.onSurfaceVariant
+                },
+                modifier = Modifier.size(24.dp)
+            )
+            return@Row
         }
 
         IconButton(

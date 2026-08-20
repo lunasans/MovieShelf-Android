@@ -84,7 +84,14 @@ fun DashboardScreen(
         if (reloadKey > 0) viewModel.loadMovies(refresh = true)
     }
 
+    val isAdmin = info.movieshelf.data.SessionManager.user?.isAdmin == true
     val gridState = rememberLazyGridState()
+
+    // Zurueck beendet zuerst die Auswahl, statt den Bildschirm zu verlassen —
+    // was sonst passierte, waere ein Verlust ohne Vorwarnung.
+    androidx.activity.compose.BackHandler(enabled = viewModel.selectionActive) {
+        viewModel.clearSelection()
+    }
 
     // Raster oder Zeilen — die Wahl haelt ueber Neustarts, sie ist eine
     // Gewohnheit und keine Momententscheidung.
@@ -125,6 +132,11 @@ fun DashboardScreen(
             Column {
                 // Logo linksbündig wie im Web; stringResource(R.string.about_title) sitzt
                 // jetzt in den Einstellungen und braucht hier keinen Platz.
+                if (viewModel.selectionActive) {
+                    SelectionBar(viewModel = viewModel, isAdmin = isAdmin)
+                    return@Column
+                }
+
                 TopAppBar(
                     title = {
                         Image(
@@ -399,17 +411,32 @@ fun DashboardScreen(
                         }
                     }
                     items(viewModel.movies, key = { it.id }) { movie ->
+                        val ausgewaehlt = movie.localId in viewModel.selection
+                        // Im Auswahlmodus waehlt ein Tippen aus, statt den Film
+                        // zu oeffnen — sonst muesste man jedes Mal zielen.
+                        val onCardClick: () -> Unit = {
+                            if (viewModel.selectionActive) {
+                                viewModel.toggleSelection(movie.localId)
+                            } else {
+                                onMovieClick(movie, viewModel.movies.map { it.localId })
+                            }
+                        }
+
                         if (isListMode) {
                             MovieListRow(
                                 movie = movie,
                                 imageUrl = resolveImageUrl(context, movie.coverUrl ?: ""),
-                                onClick = { onMovieClick(movie, viewModel.movies.map { it.localId }) },
+                                onClick = onCardClick,
+                                onLongClick = { viewModel.toggleSelection(movie.localId) },
+                                selected = ausgewaehlt.takeIf { viewModel.selectionActive },
                                 onWatchedToggle = { viewModel.toggleWatched(movie.localId) }
                             )
                         } else {
                             MovieItem(
                                 movie = movie,
-                                onClick = { onMovieClick(movie, viewModel.movies.map { it.localId }) },
+                                onClick = onCardClick,
+                                onLongClick = { viewModel.toggleSelection(movie.localId) },
+                                selected = ausgewaehlt.takeIf { viewModel.selectionActive },
                                 onWatchedToggle = { viewModel.toggleWatched(movie.localId) }
                             )
                         }
@@ -460,6 +487,96 @@ fun DashboardScreen(
             confirmButton = {
                 TextButton(onClick = { viewModel.dismissRandom() }) {
                     Text(stringResource(R.string.common_ok))
+                }
+            }
+        )
+    }
+}
+
+/**
+ * Kopfzeile im Auswahlmodus.
+ *
+ * Sie ersetzt die gewoehnliche Leiste, statt sich darunter zu schieben: solange
+ * ausgewaehlt ist, geht es nur um die Auswahl, und zwei Leisten uebereinander
+ * kosten auf einem Telefon die halbe Liste.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun SelectionBar(viewModel: DashboardViewModel, isAdmin: Boolean) {
+    var confirmDelete by remember { mutableStateOf(false) }
+    val anzahl = viewModel.selection.size
+
+    TopAppBar(
+        title = {
+            Text(
+                stringResource(R.string.selection_count, anzahl),
+                fontWeight = FontWeight.Bold
+            )
+        },
+        navigationIcon = {
+            IconButton(onClick = { viewModel.clearSelection() }) {
+                Icon(Icons.Default.Close, contentDescription = stringResource(R.string.selection_end))
+            }
+        },
+        actions = {
+            IconButton(
+                onClick = { viewModel.bulkSetWatched(true) },
+                enabled = !viewModel.isBulkRunning
+            ) {
+                Icon(Icons.Default.Visibility, contentDescription = stringResource(R.string.selection_mark_watched))
+            }
+            IconButton(
+                onClick = { viewModel.bulkSetWatched(false) },
+                enabled = !viewModel.isBulkRunning
+            ) {
+                Icon(Icons.Default.VisibilityOff, contentDescription = stringResource(R.string.selection_mark_unwatched))
+            }
+            IconButton(
+                onClick = { viewModel.selectAllVisible() },
+                enabled = !viewModel.isBulkRunning
+            ) {
+                Icon(Icons.Default.SelectAll, contentDescription = stringResource(R.string.selection_all))
+            }
+            if (isAdmin) {
+                IconButton(
+                    onClick = { confirmDelete = true },
+                    enabled = !viewModel.isBulkRunning
+                ) {
+                    Icon(
+                        Icons.Default.Delete,
+                        contentDescription = stringResource(R.string.selection_delete),
+                        tint = MaterialTheme.colorScheme.error
+                    )
+                }
+            }
+        },
+        colors = TopAppBarDefaults.topAppBarColors(
+            containerColor = MaterialTheme.colorScheme.surfaceColorAtElevation(3.dp)
+        )
+    )
+
+    if (viewModel.isBulkRunning) {
+        LinearProgressIndicator(modifier = Modifier.fillMaxWidth().height(2.dp))
+    }
+
+    if (confirmDelete) {
+        AlertDialog(
+            onDismissRequest = { confirmDelete = false },
+            title = { Text(stringResource(R.string.selection_delete)) },
+            // Loeschen trifft mehrere Titel auf einmal und laesst sich nicht
+            // zuruecknehmen — die Zahl gehoert in die Frage.
+            text = { Text(stringResource(R.string.selection_delete_question, anzahl)) },
+            confirmButton = {
+                TextButton(onClick = {
+                    viewModel.bulkDelete()
+                    confirmDelete = false
+                }) {
+                    Text(stringResource(R.string.selection_delete), color = MaterialTheme.colorScheme.error)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { confirmDelete = false }) {
+                    Text(stringResource(R.string.common_cancel))
                 }
             }
         )
@@ -1028,12 +1145,16 @@ fun MovieShelfRow(
 fun MovieItem(
     movie: Movie,
     onClick: () -> Unit,
-    onWatchedToggle: () -> Unit
+    onWatchedToggle: () -> Unit,
+    onLongClick: (() -> Unit)? = null,
+    /** `null` heisst: kein Auswahlmodus. */
+    selected: Boolean? = null
 ) {
     val context = LocalContext.current
     PosterCard(
         imageUrl = resolveImageUrl(context, movie.coverUrl ?: ""),
         title = movie.title ?: "",
+        onLongClick = onLongClick,
         subtitle = movie.year?.toString(),
         modifier = Modifier.padding(6.dp),
         onClick = onClick,
@@ -1043,6 +1164,18 @@ fun MovieItem(
             }
         },
         topEnd = {
+            // Im Auswahlmodus steht hier das Haekchen statt des
+            // Gesehen-Schalters: zwei Bedeutungen an derselben Stelle waeren
+            // ein Griff ins Ungewisse.
+            if (selected != null) {
+                Icon(
+                    imageVector = if (selected) Icons.Default.CheckCircle else Icons.Default.RadioButtonUnchecked,
+                    contentDescription = null,
+                    tint = if (selected) MaterialTheme.colorScheme.primary else Color.White,
+                    modifier = Modifier.size(28.dp)
+                )
+                return@PosterCard
+            }
             IconButton(
                 onClick = onWatchedToggle,
                 modifier = Modifier

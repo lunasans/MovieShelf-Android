@@ -507,4 +507,11 @@
     <string name="access_load_failed">Die Zugriffe konnten nicht geladen werden: %1$s</string>
     <string name="access_needs_newer_shelf">Dafür braucht deine Shelf mindestens Version 2.43.0.</string>
     <string name="access_hint">Browser-Sitzungen und Freigabe-Links verwaltest du in der Weboberfläche.</string>
+    <string name="selection_count">%1$d ausgewählt</string>
+    <string name="selection_end">Auswahl beenden</string>
+    <string name="selection_all">Alle auswählen</string>
+    <string name="selection_mark_watched">Als gesehen markieren</string>
+    <string name="selection_mark_unwatched">Als ungesehen markieren</string>
+    <string name="selection_delete">Löschen</string>
+    <string name="selection_delete_question">%1$d Titel werden aus der Sammlung entfernt. Das lässt sich nicht zurücknehmen.</string>
 </resources>
