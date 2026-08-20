@@ -130,6 +130,13 @@ class MovieRepository(
      * zurueck — wie im Web, wo der Banner lieber ein Cover zeigt als zu
      * verschwinden.
      */
+    /**
+     * Zufaelligen Titel ziehen. Rein lokal — die Sammlung liegt ohnehin auf dem
+     * Geraet, und ein Server-Aufruf waere hier nur eine Wartezeit.
+     */
+    suspend fun randomMovie(collectionType: String? = null): Movie? =
+        movieDao.randomMovie(collectionType)?.let { withLocalDetails(it) }
+
     suspend fun getFeatured(limit: Int = 5): List<Movie> =
         movieDao.getFeatured(limit).map { it.toMovie() }
             .ifEmpty { movieDao.getNewest(1).map { it.toMovie() } }

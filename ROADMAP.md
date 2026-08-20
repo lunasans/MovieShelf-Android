@@ -41,11 +41,11 @@ auf `main`.
   `userRating`/`syncedUserRating` und geht über `POST /api/movies/{id}/rate` raus —
   sofort, und beim nächsten Abgleich noch einmal, falls der erste Versuch scheiterte.
 
-- [ ] 🟡 **Zufallsauswahl** — „Überrasch mich" wie [RandomPickerModal.vue](../desktop/src/components/RandomPickerModal.vue).
-  `RANDOM()` wird in [MovieDao.kt:71](app/src/main/java/info/movieshelf/data/local/db/MovieDao.kt#L71)
-  schon für die Empfehlungen benutzt, es fehlt nur die Auslosung auf die aktuell
-  gefilterte Menge plus ein Ergebnis-Sheet. Rein lokal, kein Server nötig.
-  *Aufwand: klein.*
+- [x] 🟡 **Zufallsauswahl** — **umgesetzt.** Würfel-Symbol in der Kopfzeile des
+  Dashboards; das Ergebnis kommt als Blatt von unten mit Cover, Titel, Eckdaten
+  und Inhalt, dazu „Nochmal" und „Ansehen". Die Auslosung folgt der geöffneten
+  Kategorie (Serien bleiben Serien), lässt Boxsets, gelöschte und nicht
+  gesammelte Titel aus und läuft rein lokal.
 
 - [ ] 🟡 **Besetzung manuell pflegen** — Desktop hat einen Schauspieler-Picker
   ([ActorPickerModal.vue](../desktop/src/components/movies/ActorPickerModal.vue));

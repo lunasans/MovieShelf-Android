@@ -130,6 +130,15 @@ fun DashboardScreen(
                             modifier = Modifier.height(32.dp)
                         )
                     },
+                    actions = {
+                        IconButton(onClick = { viewModel.rollRandom() }) {
+                            Icon(
+                                imageVector = Icons.Default.Casino,
+                                contentDescription = stringResource(R.string.random_pick),
+                                tint = MaterialTheme.colorScheme.onSurface
+                            )
+                        }
+                    },
                     // Über dem Hero durchsichtig, damit das Logo auf dem Bild
                     // liegt; sobald Inhalt darunter durchläuft, bekommt sie
                     // ihren Grund.
@@ -404,6 +413,36 @@ fun DashboardScreen(
             }
         }
     }
+
+    // Ergebnis der Auslosung. Ausserhalb des Scaffold-Inhalts, damit das Blatt
+    // ueber allem liegt — auch ueber der Navigationsleiste.
+    viewModel.randomPick?.let { picked ->
+        RandomPickSheet(
+            movie = picked,
+            onDismiss = { viewModel.dismissRandom() },
+            onRollAgain = { viewModel.rollRandom() },
+            onOpen = {
+                viewModel.dismissRandom()
+                onMovieClick(picked, listOf(picked.localId))
+            },
+            isRolling = viewModel.isRolling
+        )
+    }
+
+    // Eine leere Sammlung ergibt keinen Vorschlag; ohne Hinweis saehe der
+    // Wuerfel-Knopf schlicht kaputt aus.
+    if (viewModel.randomPickEmpty) {
+        AlertDialog(
+            onDismissRequest = { viewModel.dismissRandom() },
+            title = { Text(stringResource(R.string.random_pick)) },
+            text = { Text(stringResource(R.string.random_none)) },
+            confirmButton = {
+                TextButton(onClick = { viewModel.dismissRandom() }) {
+                    Text(stringResource(R.string.common_ok))
+                }
+            }
+        )
+    }
 }
 
 /**
@@ -436,6 +475,100 @@ private fun ViewModeChip(viewMode: CollectionViewMode, onToggle: () -> Unit) {
             leadingIconContentColor = MaterialTheme.colorScheme.onSurfaceVariant
         )
     )
+}
+
+/**
+ * Ergebnis der Auslosung.
+ *
+ * Ein Blatt von unten statt eines Dialogs: der Vorschlag ist kein Ereignis,
+ * das eine Bestaetigung braucht, sondern ein Angebot — man wischt es weg oder
+ * nimmt es an.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun RandomPickSheet(
+    movie: Movie,
+    onDismiss: () -> Unit,
+    onRollAgain: () -> Unit,
+    onOpen: () -> Unit,
+    isRolling: Boolean
+) {
+    val context = LocalContext.current
+    ModalBottomSheet(onDismissRequest = onDismiss) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 20.dp)
+                .padding(bottom = 32.dp)
+        ) {
+            Row(verticalAlignment = Alignment.Top, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                AsyncImage(
+                    model = resolveImageUrl(context, movie.coverUrl ?: ""),
+                    contentDescription = null,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier
+                        .width(110.dp)
+                        .height(165.dp)
+                        .clip(info.movieshelf.ui.theme.PosterCardShape)
+                )
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = movie.title ?: "",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    Spacer(Modifier.height(4.dp))
+                    val meta = listOfNotNull(
+                        movie.year?.toString(),
+                        movie.runtime?.let { stringResource(R.string.stats_minutes, it) },
+                        movie.genre?.takeIf { it.isNotBlank() }
+                    ).joinToString(" · ")
+                    if (meta.isNotBlank()) {
+                        Text(
+                            text = meta,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
+                    movie.overview?.takeIf { it.isNotBlank() }?.let { text ->
+                        Spacer(Modifier.height(8.dp))
+                        Text(
+                            text = text,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 4,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
+                }
+            }
+
+            Spacer(Modifier.height(20.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                OutlinedButton(
+                    onClick = onRollAgain,
+                    enabled = !isRolling,
+                    shape = info.movieshelf.ui.theme.PillShape,
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Icon(Icons.Default.Casino, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Spacer(Modifier.width(8.dp))
+                    Text(stringResource(R.string.random_again))
+                }
+                Button(
+                    onClick = onOpen,
+                    shape = info.movieshelf.ui.theme.PillShape,
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Text(stringResource(R.string.random_open), fontWeight = FontWeight.Bold)
+                }
+            }
+        }
+    }
 }
 
 /**

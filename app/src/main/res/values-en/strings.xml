@@ -466,4 +466,8 @@
     <string name="detail_rate_stars">%1$d out of 5 stars</string>
     <string name="detail_rating_clear_hint">Tap again to remove</string>
     <string name="sync_full_preview">Full preview</string>
+    <string name="random_pick">Random pick</string>
+    <string name="random_again">Roll again</string>
+    <string name="random_open">Open</string>
+    <string name="random_none">There is nothing in your collection to pick from.</string>
 </resources>

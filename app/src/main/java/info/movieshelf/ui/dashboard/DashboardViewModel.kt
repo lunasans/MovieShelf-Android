@@ -202,6 +202,47 @@ class DashboardViewModel(private val repository: MovieRepository) : ViewModel() 
     }
 
     /** "Alle anzeigen" einer Shelf-Reihe: Kategorie als Raster öffnen. */
+    // ── Zufallsauswahl ───────────────────────────────────────────────────────
+
+    /** Der gezogene Titel, solange das Blatt offen ist. */
+    var randomPick by mutableStateOf<Movie?>(null)
+        private set
+    var isRolling by mutableStateOf(false)
+        private set
+    var randomPickEmpty by mutableStateOf(false)
+        private set
+
+    /**
+     * Einen Titel auslosen.
+     *
+     * Die Auswahl folgt der gerade sichtbaren Kategorie: wer "Serien" geöffnet
+     * hat, will keinen Film vorgeschlagen bekommen. Der Suchtext bleibt
+     * bewusst aussen vor — er ist eine Suche nach etwas Bestimmtem, und dabei
+     * hilft eine Auslosung nicht.
+     */
+    fun rollRandom() {
+        if (isRolling) return
+        isRolling = true
+        randomPickEmpty = false
+        viewModelScope.launch {
+            val type = when (selectedShelf) {
+                ShelfCategory.FILME -> "Film"
+                ShelfCategory.SERIEN -> "Serie"
+                // "Neue Filme" ist keine Art, sondern ein Ausschnitt.
+                else -> null
+            }
+            val picked = runCatching { repository.randomMovie(type) }.getOrNull()
+            randomPick = picked
+            randomPickEmpty = picked == null
+            isRolling = false
+        }
+    }
+
+    fun dismissRandom() {
+        randomPick = null
+        randomPickEmpty = false
+    }
+
     fun onShelfSelected(category: ShelfCategory) {
         selectedShelf = category
         recompute()
