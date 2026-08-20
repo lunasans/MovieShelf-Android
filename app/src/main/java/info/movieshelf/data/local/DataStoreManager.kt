@@ -29,12 +29,24 @@ enum class ThemeMode(@StringRes val labelRes: Int) {
     SYSTEM(R.string.theme_system)
 }
 
+/**
+ * Darstellung der Sammlungsliste. Das Poster-Raster ist der Standard; die
+ * Zeilenansicht zeigt mehr Titel auf einmal und daneben den Regalstandort —
+ * gedacht fuer das Suchen vor dem Regal. (Desktop kennt zusaetzlich eine
+ * Tabelle; die traegt auf dem Telefon nicht.)
+ */
+enum class CollectionViewMode {
+    GRID,
+    LIST
+}
+
 class DataStoreManager(private val context: Context) {
 
     companion object {
         val SERVER_URL_KEY = stringPreferencesKey("server_url")
         val DYNAMIC_COLOR_KEY = booleanPreferencesKey("dynamic_color")
         val THEME_MODE_KEY = stringPreferencesKey("theme_mode")
+        val COLLECTION_VIEW_MODE_KEY = stringPreferencesKey("collection_view_mode")
 
         private const val SECURE_PREFS_NAME  = "secure_auth"
         private const val KEY_AUTH_TOKEN      = "auth_token"
@@ -90,6 +102,16 @@ class DataStoreManager(private val context: Context) {
 
     suspend fun saveThemeMode(mode: ThemeMode) {
         context.dataStore.edit { it[THEME_MODE_KEY] = mode.name }
+    }
+
+    // --- Raster oder Zeilen in der Sammlung (nicht sicherheitskritisch) ---
+    val collectionViewMode: Flow<CollectionViewMode> = context.dataStore.data.map { prefs ->
+        CollectionViewMode.entries.firstOrNull { it.name == prefs[COLLECTION_VIEW_MODE_KEY] }
+            ?: CollectionViewMode.GRID
+    }
+
+    suspend fun saveCollectionViewMode(mode: CollectionViewMode) {
+        context.dataStore.edit { it[COLLECTION_VIEW_MODE_KEY] = mode.name }
     }
 
     // --- TMDb-Schlüssel (verschlüsselt) ---

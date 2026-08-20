@@ -1,7 +1,10 @@
 package info.movieshelf.ui.stats
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -10,9 +13,12 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.platform.LocalContext
@@ -21,6 +27,20 @@ import androidx.compose.ui.res.stringResource
 import info.movieshelf.R
 import info.movieshelf.MovieShelfApplication
 import info.movieshelf.data.model.Stats
+import info.movieshelf.ui.theme.PillShape
+import kotlin.math.roundToInt
+
+/**
+ * Farben der Auswertungen. Bewusst feste Werte statt Theme-Tokens: die
+ * Abschnitte sollen sich voneinander abheben, und die Zuordnung Farbe->Thema
+ * (blau = Sammlung, gruen = gesehen, orange = Zeit) soll ueber Theme-Wechsel
+ * hinweg dieselbe bleiben.
+ */
+private val AccentWatched = Color(0xFF4CAF50)
+private val AccentSeries = Color(0xFF7C4DFF)
+private val AccentTime = Color(0xFFFF9800)
+private val AccentGenre = Color(0xFF29B6F6)
+private val AccentAge = Color(0xFFEC407A)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -67,101 +87,327 @@ fun StatsScreen(
                     Button(onClick = { viewModel.loadStats() }) { Text(stringResource(R.string.common_retry)) }
                 }
             }
+        } else if (stats != null && stats.totalFilms == 0 && stats.totalSeries == 0) {
+            // Eine Statistik ueber nichts besteht sonst aus lauter Nullen und
+            // leeren Balken — das sieht nach Fehler aus, ist aber keiner.
+            Box(Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    modifier = Modifier.padding(horizontal = 32.dp)
+                ) {
+                    Icon(Icons.Default.QueryStats, null, Modifier.size(64.dp), tint = MaterialTheme.colorScheme.outline)
+                    Spacer(Modifier.height(16.dp))
+                    Text(stringResource(R.string.stats_empty_title), style = MaterialTheme.typography.titleMedium)
+                    Spacer(Modifier.height(8.dp))
+                    Text(
+                        stringResource(R.string.stats_empty_hint),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                    )
+                }
+            }
         } else if (stats != null) {
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(padding)
-                    .verticalScroll(rememberScrollState())
-                    .padding(16.dp)
-                    .padding(bottom = 100.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                // Übersichtskarten
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                    StatCard(
-                        modifier = Modifier.weight(1f),
-                        title = stringResource(R.string.stats_total),
-                        value = stats.totalFilms.toString(),
-                        subtitle = stringResource(R.string.shelf_movies),
-                        icon = Icons.Default.Movie,
+            StatsContent(stats = stats, contentPadding = padding)
+        }
+    }
+}
+
+@Composable
+private fun StatsContent(stats: Stats, contentPadding: PaddingValues) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(contentPadding)
+            .verticalScroll(rememberScrollState())
+            .padding(horizontal = 16.dp)
+            .padding(top = 8.dp, bottom = 120.dp),
+        verticalArrangement = Arrangement.spacedBy(20.dp)
+    ) {
+        // --- Kennzahlen ---
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            StatCard(
+                modifier = Modifier.weight(1f),
+                title = stringResource(R.string.stats_total),
+                value = stats.totalFilms.toString(),
+                subtitle = stringResource(R.string.shelf_movies),
+                icon = Icons.Default.Movie,
+                color = MaterialTheme.colorScheme.primary
+            )
+            // Serien stehen fuer sich: die Film-Zahlen schliessen sie nicht ein,
+            // sonst wichen sie von Shelf und Desktop-App ab.
+            if (stats.totalSeries > 0) {
+                StatCard(
+                    modifier = Modifier.weight(1f),
+                    title = stringResource(R.string.stats_series),
+                    value = stats.totalSeries.toString(),
+                    subtitle = stringResource(
+                        if (stats.totalSeries == 1) R.string.stats_series_one else R.string.stats_series_many
+                    ),
+                    icon = Icons.Default.Tv,
+                    color = AccentSeries
+                )
+            } else {
+                StatCard(
+                    modifier = Modifier.weight(1f),
+                    title = stringResource(R.string.stats_avg_runtime),
+                    value = stringResource(R.string.stats_minutes, stats.avgRuntime.roundToInt()),
+                    subtitle = stringResource(R.string.stats_per_film),
+                    icon = Icons.Default.Timer,
+                    color = AccentTime
+                )
+            }
+        }
+
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            StatCard(
+                modifier = Modifier.weight(1f),
+                title = stringResource(R.string.stats_total_runtime),
+                value = stringResource(R.string.stats_days, stats.totalRuntimeDays.roundToInt()),
+                subtitle = stringResource(R.string.stats_hours, stats.totalRuntimeHours.toInt()),
+                icon = Icons.Default.AccessTime,
+                color = AccentTime
+            )
+            if (stats.totalSeries > 0) {
+                StatCard(
+                    modifier = Modifier.weight(1f),
+                    title = stringResource(R.string.stats_avg_runtime),
+                    value = stringResource(R.string.stats_minutes, stats.avgRuntime.roundToInt()),
+                    subtitle = stringResource(R.string.stats_per_film),
+                    icon = Icons.Default.Timer,
+                    color = AccentTime
+                )
+            } else {
+                Spacer(Modifier.weight(1f))
+            }
+        }
+
+        // --- Gesehen ---
+        stats.watched?.let { watched ->
+            StatsSection(title = stringResource(R.string.stats_watched)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.Bottom,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(
+                        text = watched.count.toString(),
+                        fontSize = 32.sp,
+                        fontWeight = FontWeight.ExtraBold,
+                        color = AccentWatched
+                    )
+                    Text(
+                        text = "${watched.percentage.roundToInt()} %",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                Spacer(Modifier.height(10.dp))
+                LinearProgressIndicator(
+                    progress = { (watched.percentage / 100.0).toFloat().coerceIn(0f, 1f) },
+                    modifier = Modifier.fillMaxWidth().height(8.dp),
+                    color = AccentWatched,
+                    trackColor = AccentWatched.copy(alpha = 0.15f),
+                    strokeCap = StrokeCap.Round,
+                    gapSize = 0.dp,
+                    drawStopIndicator = {}
+                )
+                Spacer(Modifier.height(8.dp))
+                Text(
+                    text = stringResource(R.string.stats_unwatched, (stats.totalFilms - watched.count).coerceAtLeast(0)),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+
+        // --- Zusammensetzung der Sammlung ---
+        stats.collections?.takeIf { it.isNotEmpty() }?.let { collections ->
+            StatsSection(title = stringResource(R.string.stats_collection_types)) {
+                val max = collections.maxOf { it.count }
+                collections.sortedByDescending { it.count }.forEach { entry ->
+                    BarRow(
+                        label = entry.collectionType,
+                        value = entry.count.toString(),
+                        fraction = entry.count.toFloat() / max.toFloat(),
                         color = MaterialTheme.colorScheme.primary
                     )
-                    StatCard(
-                        modifier = Modifier.weight(1f),
-                        title = stringResource(R.string.stats_watched),
-                        value = stats.watched?.count.toString(),
-                        subtitle = "${stats.watched?.percentage?.toInt()}%",
-                        icon = Icons.Default.Visibility,
-                        color = Color(0xFF4CAF50)
+                }
+            }
+        }
+
+        // --- Genres ---
+        stats.genres?.takeIf { it.isNotEmpty() }?.let { genres ->
+            StatsSection(title = stringResource(R.string.stats_top_genres)) {
+                // Die Balken messen sich am haeufigsten Genre, nicht an der
+                // Gesamtzahl: sonst bleiben bei einer breit gestreuten Sammlung
+                // alle Balken Striche und die Reihenfolge ist nicht ablesbar.
+                val max = genres.maxOf { it.count }
+                genres.sortedByDescending { it.count }.take(8).forEach { genre ->
+                    BarRow(
+                        label = genre.genre,
+                        value = genre.count.toString(),
+                        fraction = genre.count.toFloat() / max.toFloat(),
+                        color = AccentGenre
                     )
                 }
+            }
+        }
 
-                // Serien stehen fuer sich: die Film-Zahlen oben schliessen sie
-                // nicht ein, sonst wichen sie von Shelf und Desktop-App ab.
-                if (stats.totalSeries > 0) {
-                    StatCard(
-                        modifier = Modifier.fillMaxWidth(),
-                        title = stringResource(R.string.stats_series),
-                        value = stats.totalSeries.toString(),
-                        subtitle = stringResource(if (stats.totalSeries == 1) R.string.stats_series_one else R.string.stats_series_many),
-                        icon = Icons.Default.Tv,
-                        color = Color(0xFF7C4DFF)
-                    )
-                }
-
-                StatCard(
-                    modifier = Modifier.fillMaxWidth(),
-                    title = stringResource(R.string.stats_total_runtime),
-                    value = "${stats.totalRuntimeDays.toInt()} Tage",
-                    subtitle = stringResource(R.string.stats_hours, stats.totalRuntimeHours.toInt()),
-                    icon = Icons.Default.AccessTime,
-                    color = Color(0xFFFF9800)
+        // --- Jahrzehnte ---
+        stats.decades?.takeIf { it.isNotEmpty() }?.let { decades ->
+            StatsSection(title = stringResource(R.string.stats_decades)) {
+                ColumnChart(
+                    entries = decades.sortedBy { it.decade }.map {
+                        ChartEntry(label = stringResource(R.string.stats_decade, it.decade), count = it.count)
+                    },
+                    color = MaterialTheme.colorScheme.primary
                 )
+            }
+        }
 
-                // Zeitreise
-                Text(stringResource(R.string.stats_timeline), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
-                Card(modifier = Modifier.fillMaxWidth()) {
-                    Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        StatRow(label = stringResource(R.string.stats_oldest), value = stats.years?.oldestYear?.toString() ?: "-")
-                        StatRow(label = stringResource(R.string.stats_newest), value = stats.years?.newestYear?.toString() ?: "-")
-                        StatRow(label = stringResource(R.string.stats_avg_year), value = stats.years?.avgYear?.toInt()?.toString() ?: "-")
-                    }
+        // --- Jahre ---
+        stats.yearDistribution?.takeIf { it.isNotEmpty() }?.let { years ->
+            StatsSection(title = stringResource(R.string.stats_per_year)) {
+                ColumnChart(
+                    entries = years.entries
+                        .mapNotNull { (year, count) -> year.toIntOrNull()?.let { it to count } }
+                        .sortedBy { it.first }
+                        .map { ChartEntry(label = it.first.toString(), count = it.second) },
+                    color = AccentTime,
+                    barWidth = 18.dp
+                )
+            }
+        }
+
+        // --- Altersfreigabe ---
+        stats.ratings?.takeIf { it.isNotEmpty() }?.let { ratings ->
+            StatsSection(title = stringResource(R.string.stats_age_rating)) {
+                val max = ratings.maxOf { it.count }
+                ratings.sortedBy { it.ratingAge }.forEach { rating ->
+                    BarRow(
+                        label = stringResource(R.string.stats_fsk, rating.ratingAge),
+                        value = rating.count.toString(),
+                        fraction = rating.count.toFloat() / max.toFloat(),
+                        color = AccentAge
+                    )
                 }
+            }
+        }
 
-                // Top Genres
-                if (!stats.genres.isNullOrEmpty()) {
-                    Text(stringResource(R.string.stats_top_genres), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
-                    Card(modifier = Modifier.fillMaxWidth()) {
-                        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                            stats.genres.take(5).forEach { genre ->
-                                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                                    Text(genre.genre)
-                                    Text(genre.count.toString(), fontWeight = FontWeight.Bold)
-                                }
-                                LinearProgressIndicator(
-                                    progress = { genre.count.toFloat() / stats.totalFilms.toFloat() },
-                                    modifier = Modifier.fillMaxWidth().height(4.dp),
-                                    strokeCap = androidx.compose.ui.graphics.StrokeCap.Round
-                                )
-                            }
-                        }
-                    }
-                }
+        // --- Zeitreise ---
+        stats.years?.let { years ->
+            StatsSection(title = stringResource(R.string.stats_timeline)) {
+                StatRow(label = stringResource(R.string.stats_oldest), value = years.oldestYear.toString())
+                Spacer(Modifier.height(6.dp))
+                StatRow(label = stringResource(R.string.stats_newest), value = years.newestYear.toString())
+                Spacer(Modifier.height(6.dp))
+                StatRow(label = stringResource(R.string.stats_avg_year), value = years.avgYear.roundToInt().toString())
+            }
+        }
+    }
+}
 
-                // Jahrzehnte
-                if (!stats.decades.isNullOrEmpty()) {
-                    Text(stringResource(R.string.stats_decades), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
-                    Card(modifier = Modifier.fillMaxWidth()) {
-                        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                            stats.decades.sortedByDescending { it.decade }.forEach { decade ->
-                                StatRow(label = stringResource(R.string.stats_decade, decade.decade), value = "${decade.count} Filme")
-                            }
-                        }
-                    }
-                }
+/** Abschnitt mit Überschrift und Karte — die Seite besteht nur aus diesen. */
+@Composable
+private fun StatsSection(title: String, content: @Composable ColumnScope.() -> Unit) {
+    Column {
+        Text(
+            text = title.uppercase(),
+            style = MaterialTheme.typography.labelSmall,
+            fontWeight = FontWeight.Black,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(start = 4.dp, bottom = 8.dp)
+        )
+        Card(modifier = Modifier.fillMaxWidth(), shape = PillShape) {
+            Column(modifier = Modifier.padding(16.dp), content = content)
+        }
+    }
+}
 
-                Spacer(Modifier.height(32.dp))
+/**
+ * Waagerechter Balken mit Beschriftung — fuer Auswertungen mit wenigen, aber
+ * langen Beschriftungen (Genres, Sammlungsarten, Altersfreigaben).
+ */
+@Composable
+private fun BarRow(label: String, value: String, fraction: Float, color: Color) {
+    Column(modifier = Modifier.padding(vertical = 5.dp)) {
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+            Text(
+                text = label,
+                style = MaterialTheme.typography.bodyMedium,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f, fill = false)
+            )
+            Spacer(Modifier.width(12.dp))
+            Text(text = value, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold)
+        }
+        Spacer(Modifier.height(5.dp))
+        LinearProgressIndicator(
+            progress = { fraction.coerceIn(0f, 1f) },
+            modifier = Modifier.fillMaxWidth().height(6.dp),
+            color = color,
+            trackColor = color.copy(alpha = 0.15f),
+            strokeCap = StrokeCap.Round,
+            gapSize = 0.dp,
+            drawStopIndicator = {}
+        )
+    }
+}
+
+private data class ChartEntry(val label: String, val count: Int)
+
+/**
+ * Stehende Balken fuer Reihen ueber die Zeit (Jahrzehnte, Jahre).
+ *
+ * Scrollt waagerecht, statt die Balken zu stauchen: bei vierzig Jahrgaengen
+ * waere sonst jeder Balken zwei Pixel breit und keine Beschriftung mehr lesbar.
+ */
+@Composable
+private fun ColumnChart(
+    entries: List<ChartEntry>,
+    color: Color,
+    barWidth: androidx.compose.ui.unit.Dp = 30.dp
+) {
+    if (entries.isEmpty()) return
+    val max = entries.maxOf { it.count }.coerceAtLeast(1)
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .horizontalScroll(rememberScrollState()),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalAlignment = Alignment.Bottom
+    ) {
+        entries.forEach { entry ->
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier.width(barWidth)
+            ) {
+                Text(
+                    text = entry.count.toString(),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1
+                )
+                Spacer(Modifier.height(4.dp))
+                Box(
+                    modifier = Modifier
+                        .width(barWidth * 0.7f)
+                        // Mindesthoehe, damit ein einzelner Film neben einem
+                        // Jahrgang mit dreissig nicht ganz verschwindet.
+                        .height((96.dp * entry.count / max).coerceAtLeast(4.dp))
+                        .clip(RoundedCornerShape(6.dp))
+                        .background(color)
+                )
+                Spacer(Modifier.height(6.dp))
+                Text(
+                    text = entry.label,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
             }
         }
     }
@@ -176,13 +422,36 @@ fun StatCard(
     icon: ImageVector,
     color: Color
 ) {
-    Card(modifier = modifier, colors = CardDefaults.cardColors(containerColor = color.copy(alpha = 0.1f))) {
+    Card(
+        modifier = modifier,
+        shape = PillShape,
+        colors = CardDefaults.cardColors(containerColor = color.copy(alpha = 0.1f))
+    ) {
         Column(modifier = Modifier.padding(16.dp)) {
-            Icon(icon, contentDescription = null, tint = color)
-            Spacer(Modifier.height(8.dp))
-            Text(value, fontSize = 24.sp, fontWeight = FontWeight.ExtraBold, color = color)
-            Text(title, style = MaterialTheme.typography.labelMedium, color = color.copy(alpha = 0.7f))
-            Text(subtitle, style = MaterialTheme.typography.bodySmall, color = color.copy(alpha = 0.7f))
+            Icon(icon, contentDescription = null, tint = color, modifier = Modifier.size(20.dp))
+            Spacer(Modifier.height(10.dp))
+            Text(
+                value,
+                fontSize = 26.sp,
+                fontWeight = FontWeight.ExtraBold,
+                color = color,
+                maxLines = 1
+            )
+            Text(
+                title,
+                style = MaterialTheme.typography.labelMedium,
+                fontWeight = FontWeight.Bold,
+                color = color.copy(alpha = 0.8f),
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+            Text(
+                subtitle,
+                style = MaterialTheme.typography.bodySmall,
+                color = color.copy(alpha = 0.6f),
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
         }
     }
 }
