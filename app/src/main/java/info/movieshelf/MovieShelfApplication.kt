@@ -135,6 +135,7 @@ class MovieShelfApplication : Application(), ImageLoaderFactory {
             pushWatched = { onProgress -> movieRepository.pushWatchedChanges(onProgress) },
             pushUserRatings = { onProgress -> movieRepository.pushUserRatings(onProgress) },
             pushEpisodeWatched = { onProgress -> movieRepository.pushEpisodeWatched(onProgress) },
+            pendingEpisodeWatchedCount = { database.seriesDao().getPendingEpisodeWatched().size },
             pruneSeasons = { localId, keep -> database.seriesDao().pruneSeasons(localId, keep) },
             localSeasonSignature = { localId ->
                 database.seriesDao().getSeasons(localId)

@@ -487,4 +487,6 @@
     <string name="wishlist_empty">Noch nichts vorgemerkt</string>
     <string name="wishlist_empty_hint">Tippe in der Filmansicht auf das Herz, um einen Titel vorzumerken.</string>
     <string name="error_movie_not_loaded_short">Der Film konnte nicht geladen werden.</string>
+    <string name="sync_ratings">Bewertungen</string>
+    <string name="sync_episodes_watched">Folgen gesehen</string>
 </resources>

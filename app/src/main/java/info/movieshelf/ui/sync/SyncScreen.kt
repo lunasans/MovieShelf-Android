@@ -235,6 +235,12 @@ private fun PreviewSection(preview: SyncPreview) {
         if (preview.toUpdate > 0) DetailRow(stringResource(R.string.sync_changed), preview.toUpdate)
         if (preview.toDeleteRemote > 0) DetailRow(stringResource(R.string.sync_deleted), preview.toDeleteRemote)
         if (preview.toPushWatched > 0) DetailRow(stringResource(R.string.sync_watched), preview.toPushWatched)
+        if (preview.toPushUserRatings > 0) {
+            DetailRow(stringResource(R.string.sync_ratings), preview.toPushUserRatings)
+        }
+        if (preview.toPushEpisodesWatched > 0) {
+            DetailRow(stringResource(R.string.sync_episodes_watched), preview.toPushEpisodesWatched)
+        }
 
         Spacer(Modifier.height(4.dp))
         CountRow(Icons.Default.CloudDownload, stringResource(R.string.sync_shelf_to_app), preview.incoming)
