@@ -23,7 +23,7 @@ class AddMovieViewModel(
     var searchUnavailable by mutableStateOf(false)
         private set
     var searchQuery by mutableStateOf("")
-    var searchResults by mutableStateOf<List<Map<String, Any>>>(emptyList())
+    var searchResults by mutableStateOf<List<TmdbSearchItem>>(emptyList())
     var isLoading by mutableStateOf(false)
     var isImporting by mutableStateOf(false)
     var error by mutableStateOf<UiText?>(null)
@@ -58,7 +58,7 @@ class AddMovieViewModel(
         error = null
         try {
             val response = repository.search(query, searchSeries)
-            searchResults = (response.results ?: emptyList()).map { it.toUiMap() }
+            searchResults = response.results ?: emptyList()
         } catch (e: MissingTmdbKeyException) {
             // Kein Fehler der Suche, sondern eine fehlende Voraussetzung —
             // dafuer gibt es einen eigenen, uebersetzten Hinweis.
@@ -114,29 +114,4 @@ class AddMovieViewModel(
             return AddMovieViewModel(repository) as T
         }
     }
-}
-
-/**
- * Bildet das typisierte DTO auf die von AddMovieScreen/TmdbMovieItem erwartete
- * Map ab. Damit bleibt das UI (Map-Zugriffe via "id", "title"/"name",
- * "release_date"/"first_air_date", "poster_path", "overview") unverändert und
- * das Laufzeitverhalten identisch. Null-Werte werden weggelassen, sodass die
- * `as? ...`-Fallbacks im UI genauso greifen wie zuvor.
- */
-private fun TmdbSearchItem.toUiMap(): Map<String, Any> {
-    val map = mutableMapOf<String, Any>()
-    id?.let { map["id"] = it }
-    // Über `alternate` zusammengeführter Titel: unter beiden Keys ablegen,
-    // damit der title/name-Fallback im UI weiterhin funktioniert.
-    title?.let {
-        map["title"] = it
-        map["name"] = it
-    }
-    releaseDate?.let {
-        map["release_date"] = it
-        map["first_air_date"] = it
-    }
-    posterPath?.let { map["poster_path"] = it }
-    overview?.let { map["overview"] = it }
-    return map
 }
