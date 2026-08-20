@@ -94,8 +94,9 @@ Im Code nachgeprüft, nicht aus dem Archiv übernommen — die 1.7.0-Liste dort 
 teils überholt.
 
 - [x] 🟡 **Wunschlisten-Ansicht** — **umgesetzt.** Profil → Wunschliste zeigt die
-  vorgemerkten Titel als Raster; das Herz im Detail füllt sie wie bisher. Ohne
-  Gesehen-Schalter: was man nicht besitzt, hat man nicht gesehen.
+  vorgemerkten Titel als Raster; das Herz im Detail füllt sie. Die erste Fassung
+  las `inCollection` statt der Vormerkung und zeigte damit die falsche Menge —
+  behoben, samt lokalem Speichern und eigenem Push-Schritt.
 
 - [x] 🟡 **Fehler-/Retry-Zustand im Detail-Screen** — **umgesetzt.** Schlägt das Laden
   fehl, steht jetzt ein Fehlerbild mit „Erneut versuchen" da statt einer leeren

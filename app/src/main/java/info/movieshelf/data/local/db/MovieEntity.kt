@@ -82,6 +82,17 @@ data class MovieEntity(
      */
     val userRating: Int? = null,
     /**
+     * Vorgemerkt — die Wunschliste des Nutzers.
+     *
+     * Nicht zu verwechseln mit [inCollection]: das haengt am Film und sagt, ob
+     * er zur Sammlung gehoert. Die Wunschliste haengt am Benutzer und liegt auf
+     * der Shelf in `user_wishlist`. Genau diese Verwechslung hat die
+     * Wunschlisten-Ansicht anfangs die falsche Menge zeigen lassen.
+     */
+    val isWishlisted: Boolean = false,
+    /** Der Stand, den der Server zuletzt bestaetigt hat. */
+    val syncedWishlisted: Boolean = false,
+    /**
      * Die Bewertung, die der Server zuletzt bestaetigt hat.
      *
      * Wie [syncedWatched] ein eigener Vergleichswert, aus demselben Grund: die
@@ -133,6 +144,10 @@ data class MovieEntity(
     val hasPendingUserRating: Boolean
         get() = userRating != syncedUserRating
 
+    /** Die Vormerkung ist lokal gesetzt und noch nicht uebertragen. */
+    val hasPendingWishlist: Boolean
+        get() = isWishlisted != syncedWishlisted
+
     /**
      * In das Modell der Oberfläche übersetzen. [Movie.id] bleibt die Server-ID
      * für Netzaufrufe, [Movie.localId] trägt die lokale Identität — darüber
@@ -161,6 +176,7 @@ data class MovieEntity(
             viewCount = viewCount,
             isWatched = isWatched,
             userRating = userRating,
+            isWishlisted = isWishlisted,
             tmdbId = tmdbId,
             ratingAge = ratingAge,
             tag = tag,
@@ -299,6 +315,8 @@ data class MovieEntity(
                 viewCount = movie.viewCount,
                 isWatched = movie.isWatched,
                 userRating = movie.userRating,
+                isWishlisted = movie.isWishlisted == true,
+                syncedWishlisted = movie.isWishlisted == true,
                 // Wie beim Gesehen-Stand: was von dort kommt, ist dort bekannt.
                 syncedUserRating = movie.userRating,
                 // Kommt der Stand vom Server, ist er dort per Definition bekannt.

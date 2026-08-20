@@ -591,6 +591,31 @@ class SyncEngineTest {
         assertEquals(3, preview.outgoing)
     }
 
+    @Test
+    fun `eine offene Vormerkung ueberlebt den Pull`() = runBlocking {
+        val dao = FakeMovieDao()
+        dao.rows += movie(localId = 1, remoteId = 10, title = "Arrival")
+            .copy(
+                updatedAt = "2026-08-10T10:00:00Z",
+                syncedAt = "2026-08-10T10:00:00Z",
+                isWishlisted = true,
+                syncedWishlisted = false
+            )
+
+        val engine = engine(
+            dao,
+            FakeSettingDao(),
+            FakeSyncApi(export = ExportResponse(exportedAt = "t", movies = listOf(
+                // Der Server weiss noch nichts von der Vormerkung.
+                serverMovie(id = 10, title = "Arrival").copy(isWishlisted = false)
+            )))
+        )
+
+        engine.pull(full = true)
+
+        assertEquals(true, dao.rows.single().isWishlisted)
+    }
+
     private fun engine(dao: FakeMovieDao, settings: FakeSettingDao, api: FakeSyncApi) =
         SyncEngine(dao, settings, { api })
 
