@@ -29,6 +29,7 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.compose.ui.res.stringResource
 import info.movieshelf.R
+import info.movieshelf.data.model.TmdbSearchItem
 import info.movieshelf.ui.util.UiText
 import info.movieshelf.MovieShelfApplication
 import coil.compose.AsyncImage
@@ -224,10 +225,7 @@ fun AddMovieScreen(
                         TmdbMovieItem(
                             item = item,
                             onImport = {
-                                val id = (item["id"] as? Number)?.toInt()
-                                if (id != null) {
-                                    viewModel.importMovie(id, onMovieImported)
-                                }
+                                item.id?.let { viewModel.importMovie(it, onMovieImported) }
                             }
                         )
                         HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp), color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
@@ -277,12 +275,13 @@ fun AddMovieScreen(
 }
 
 @Composable
-fun TmdbMovieItem(item: Map<String, Any>, onImport: () -> Unit) {
-    val title = item["title"] as? String ?: (item["name"] as? String) ?: stringResource(R.string.common_unknown)
-    val overview = item["overview"] as? String ?: ""
-    val releaseDate = item["release_date"] as? String ?: (item["first_air_date"] as? String) ?: ""
-    val posterPath = item["poster_path"] as? String
-    val posterUrl = if (posterPath != null) "https://image.tmdb.org/t/p/w200$posterPath" else null
+fun TmdbMovieItem(item: TmdbSearchItem, onImport: () -> Unit) {
+    // `title` traegt bei Serien den `name`, `releaseDate` das
+    // `first_air_date` — beides fuehrt das DTO ueber `alternate` zusammen.
+    val title = item.title ?: stringResource(R.string.common_unknown)
+    val overview = item.overview.orEmpty()
+    val releaseDate = item.releaseDate.orEmpty()
+    val posterUrl = item.posterPath?.let { "https://image.tmdb.org/t/p/w200$it" }
 
     ListItem(
         headlineContent = { Text(title, fontWeight = FontWeight.Bold) },

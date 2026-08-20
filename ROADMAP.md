@@ -103,9 +103,10 @@ teils überholt.
   fehl, steht jetzt ein Fehlerbild mit „Erneut versuchen" da statt einer leeren
   Seite; die flüchtige Meldung bleibt für Fehler, bei denen der Film sichtbar ist.
 
-- [ ] 🟡 **Typisierte TMDb-DTOs im Anlegen-Weg** — `AddMovieScreen` und
-  `AddMovieViewModel` arbeiten weiter mit `Map<String, Any>` und ungeprüften Casts.
-  Für die Suche ist das erledigt, für den Import-Weg nicht. *Aufwand: klein–mittel.*
+- [x] 🟡 **Typisierte TMDb-DTOs im Anlegen-Weg** — **umgesetzt.** `AddMovieViewModel`
+  und `AddMovieScreen` arbeiten jetzt mit `TmdbSearchItem` statt mit
+  `Map<String, Any>`; die Rückverwandlung in eine Map ist entfallen. In der
+  gesamten Oberfläche gibt es keine ungeprüften Map-Zugriffe mehr.
 
 - [x] 🟡 **Tests für die Sortierlogik** — **umgesetzt** zusammen mit der Sortierung:
   Bewertungen mit Komma, fehlende Werte in beiden Richtungen, stabile Reihenfolge
