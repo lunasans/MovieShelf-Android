@@ -1,8 +1,11 @@
-Behoben:
-
-• Mit verbundener Shelf wurden Serien als Film importiert. Statt der Serie kam ein Fehler oder ein völlig fremder Titel.
-• Die Leiste am unteren Rand klappte schon bei der kleinsten Bewegung nach oben wieder auf – auch wenn nur der Finger auf dem Display nachfederte. Jetzt braucht es eine bewusste Geste.
-
 Neu:
 
-• Nach dem Import landest du direkt im Formular. Format, Standort im Regal, Kaufdatum und Zustand trägst du gleich nach, statt den Film erst wieder zu suchen.
+• Jellyfin-Import: Bibliotheken vom eigenen Medienserver übernehmen, samt Staffeln, Episoden, Covern und Besetzung.
+• Eigene Bewertung mit fünf Sternen, je Folge abhaken, Wunschliste ansehen.
+• Sortieren und nach Genre filtern, Zeilenansicht, Zufallsauswahl.
+• Mehrere Titel gemeinsam bearbeiten.
+
+Behoben:
+
+• "Vollständig synchronisieren" holte nur eine Vorschau – ältere Bewertungen kamen nie an.
+• Überarbeitete Statistik.
