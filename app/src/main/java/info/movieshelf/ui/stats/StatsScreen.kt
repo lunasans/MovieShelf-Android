@@ -242,7 +242,9 @@ private fun StatsContent(stats: Stats, contentPadding: PaddingValues) {
             StatsSection(title = stringResource(R.string.stats_decades)) {
                 ColumnChart(
                     entries = decades.sortedBy { it.decade }.map {
-                        ChartEntry(label = stringResource(R.string.stats_decade, it.decade), count = it.count)
+                        // "70er" statt "1970er": das Jahrhundert ist aus der
+                        // Reihenfolge ablesbar und kostet nur Spaltenbreite.
+                        ChartEntry(label = stringResource(R.string.stats_decade_short, it.decade % 100), count = it.count)
                     },
                     color = MaterialTheme.colorScheme.primary
                 )
@@ -257,8 +259,7 @@ private fun StatsContent(stats: Stats, contentPadding: PaddingValues) {
                         .mapNotNull { (year, count) -> year.toIntOrNull()?.let { it to count } }
                         .sortedBy { it.first }
                         .map { ChartEntry(label = it.first.toString(), count = it.second) },
-                    color = MaterialTheme.colorScheme.primary,
-                    barWidth = 18.dp
+                    color = MaterialTheme.colorScheme.primary
                 )
             }
         }
@@ -341,6 +342,9 @@ private fun BarRow(label: String, value: String, fraction: Float, color: Color) 
 
 private data class ChartEntry(val label: String, val count: Int)
 
+/** Daumenwert fuer die Breite einer Ziffer in `labelSmall`. */
+private val LABEL_CHAR_WIDTH = 8.dp
+
 /**
  * Stehende Balken fuer Reihen ueber die Zeit (Jahrzehnte, Jahre).
  *
@@ -350,11 +354,14 @@ private data class ChartEntry(val label: String, val count: Int)
 @Composable
 private fun ColumnChart(
     entries: List<ChartEntry>,
-    color: Color,
-    barWidth: androidx.compose.ui.unit.Dp = 30.dp
+    color: Color
 ) {
     if (entries.isEmpty()) return
     val max = entries.maxOf { it.count }.coerceAtLeast(1)
+    // Die Spalte richtet sich nach der laengsten Beschriftung, nicht nach einem
+    // festen Wert: eine Jahreszahl braucht vier Ziffern Platz, sonst steht dort
+    // "1…" und das Diagramm ist nicht mehr zu lesen.
+    val columnWidth = (LABEL_CHAR_WIDTH * entries.maxOf { it.label.length }).coerceAtLeast(28.dp)
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -365,7 +372,7 @@ private fun ColumnChart(
         entries.forEach { entry ->
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
-                modifier = Modifier.width(barWidth)
+                modifier = Modifier.width(columnWidth)
             ) {
                 Text(
                     text = entry.count.toString(),
@@ -376,7 +383,7 @@ private fun ColumnChart(
                 Spacer(Modifier.height(4.dp))
                 Box(
                     modifier = Modifier
-                        .width(barWidth * 0.7f)
+                        .width(columnWidth * 0.6f)
                         // Mindesthoehe, damit ein einzelner Film neben einem
                         // Jahrgang mit dreissig nicht ganz verschwindet.
                         .height((96.dp * entry.count / max).coerceAtLeast(4.dp))
@@ -389,7 +396,7 @@ private fun ColumnChart(
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
+                    softWrap = false
                 )
             }
         }

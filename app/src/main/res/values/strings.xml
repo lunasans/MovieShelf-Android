@@ -428,4 +428,5 @@
     <string name="stats_per_year">Nach Jahr</string>
     <string name="stats_age_rating">Altersfreigabe</string>
     <string name="stats_fsk">FSK %1$d</string>
+    <string name="stats_decade_short">%1$der</string>
 </resources>
