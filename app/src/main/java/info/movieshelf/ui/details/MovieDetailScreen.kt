@@ -378,7 +378,11 @@ private fun MovieDetailContent(
                         Spacer(Modifier.height(16.dp))
                         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                             movie.boxsetChildren.forEach { childMovie ->
-                                BoxsetMovieItem(movie = childMovie, onClick = { onMovieClick(childMovie) })
+                                info.movieshelf.ui.components.MovieListRow(
+                                    movie = childMovie,
+                                    imageUrl = resolveImageUrl(ctx, childMovie.coverUrl ?: ""),
+                                    onClick = { onMovieClick(childMovie) }
+                                )
                             }
                         }
                     }
@@ -1029,48 +1033,6 @@ fun MetadataItem(
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.outline
         )
-    }
-}
-
-@Composable
-fun BoxsetMovieItem(movie: Movie, onClick: () -> Unit) {
-    val context = LocalContext.current
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(100.dp)
-            .clickable(onClick = onClick),
-        shape = MaterialTheme.shapes.medium
-    ) {
-        Row(modifier = Modifier.fillMaxSize()) {
-            if (movie.coverUrl != null) {
-                val model: Any? = remember(movie.coverUrl) { resolveImageUrl(context, movie.coverUrl) }
-                AsyncImage(
-                    model = model,
-                    contentDescription = movie.title,
-                    modifier = Modifier.width(70.dp).fillMaxHeight(),
-                    contentScale = ContentScale.Crop
-                )
-            }
-            Column(
-                modifier = Modifier
-                    .padding(12.dp)
-                    .fillMaxSize(),
-                verticalArrangement = Arrangement.Center
-            ) {
-                Text(
-                    text = movie.title ?: stringResource(R.string.common_unknown),
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-                Text(
-                    text = movie.year?.toString() ?: "",
-                    style = MaterialTheme.typography.bodySmall
-                )
-            }
-        }
     }
 }
 
