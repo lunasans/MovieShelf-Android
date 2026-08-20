@@ -84,6 +84,26 @@ interface MovieDao {
      * eindeutige Weg. Geloeschte Zeilen zaehlen mit — sie warten auf die
      * Bestaetigung der Shelf und duerfen nicht ungefragt zurueckkehren.
      */
+    /**
+     * Ein zufaelliger Titel aus der Sammlung — fuer die Auslosung, wenn man
+     * sich nicht entscheiden kann.
+     *
+     * Boxsets bleiben aussen vor: eine Huelle schaut niemand, gemeint sind die
+     * Filme darin. Gleiche Regel wie in der Desktop-App (`randomMovie`).
+     *
+     * @param collectionType "Film" oder "Serie", oder `null` fuer beides.
+     */
+    @Query("""
+        SELECT * FROM movies
+        WHERE isDeleted = 0
+          AND (inCollection = 1 OR inCollection IS NULL)
+          AND (isBoxset IS NULL OR isBoxset = 0)
+          AND (:collectionType IS NULL OR collectionType = :collectionType)
+        ORDER BY RANDOM()
+        LIMIT 1
+    """)
+    suspend fun randomMovie(collectionType: String?): MovieEntity?
+
     @Query("SELECT * FROM movies WHERE tmdbId = :tmdbId LIMIT 1")
     suspend fun findByTmdbId(tmdbId: String): MovieEntity?
 

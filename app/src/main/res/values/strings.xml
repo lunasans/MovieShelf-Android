@@ -469,4 +469,18 @@
     <string name="detail_rate_stars">%1$d von 5 Sternen</string>
     <string name="detail_rating_clear_hint">Nochmal tippen zum Entfernen</string>
     <string name="sync_full_preview">Vollständige Vorschau</string>
+    <string name="random_pick">Zufällige Auswahl</string>
+    <string name="random_again">Nochmal</string>
+    <string name="random_open">Ansehen</string>
+    <string name="random_none">In deiner Sammlung ist nichts, was sich auslosen ließe.</string>
+    <string name="sort_title">Titel</string>
+    <string name="sort_year">Jahr</string>
+    <string name="sort_rating">Bewertung</string>
+    <string name="sort_runtime">Laufzeit</string>
+    <string name="sort_added">Zugang</string>
+    <string name="sort_label">Sortierung: %1$s</string>
+    <string name="sort_ascending">Aufsteigend</string>
+    <string name="sort_descending">Absteigend</string>
+    <string name="filter_genre">Genre</string>
+    <string name="filter_genre_all">Alle Genres</string>
 </resources>

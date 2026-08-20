@@ -1,17 +1,24 @@
 # MovieShelf Android – Roadmap
 
-## Version 2.2.0 (geplant)
+## Version 2.2.0 (in Arbeit)
 
-Aktueller Stand: 2.1.0 (versionCode 31). Die Punkte unten stammen aus dem
-Funktionsvergleich mit **MovieShelf Desktop** (`versions/desktop`) — es ist das,
-was die Desktop-App kann und die App bisher nicht.
+Aktueller Stand: 2.1.0 (versionCode 31), der Versionsbump auf 2.2.0 steht noch aus.
+Die Punkte stammen aus dem Funktionsvergleich mit **MovieShelf Desktop**
+(`versions/desktop`) — beide Apps sollen nahezu identisch funktionieren, siehe
+[CLAUDE.md](CLAUDE.md).
 Priorität: 🔴 hoch · 🟡 mittel · ⚪ optional.
+
+**Erledigt für 2.2.0:** Jellyfin-Import · eigene Sternbewertung · Zeilenansicht ·
+überarbeitete Statistik · Vollsync-Fehler behoben. Alles offen in
+[PR #30](https://github.com/lunasans/MovieShelf-Android/pull/30) und
+[PR #31](https://github.com/lunasans/MovieShelf-Android/pull/31), noch nicht
+auf `main`.
 
 > Nicht auf der Liste, weil bereits vorhanden: Serien mit Staffeln/Episoden inkl.
 > Season-Backfill, Boxset-Anzeige, TMDb-Import, Schauspieler-Detailseiten, Listen,
-> **Statistiken** (`StatsScreen`), physische Sammlungsdaten (Edition, Region,
-> Regalstandort, Zustand, Kaufdatum/-preis), Standalone- und Online-Modus mit Sync,
-> Deutsch/Englisch, Hell/Dunkel, Update-Hinweis über Play.
+> Statistiken, physische Sammlungsdaten (Edition, Region, Regalstandort, Zustand,
+> Kaufdatum/-preis), Standalone- und Online-Modus mit Sync, Deutsch/Englisch,
+> Hell/Dunkel, Update-Hinweis über Play.
 > Nur mobil: 2FA-Verwaltung, Wunschlisten-Toggle, Cover-/Backdrop-Upload, OAuth-Login.
 
 ### Funktionslücken gegenüber der Desktop-App
@@ -22,7 +29,12 @@ Priorität: 🔴 hoch · 🟡 mittel · ⚪ optional.
   Schreibt lokal in die Room-Datenbank; im Shelf-Modus geht das Ergebnis über den
   normalen Abgleich zum Server — genau wie in der Desktop-App.
 
-- [] 🔴 **Massenbearbeitung** — Desktop kann mehrere Titel auswählen und gemeinsam
+- [x] 🔴 **Sortierung und Genre-Filter** — **umgesetzt.** Fünf Sortierschlüssel
+  (Titel, Jahr, Bewertung, Laufzeit, Zugang) mit Richtungsumschalter und ein
+  Genre-Filter, beide als Chips über der Liste. Die Regeln liegen als reine
+  Funktionen in `MovieSorting.kt` und sind geprüft.
+
+- [ ] 🔴 **Massenbearbeitung** — Desktop kann mehrere Titel auswählen und gemeinsam
   ändern ([BulkActionBar.vue](../desktop/src/components/BulkActionBar.vue)). Im
   Dashboard fehlt jede Mehrfachauswahl. Sinnvoller Umfang: Long-Press startet den
   Auswahlmodus, Sammelaktionen für Gesehen-Status, Genre/Tag, Regalstandort,
@@ -34,37 +46,86 @@ Priorität: 🔴 hoch · 🟡 mittel · ⚪ optional.
   `userRating`/`syncedUserRating` und geht über `POST /api/movies/{id}/rate` raus —
   sofort, und beim nächsten Abgleich noch einmal, falls der erste Versuch scheiterte.
 
-- [] 🟡 **Zufallsauswahl** — „Überrasch mich" wie [RandomPickerModal.vue](../desktop/src/components/RandomPickerModal.vue).
-  `RANDOM()` wird in [MovieDao.kt:71](app/src/main/java/info/movieshelf/data/local/db/MovieDao.kt#L71)
-  schon für die Empfehlungen benutzt, es fehlt nur die Auslosung auf die aktuell
-  gefilterte Menge plus ein Ergebnis-Sheet. Rein lokal, kein Server nötig.
-  *Aufwand: klein.*
+- [x] 🟡 **Zufallsauswahl** — **umgesetzt.** Würfel-Symbol in der Kopfzeile des
+  Dashboards; das Ergebnis kommt als Blatt von unten mit Cover, Titel, Eckdaten
+  und Inhalt, dazu „Nochmal" und „Ansehen". Die Auslosung folgt der geöffneten
+  Kategorie (Serien bleiben Serien), lässt Boxsets, gelöschte und nicht
+  gesammelte Titel aus und läuft rein lokal.
 
-- [] 🟡 **Besetzung manuell pflegen** — Desktop hat einen Schauspieler-Picker
+- [ ] 🟡 **Besetzung manuell pflegen** — Desktop hat einen Schauspieler-Picker
   ([ActorPickerModal.vue](../desktop/src/components/movies/ActorPickerModal.vue));
   der Android-Edit-Screen kennt keine Schauspieler-Zuordnung. Lesend ist alles da
   (`GET /api/actors`, `/api/actors/search`). **Server:** `AdminMovieController::update`
   schreibt die `actors`-Relation nicht — Endpunkt bzw. Feld muss ergänzt werden.
   *Aufwand: mittel (Server + App).*
 
-- [] 🟡 **Boxset-Zuordnung bearbeiten** — die App *zeigt* Boxset-Kinder im Detail
+- [ ] 🟡 **Boxset-Zuordnung bearbeiten** — die App *zeigt* Boxset-Kinder im Detail
   ([MovieDetailScreen.kt:324](app/src/main/java/info/movieshelf/ui/details/MovieDetailScreen.kt#L324)),
   kann sie aber nicht zuordnen oder entfernen; Desktop schon
   ([CollectionPartsSection.vue](../desktop/src/components/movies/CollectionPartsSection.vue)).
   **Server:** wie oben, die Eltern-/Kind-Beziehung ist im Admin-Update nicht
   schreibbar. *Aufwand: mittel (Server + App).*
 
-- [x] ⚪ **Ansichtsmodi der Sammlung** — Desktop bietet Karten-, Zeilen- und
-  Tabellenansicht (`MovieCard`/`MovieListRow`/`MovieTableRow`); Android hat nur das
-  Poster-Grid. Auf dem Telefon lohnt am ehesten eine kompakte Zeilenansicht (Cover
-  klein, Titel/Jahr/Regalstandort daneben) als Umschalter im Dashboard, gespeichert
-  in DataStore. *Aufwand: klein–mittel.*
+- [x] ⚪ **Ansichtsmodi der Sammlung** — **umgesetzt.** Umschalter als Chip über der
+  Liste zwischen Poster-Raster und kompakter Zeilenansicht mit Regalstandort; die
+  Wahl liegt im DataStore. Die Tabellenansicht des Desktops bleibt bewusst aus —
+  siehe unten.
+
+### Neu aufgenommen (aus der Arbeit an 2.2.0)
+
+- [ ] 🔴 **Zugriffe verwalten** — die Shelf bekommt einen Profil-Abschnitt, in dem
+  angemeldete Geräte, verbundene Apps, Browser-Sitzungen und Freigabe-Links
+  einsehbar und widerrufbar sind ([MovieShelf-SaaS#80](https://github.com/lunasans/MovieShelf-SaaS/pull/80)).
+  Nach dem Paritäts-Grundsatz gehört dasselbe in die App, neben die 2FA-Verwaltung.
+  Braucht zuerst API-Endpunkte zum Auflisten und Widerrufen — bisher gibt es nur
+  `POST /api/logout` für den eigenen Token. *Aufwand: mittel (Server + App).*
+
+- [ ] 🟡 **Gesehen-Stand von Episoden** — `POST /api/episodes/{id}/watched` gibt es,
+  die App zeigt Episoden nur an. Betrifft dieselbe Sorte Feld wie die Bewertung:
+  benutzergebunden, eigener Endpunkt, also eigener bestätigter Stand und eigener
+  Push-Schritt (siehe [CLAUDE.md](CLAUDE.md), Abschnitt Abgleich). *Aufwand: mittel.*
+
+- [ ] ⚪ **Anzeige der Zahl gesehener Titel im Delta-Abgleich** — beim Behandeln des
+  Vollsync-Fehlers fiel auf, dass die Vorschau offene Bewertungen nicht mitzählt
+  (`SyncPreview.toPushWatched` hat kein Gegenstück für Bewertungen). Kosmetisch,
+  aber die Vorschau soll vollständig sein. *Aufwand: klein.*
+
+### Offen, unabhängig vom Desktop-Vergleich
+
+Im Code nachgeprüft, nicht aus dem Archiv übernommen — die 1.7.0-Liste dort ist
+teils überholt.
+
+- [ ] 🟡 **Wunschlisten-Ansicht** — die Wunschliste lässt sich im Detail per Herz
+  füllen, aber nirgends ansehen: eine Ansicht für `in_collection = false` fehlt.
+  Der Schalter füllt damit einen Topf, den niemand öffnen kann. Server ist
+  vollständig. *Aufwand: mittel.*
+
+- [ ] 🟡 **Fehler-/Retry-Zustand im Detail-Screen** — Stats und Actor haben ihn,
+  der Detail-Screen nicht (`common_retry` kommt dort nicht vor). Schlägt das Laden
+  fehl, bleibt die Ansicht ohne Weg zurück. *Aufwand: klein.*
+
+- [ ] 🟡 **Typisierte TMDb-DTOs im Anlegen-Weg** — `AddMovieScreen` und
+  `AddMovieViewModel` arbeiten weiter mit `Map<String, Any>` und ungeprüften Casts.
+  Für die Suche ist das erledigt, für den Import-Weg nicht. *Aufwand: klein–mittel.*
+
+- [x] 🟡 **Tests für die Sortierlogik** — **umgesetzt** zusammen mit der Sortierung:
+  Bewertungen mit Komma, fehlende Werte in beiden Richtungen, stabile Reihenfolge
+  bei Gleichstand, Genre-Vergleich der Einzelteile.
+
+- [ ] ⚪ **Restliche Screens auf `PosterCard`** — nur Dashboard und Detail nutzen die
+  geteilte Karte; Lists, ActorDetail, Stats, Profile, Add und Edit bringen eigene
+  Poster-Darstellungen mit. Rein optisch, aber es hält den „Shelf"-Look zusammen.
+  *Aufwand: klein–mittel.*
 
 ### Bewusst nicht übernommen
 
 - **Statistik-Fenster** — Desktop kann die Statistiken in ein eigenes Fenster
   auslösen. Auf Mobil ohne Entsprechung; der bestehende `StatsScreen` deckt den
   Inhalt ab.
+- **Tabellenansicht** — Desktop bietet neben Karten und Zeilen eine Tabelle. Auf
+  einem Telefonschirm bleibt von den Spalten nichts Lesbares übrig; die
+  Zeilenansicht deckt den Zweck ab.
+
 - **Backup als `.ms`-Archiv** — Desktop exportiert Datenbank plus Cover in eine
   Datei. Auf Android ist die Room-DB an die App gebunden; ein Austauschformat wäre
   nur sinnvoll, wenn es zwischen beiden Apps kompatibel ist. Zurückgestellt, bis
