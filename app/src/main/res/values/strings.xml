@@ -478,7 +478,6 @@
     <string name="sort_rating">Bewertung</string>
     <string name="sort_runtime">Laufzeit</string>
     <string name="sort_added">Zugang</string>
-    <string name="sort_label">Sortierung: %1$s</string>
     <string name="sort_ascending">Aufsteigend</string>
     <string name="sort_descending">Absteigend</string>
     <string name="filter_genre">Genre</string>
