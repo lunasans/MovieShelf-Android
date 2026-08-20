@@ -129,6 +129,27 @@ class MovieSortingTest {
         assertEquals(listOf("Action", "Drama", "Sci-Fi"), genresOf(movies))
     }
 
+    @Test
+    fun `eine Sammelaktion fasst nur an, was noch nicht stimmt`() {
+        val movies = listOf(
+            movie(title = "Schon gesehen").copy(isWatched = true),
+            movie(title = "Ungesehen").copy(isWatched = false),
+            movie(title = "Unbekannt").copy(isWatched = null)
+        )
+
+        // Gesetzt, nicht umgeschaltet: sonst liefe bei gemischter Auswahl die
+        // Haelfte in die falsche Richtung. Und jeder ueberfluessige Aufruf
+        // ginge einzeln an die Shelf.
+        assertEquals(
+            listOf("Ungesehen", "Unbekannt"),
+            moviesNeedingWatchedChange(movies, target = true).map { it.title }
+        )
+        assertEquals(
+            listOf("Schon gesehen"),
+            moviesNeedingWatchedChange(movies, target = false).map { it.title }
+        )
+    }
+
     private fun movie(
         title: String = "Titel",
         year: Int? = 2000,
