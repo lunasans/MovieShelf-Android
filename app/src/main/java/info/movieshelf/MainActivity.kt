@@ -399,6 +399,7 @@ fun MovieShelfApp(oauthCallbackUri: MutableState<Uri?> = mutableStateOf(null)) {
                         onBack = { navController.popBackStack() },
                         onListsClick = { navController.navigate("lists") },
                         onTwoFactorClick = { navController.navigate("twofactor") },
+                        onJellyfinClick = { navController.navigate("jellyfin") },
                         onSyncClick = { navController.navigate("sync") },
                         isStandalone = appMode == AppMode.STANDALONE,
                         onConnectShelfClick = {
@@ -414,6 +415,12 @@ fun MovieShelfApp(oauthCallbackUri: MutableState<Uri?> = mutableStateOf(null)) {
                 }
                 composable("twofactor") {
                     TwoFactorScreen(onBack = { navController.popBackStack() })
+                }
+                composable("jellyfin") {
+                    info.movieshelf.ui.jellyfin.JellyfinScreen(
+                        onBack = { navController.popBackStack() },
+                        isShelfMode = appMode != AppMode.STANDALONE
+                    )
                 }
                 composable("create_movie") {
                     CreateMovieScreen(

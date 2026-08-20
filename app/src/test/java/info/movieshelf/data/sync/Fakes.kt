@@ -33,6 +33,12 @@ open class FakeMovieDao : MovieDao {
     override suspend fun findLocalIdByRemoteId(remoteId: Int): Long? =
         rows.firstOrNull { it.remoteId == remoteId }?.localId
 
+    override suspend fun findByTmdbId(tmdbId: String): MovieEntity? =
+        rows.firstOrNull { it.tmdbId == tmdbId }
+
+    override suspend fun findByYear(year: Int?): List<MovieEntity> =
+        rows.filter { it.year == year }
+
     override suspend fun insert(movie: MovieEntity): Long {
         val id = if (movie.localId != 0L) movie.localId else (rows.maxOfOrNull { it.localId } ?: 0L) + 1
         rows.removeAll { it.localId == id }
