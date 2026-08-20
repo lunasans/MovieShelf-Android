@@ -475,7 +475,6 @@
     <string name="sort_rating">Rating</string>
     <string name="sort_runtime">Runtime</string>
     <string name="sort_added">Added</string>
-    <string name="sort_label">Sort: %1$s</string>
     <string name="sort_ascending">Ascending</string>
     <string name="sort_descending">Descending</string>
     <string name="filter_genre">Genre</string>

@@ -2,6 +2,7 @@ package info.movieshelf.ui.dashboard
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items as lazyRowItems
@@ -19,6 +20,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
+import androidx.compose.material.icons.automirrored.filled.Sort
 import androidx.compose.material.icons.automirrored.filled.ViewList
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -346,12 +348,17 @@ fun DashboardScreen(
                     // Kopfzeile, weil die sich beim Scrollen einfaehrt — und weil
                     // er dort steht, wo seine Wirkung eintritt.
                     item(span = { GridItemSpan(maxLineSpan) }) {
+                        // Waagerecht scrollbar: vier Chips passen auf einem
+                        // Telefon nicht nebeneinander, und gestaucht wurde aus
+                        // "Liste" eine Buchstabensaeule. Lieber schieben als
+                        // quetschen.
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
+                                .horizontalScroll(rememberScrollState())
                                 .padding(horizontal = 8.dp),
                             verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.SpaceBetween
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
                             viewModel.selectedShelf?.let { shelf ->
                                 InputChip(
@@ -360,37 +367,35 @@ fun DashboardScreen(
                                     label = { Text("${stringResource(shelf.labelRes)} · ${viewModel.movies.size}") },
                                     trailingIcon = { Icon(Icons.Default.Close, null, Modifier.size(14.dp)) }
                                 )
-                            } ?: Spacer(Modifier.width(0.dp))
+                            }
 
-                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                SortChip(
-                                    sortKey = viewModel.sortKey,
-                                    ascending = viewModel.sortAscending,
-                                    onSelect = { viewModel.onSortKeyChange(it) },
-                                    onToggleDirection = { viewModel.toggleSortDirection() }
-                                )
-                                if (viewModel.availableGenres.isNotEmpty()) {
-                                    GenreChip(
-                                        genres = viewModel.availableGenres,
-                                        selected = viewModel.selectedGenre,
-                                        onSelect = { viewModel.onGenreSelected(it) }
-                                    )
-                                }
-                                ViewModeChip(
-                                    viewMode = viewMode,
-                                    onToggle = {
-                                        scope.launch {
-                                            dataStoreManager.saveCollectionViewMode(
-                                                if (viewMode == CollectionViewMode.GRID) {
-                                                    CollectionViewMode.LIST
-                                                } else {
-                                                    CollectionViewMode.GRID
-                                                }
-                                            )
-                                        }
-                                    }
+                            SortChip(
+                                sortKey = viewModel.sortKey,
+                                ascending = viewModel.sortAscending,
+                                onSelect = { viewModel.onSortKeyChange(it) },
+                                onToggleDirection = { viewModel.toggleSortDirection() }
+                            )
+                            if (viewModel.availableGenres.isNotEmpty()) {
+                                GenreChip(
+                                    genres = viewModel.availableGenres,
+                                    selected = viewModel.selectedGenre,
+                                    onSelect = { viewModel.onGenreSelected(it) }
                                 )
                             }
+                            ViewModeChip(
+                                viewMode = viewMode,
+                                onToggle = {
+                                    scope.launch {
+                                        dataStoreManager.saveCollectionViewMode(
+                                            if (viewMode == CollectionViewMode.GRID) {
+                                                CollectionViewMode.LIST
+                                            } else {
+                                                CollectionViewMode.GRID
+                                            }
+                                        )
+                                    }
+                                }
+                            )
                         }
                     }
                     items(viewModel.movies, key = { it.id }) { movie ->
@@ -480,10 +485,19 @@ private fun SortChip(
     Box {
         AssistChip(
             onClick = { expanded = true },
+            leadingIcon = {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.Sort,
+                    contentDescription = null,
+                    modifier = Modifier.size(16.dp)
+                )
+            },
             label = {
                 Text(
-                    stringResource(R.string.sort_label, stringResource(sortKey.labelRes)),
-                    style = MaterialTheme.typography.labelMedium
+                    stringResource(sortKey.labelRes),
+                    style = MaterialTheme.typography.labelMedium,
+                    maxLines = 1,
+                    softWrap = false
                 )
             },
             trailingIcon = {
@@ -534,6 +548,7 @@ private fun GenreChip(genres: List<String>, selected: String?, onSelect: (String
                     selected ?: stringResource(R.string.filter_genre),
                     style = MaterialTheme.typography.labelMedium,
                     maxLines = 1,
+                    softWrap = false,
                     overflow = TextOverflow.Ellipsis
                 )
             },
@@ -600,7 +615,9 @@ private fun ViewModeChip(viewMode: CollectionViewMode, onToggle: () -> Unit) {
         label = {
             Text(
                 stringResource(if (toList) R.string.view_mode_list else R.string.view_mode_grid),
-                style = MaterialTheme.typography.labelMedium
+                style = MaterialTheme.typography.labelMedium,
+                maxLines = 1,
+                softWrap = false
             )
         },
         leadingIcon = {
