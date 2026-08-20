@@ -514,4 +514,13 @@
     <string name="selection_mark_unwatched">Als ungesehen markieren</string>
     <string name="selection_delete">Löschen</string>
     <string name="selection_delete_question">%1$d Titel werden aus der Sammlung entfernt. Das lässt sich nicht zurücknehmen.</string>
+    <string name="form_section_cast">Besetzung</string>
+    <string name="form_section_boxset">Boxset</string>
+    <string name="form_role">Rolle</string>
+    <string name="form_main_role">Hauptrolle</string>
+    <string name="form_remove_actor">Entfernen</string>
+    <string name="form_add_actor">Schauspieler suchen…</string>
+    <string name="form_add_actor_named">„%1$s“ neu anlegen</string>
+    <string name="form_boxset_none">— Eigenständiger Titel —</string>
+    <string name="form_boxset_is_boxset">Dieser Titel ist selbst ein Boxset und kann deshalb nicht Teil eines anderen werden.</string>
 </resources>

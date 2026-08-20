@@ -52,19 +52,15 @@ auf `main`.
   Kategorie (Serien bleiben Serien), lässt Boxsets, gelöschte und nicht
   gesammelte Titel aus und läuft rein lokal.
 
-- [ ] 🟡 **Besetzung manuell pflegen** — Desktop hat einen Schauspieler-Picker
-  ([ActorPickerModal.vue](../desktop/src/components/movies/ActorPickerModal.vue));
-  der Android-Edit-Screen kennt keine Schauspieler-Zuordnung. Lesend ist alles da
-  (`GET /api/actors`, `/api/actors/search`). **Server:** `AdminMovieController::update`
-  schreibt die `actors`-Relation nicht — Endpunkt bzw. Feld muss ergänzt werden.
-  *Aufwand: mittel (Server + App).*
+- [x] 🟡 **Besetzung manuell pflegen** — **umgesetzt.** Abschnitt „Besetzung" im
+  Bearbeiten-Formular: suchen, hinzufügen, Rolle eintragen, Hauptrolle
+  markieren, entfernen. Ein Name ohne Treffer lässt sich trotzdem aufnehmen —
+  die Shelf legt die Person an. **Braucht MovieShelf-SaaS#85.**
 
-- [ ] 🟡 **Boxset-Zuordnung bearbeiten** — die App *zeigt* Boxset-Kinder im Detail
-  ([MovieDetailScreen.kt:324](app/src/main/java/info/movieshelf/ui/details/MovieDetailScreen.kt#L324)),
-  kann sie aber nicht zuordnen oder entfernen; Desktop schon
-  ([CollectionPartsSection.vue](../desktop/src/components/movies/CollectionPartsSection.vue)).
-  **Server:** wie oben, die Eltern-/Kind-Beziehung ist im Admin-Update nicht
-  schreibbar. *Aufwand: mittel (Server + App).*
+- [x] 🟡 **Boxset-Zuordnung bearbeiten** — **umgesetzt.** Auswahlfeld im
+  Bearbeiten-Formular; die Kandidaten kommen aus der lokalen Sammlung, damit die
+  Auswahl auch ohne Netz steht. Ist der Titel selbst ein Boxset, steht statt der
+  Auswahl ein Satz. **Braucht MovieShelf-SaaS#85.**
 
 - [x] ⚪ **Ansichtsmodi der Sammlung** — **umgesetzt.** Umschalter als Chip über der
   Liste zwischen Poster-Raster und kompakter Zeilenansicht mit Regalstandort; die

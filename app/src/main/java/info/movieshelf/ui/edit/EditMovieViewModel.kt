@@ -6,9 +6,12 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import info.movieshelf.data.model.CastEntryRequest
 import info.movieshelf.data.model.MovieUpdateRequest
 import info.movieshelf.data.local.db.UploadKind
 import info.movieshelf.data.repository.MovieRepository
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import retrofit2.HttpException
 import info.movieshelf.R
@@ -56,6 +59,105 @@ class EditMovieViewModel(
     var purchasePrice by mutableStateOf("")
     var condition by mutableStateOf("")
     var inCollection by mutableStateOf(true)
+
+    // ── Besetzung ────────────────────────────────────────────────────────────
+
+    /**
+     * Die Besetzung, wie sie gespeichert wird. Die Reihenfolge der Liste ist
+     * die Reihenfolge der Anzeige — deshalb eine Liste und keine Menge.
+     */
+    var cast by mutableStateOf<List<CastEntryRequest>>(emptyList())
+        private set
+
+    var actorQuery by mutableStateOf("")
+    var actorSuggestions by mutableStateOf<List<info.movieshelf.data.model.Actor>>(emptyList())
+        private set
+    private var searchJob: Job? = null
+
+    fun onActorQueryChange(query: String) {
+        actorQuery = query
+        searchJob?.cancel()
+        if (query.trim().length < 2) {
+            actorSuggestions = emptyList()
+            return
+        }
+        searchJob = viewModelScope.launch {
+            // Kurz warten: sonst geht bei jedem Buchstaben eine Anfrage raus.
+            delay(300)
+            actorSuggestions = runCatching { repository.searchActors(query.trim()) }
+                .getOrDefault(emptyList())
+                // Wer schon in der Besetzung steht, gehoert nicht in die
+                // Vorschlagsliste — ihn ein zweites Mal aufzunehmen ergaebe
+                // denselben Namen doppelt.
+                .filterNot { vorschlag -> cast.any { it.id != null && it.id == vorschlag.id } }
+        }
+    }
+
+    fun addActor(actor: info.movieshelf.data.model.Actor) {
+        val name = actor.name?.takeIf { it.isNotBlank() } ?: return
+        addCastEntry(CastEntryRequest(id = actor.id, name = name))
+    }
+
+    /** Ein Name ohne Treffer: die Shelf legt die Person beim Speichern an. */
+    fun addActorByName(name: String) {
+        val trimmed = name.trim()
+        if (trimmed.isNotBlank()) addCastEntry(CastEntryRequest(name = trimmed))
+    }
+
+    private fun addCastEntry(entry: CastEntryRequest) {
+        val schonDa = cast.any {
+            (entry.id != null && it.id == entry.id) ||
+                (it.name?.equals(entry.name, ignoreCase = true) == true)
+        }
+        if (!schonDa) {
+            // Die ersten drei gelten als Hauptrollen, wie es die Anzeige
+            // ohnehin annimmt, wenn die Shelf nichts anderes sagt.
+            cast = cast + entry.copy(isMainRole = cast.size < 3)
+        }
+        actorQuery = ""
+        actorSuggestions = emptyList()
+    }
+
+    fun removeCastEntry(index: Int) {
+        cast = cast.filterIndexed { i, _ -> i != index }
+    }
+
+    fun setRole(index: Int, role: String) {
+        cast = cast.mapIndexed { i, entry ->
+            if (i == index) entry.copy(role = role.ifBlank { null }) else entry
+        }
+    }
+
+    fun toggleMainRole(index: Int) {
+        cast = cast.mapIndexed { i, entry ->
+            if (i == index) entry.copy(isMainRole = !entry.isMainRole) else entry
+        }
+    }
+
+    // ── Boxset ───────────────────────────────────────────────────────────────
+
+    /** Server-ID des Boxsets, zu dem der Titel gehoert; `null` = eigenstaendig. */
+    var boxsetParent by mutableStateOf<Int?>(null)
+        private set
+
+    /** Titel, die als Boxset in Frage kommen. */
+    var boxsetCandidates by mutableStateOf<List<info.movieshelf.data.model.Movie>>(emptyList())
+        private set
+
+    /** Ist dieser Titel selbst ein Boxset? Dann kann er nicht Teil eines anderen werden. */
+    var isBoxsetItself by mutableStateOf(false)
+        private set
+
+    fun onBoxsetSelected(remoteId: Int?) {
+        boxsetParent = remoteId
+    }
+
+    private fun loadBoxsetCandidates(movie: info.movieshelf.data.model.Movie) {
+        viewModelScope.launch {
+            boxsetCandidates = runCatching { repository.boxsetCandidates(movie.localId) }
+                .getOrDefault(emptyList())
+        }
+    }
 
     // Momentaufnahme der Anfangswerte (nach dem Laden)
     private var initialTitle = ""
@@ -112,6 +214,20 @@ class EditMovieViewModel(
             if (movie == null) {
                 loadError = true
             } else {
+                cast = movie.actors.orEmpty().mapNotNull { actor ->
+                    actor.name?.takeIf { it.isNotBlank() }?.let { name ->
+                        CastEntryRequest(
+                            id = actor.id,
+                            name = name,
+                            role = actor.role,
+                            isMainRole = actor.isMainRole == true
+                        )
+                    }
+                }
+                boxsetParent = movie.boxsetParentId
+                isBoxsetItself = movie.isBoxset == true
+                loadBoxsetCandidates(movie)
+
                 title          = movie.title ?: ""
                 year           = movie.year?.toString() ?: ""
                 collectionType = movie.collectionType ?: ""
@@ -186,7 +302,12 @@ class EditMovieViewModel(
                     purchaseDate   = purchaseDate.trim().ifBlank { null },
                     purchasePrice  = purchasePrice.trim().replace(',', '.').toDoubleOrNull(),
                     condition      = condition.trim().ifBlank { null },
-                    inCollection   = inCollection
+                    inCollection   = inCollection,
+                    // Die Besetzung geht immer mit — der Screen zeigt sie, also
+                    // ist das, was darin steht, der gewollte Stand. (Die Shelf
+                    // laesst sie unangetastet, wenn der Schluessel fehlt.)
+                    actors         = cast,
+                    boxsetParent   = boxsetParent
                 )
                 repository.updateMovieByLocalId(movieLocalId, request)
                 saved = true

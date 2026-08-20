@@ -347,7 +347,28 @@ data class MovieUpdateRequest(
     @SerializedName("purchase_date") val purchaseDate: String? = null,
     @SerializedName("purchase_price") val purchasePrice: Double? = null,
     val condition: String? = null,
-    @SerializedName("in_collection") val inCollection: Boolean? = null
+    @SerializedName("in_collection") val inCollection: Boolean? = null,
+    /**
+     * Besetzung. `null` laesst sie unangetastet — die Shelf fasst sie nur an,
+     * wenn der Schluessel mitkommt. Eine leere Liste raeumt sie ab.
+     */
+    val actors: List<CastEntryRequest>? = null,
+    /** Zugehoerigkeit zu einem Boxset; `null` loest sie. */
+    @SerializedName("boxset_parent") val boxsetParent: Int? = null
+)
+
+/**
+ * Ein Eintrag der Besetzung beim Speichern.
+ *
+ * Entweder [id] (bekannter Schauspieler) oder [name] — die Shelf legt einen
+ * unbekannten Namen selbst an. Die Reihenfolge der Liste ist die Reihenfolge
+ * der Anzeige.
+ */
+data class CastEntryRequest(
+    val id: Int? = null,
+    val name: String? = null,
+    val role: String? = null,
+    @SerializedName("is_main_role") val isMainRole: Boolean = false
 )
 
 /** Antwort von POST api/movies/{id}/rate. */

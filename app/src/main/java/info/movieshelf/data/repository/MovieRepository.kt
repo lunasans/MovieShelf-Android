@@ -137,6 +137,24 @@ class MovieRepository(
     suspend fun randomMovie(collectionType: String? = null): Movie? =
         movieDao.randomMovie(collectionType)?.let { withLocalDetails(it) }
 
+    /** Schauspieler suchen — fuer die Besetzung im Bearbeiten-Formular. */
+    suspend fun searchActors(query: String): List<info.movieshelf.data.model.Actor> =
+        api.searchActors(query).data.orEmpty()
+
+    /**
+     * Titel, die als Boxset in Frage kommen.
+     *
+     * Aus der lokalen Sammlung, nicht vom Server: die Auswahl steht im
+     * Formular und soll auch ohne Netz stehen. Ausgenommen sind der Titel
+     * selbst und alles, was schon Teil eines anderen ist — geschachtelt wird
+     * nicht, dieselbe Regel wie auf der Shelf.
+     */
+    suspend fun boxsetCandidates(exceptLocalId: Long): List<Movie> =
+        movieDao.getAllMovies()
+            .filter { it.localId != exceptLocalId && it.boxsetParentRemoteId == null && it.remoteId != null }
+            .map { it.toMovie() }
+            .sortedWith(compareBy(String.CASE_INSENSITIVE_ORDER) { it.title.orEmpty() })
+
     /** Vorgemerkte Titel — die Wunschliste. */
     suspend fun getWishlist(): List<Movie> = movieDao.getWishlist().map { it.toMovie() }
 
