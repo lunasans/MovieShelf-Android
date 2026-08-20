@@ -85,10 +85,9 @@ auf `main`.
   übertragen; eigener bestätigter Stand (`syncedWatched`) und eigener
   Push-Schritt, wie bei Film und Bewertung. Room 12 → 13.
 
-- [ ] ⚪ **Anzeige der Zahl gesehener Titel im Delta-Abgleich** — beim Behandeln des
-  Vollsync-Fehlers fiel auf, dass die Vorschau offene Bewertungen nicht mitzählt
-  (`SyncPreview.toPushWatched` hat kein Gegenstück für Bewertungen). Kosmetisch,
-  aber die Vorschau soll vollständig sein. *Aufwand: klein.*
+- [x] ⚪ **Vollständige Sync-Vorschau** — **umgesetzt.** Die Vorschau zählt jetzt
+  auch offene Bewertungen und Folgen-Markierungen; vorher meldete sie „nichts zu
+  tun", während beides anstand.
 
 ### Offen, unabhängig vom Desktop-Vergleich
 

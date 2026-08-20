@@ -554,6 +554,43 @@ class SyncEngineTest {
         assertEquals("Die eigene Bewertung darf nicht verlorengehen", 5, dao.rows.single().userRating)
     }
 
+    @Test
+    fun `die Vorschau zaehlt offene Bewertungen mit`() = runBlocking {
+        val dao = FakeMovieDao()
+        // Sauber bis auf die Bewertung: ohne eigenen Posten meldete die
+        // Vorschau "nichts zu tun", waehrend sehr wohl etwas anstand.
+        dao.rows += movie(localId = 1, remoteId = 10, title = "Arrival")
+            .copy(
+                updatedAt = "2026-08-10T10:00:00Z",
+                syncedAt = "2026-08-10T10:00:00Z",
+                userRating = 4,
+                syncedUserRating = null
+            )
+
+        val preview = engine(
+            dao,
+            FakeSettingDao(),
+            FakeSyncApi(export = ExportResponse(exportedAt = "t", movies = emptyList()))
+        ).preview()
+
+        assertEquals(1, preview.toPushUserRatings)
+        assertEquals(1, preview.outgoing)
+        assertTrue("Die Vorschau darf nicht leer aussehen", !preview.isEmpty)
+    }
+
+    @Test
+    fun `die Vorschau zaehlt offene Folgen-Markierungen mit`() = runBlocking {
+        val preview = SyncEngine(
+            FakeMovieDao(),
+            FakeSettingDao(),
+            { FakeSyncApi(export = ExportResponse(exportedAt = "t", movies = emptyList())) },
+            pendingEpisodeWatchedCount = { 3 }
+        ).preview()
+
+        assertEquals(3, preview.toPushEpisodesWatched)
+        assertEquals(3, preview.outgoing)
+    }
+
     private fun engine(dao: FakeMovieDao, settings: FakeSettingDao, api: FakeSyncApi) =
         SyncEngine(dao, settings, { api })
 

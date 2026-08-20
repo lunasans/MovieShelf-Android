@@ -52,6 +52,11 @@ class SyncEngine(
     /** Offene Folgen-Markierungen, eigener Endpunkt wie die uebrigen. */
     private val pushEpisodeWatched: suspend ((Int, Int, String?) -> Unit) -> Int = { 0 },
     /**
+     * Wie viele Folgen-Markierungen offen sind — nur fuer die Vorschau.
+     * Der Abgleich selbst zaehlt beim Senden.
+     */
+    private val pendingEpisodeWatchedCount: suspend () -> Int = { 0 },
+    /**
      * Staffeln und Episoden einer Serie einspielen. Wie [flushPendingUploads]
      * als Funktion hereingereicht, damit der Film-Abgleich nicht an der
      * Serien-Tabelle haengt.
@@ -227,9 +232,13 @@ class SyncEngine(
 
         val total = incomingNew + incomingUpdated + incomingDeleted + keptLocal + dirty.size
         val pendingWatched = movieDao.getPendingWatched().size
+        val pendingRatings = movieDao.getPendingUserRatings().size
+        val pendingEpisodes = pendingEpisodeWatchedCount()
 
         return SyncPreview(
             toPushWatched = pendingWatched,
+            toPushUserRatings = pendingRatings,
+            toPushEpisodesWatched = pendingEpisodes,
             items = items,
             overflow = maxOf(0, total - items.size),
             toCreate = toCreate,
@@ -671,10 +680,18 @@ data class SyncPreview(
      * meldete die Vorschau "nichts zu tun", waehrend sehr wohl etwas anstand.
      */
     val toPushWatched: Int = 0,
+    /**
+     * Offene eigene Bewertungen und Folgen-Markierungen. Aus demselben Grund
+     * eigene Posten wie [toPushWatched]: sie gehen ueber eigene Endpunkte und
+     * tauchen in [toUpdate] nicht auf.
+     */
+    val toPushUserRatings: Int = 0,
+    val toPushEpisodesWatched: Int = 0,
     val isDelta: Boolean = false,
     val lastSyncAt: String? = null
 ) {
-    val outgoing: Int get() = toCreate + toUpdate + toDeleteRemote + toPushWatched
+    val outgoing: Int get() =
+        toCreate + toUpdate + toDeleteRemote + toPushWatched + toPushUserRatings + toPushEpisodesWatched
     val incoming: Int get() = incomingNew + incomingUpdated + incomingDeleted
     val hasDeletions: Boolean get() = toDeleteRemote > 0 || incomingDeleted > 0
     val isEmpty: Boolean get() = outgoing == 0 && incoming == 0
