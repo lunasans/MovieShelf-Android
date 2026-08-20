@@ -154,10 +154,15 @@ private fun MovieDetailContent(
             viewModel.listActionMessage = null
         }
     }
-    LaunchedEffect(viewModel.error) {
-        viewModel.error?.let {
-            Toast.makeText(ctx, it.asString(ctx), Toast.LENGTH_SHORT).show()
-            viewModel.error = null
+    // Eine kurze Meldung taugt nur, solange der Film zu sehen ist — sie
+    // verschwindet ja wieder. Scheitert das Laden ganz, bleibt der Fehler
+    // stehen und bekommt unten einen eigenen Zustand mit "Erneut versuchen".
+    LaunchedEffect(viewModel.error, movie) {
+        if (movie != null) {
+            viewModel.error?.let {
+                Toast.makeText(ctx, it.asString(ctx), Toast.LENGTH_SHORT).show()
+                viewModel.error = null
+            }
         }
     }
     val scrollState = rememberScrollState()
@@ -274,7 +279,34 @@ private fun MovieDetailContent(
             Box(Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
                 CircularProgressIndicator()
             }
-        } else if (movie != null) {
+        } else if (movie == null) {
+            // Ohne diesen Zustand blieb hier eine leere Seite zurueck: die
+            // Meldung war nach zwei Sekunden weg, und der einzige Ausweg war
+            // die Zurueck-Geste.
+            Box(Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    modifier = Modifier.padding(horizontal = 32.dp)
+                ) {
+                    Icon(
+                        Icons.Default.CloudOff,
+                        contentDescription = null,
+                        modifier = Modifier.size(64.dp),
+                        tint = MaterialTheme.colorScheme.outline
+                    )
+                    Spacer(Modifier.height(16.dp))
+                    Text(
+                        text = viewModel.error?.asString() ?: stringResource(R.string.error_movie_not_loaded_short),
+                        style = MaterialTheme.typography.titleMedium,
+                        textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                    )
+                    Spacer(Modifier.height(16.dp))
+                    Button(onClick = { viewModel.reload() }, shape = info.movieshelf.ui.theme.PillShape) {
+                        Text(stringResource(R.string.common_retry), fontWeight = FontWeight.Bold)
+                    }
+                }
+            }
+        } else {
             Column(
                 modifier = Modifier
                     .fillMaxSize()
