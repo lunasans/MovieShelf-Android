@@ -19,6 +19,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
+import androidx.compose.material.icons.automirrored.filled.ViewList
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
@@ -44,14 +45,18 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.compose.ui.res.stringResource
 import info.movieshelf.MovieShelfApplication
 import info.movieshelf.R
+import info.movieshelf.data.local.CollectionViewMode
+import info.movieshelf.data.local.DataStoreManager
 import info.movieshelf.data.model.Movie
 import info.movieshelf.ui.components.FloatingNavBar
+import info.movieshelf.ui.components.MovieListRow
 import info.movieshelf.ui.components.PosterCard
 import info.movieshelf.ui.components.RatingBadge
 import info.movieshelf.ui.theme.BackgroundDark
 import info.movieshelf.ui.theme.HeroBannerShape
 import info.movieshelf.ui.theme.NavAccentRed
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import info.movieshelf.ui.util.MovieCardSkeleton
 import info.movieshelf.ui.util.resolveImageUrl
 import coil.compose.AsyncImage
@@ -77,6 +82,12 @@ fun DashboardScreen(
     }
 
     val gridState = rememberLazyGridState()
+
+    // Raster oder Zeilen — die Wahl haelt ueber Neustarts, sie ist eine
+    // Gewohnheit und keine Momententscheidung.
+    val dataStoreManager = remember { DataStoreManager(context) }
+    val viewMode by dataStoreManager.collectionViewMode.collectAsState(initial = CollectionViewMode.GRID)
+    val scope = rememberCoroutineScope()
 
     // Pagination: lade mehr wenn nahe am Ende
     val shouldLoadMore by remember {
@@ -300,9 +311,13 @@ fun DashboardScreen(
                     }
                 }
             } else {
+                val isListMode = viewMode == CollectionViewMode.LIST
+                // Auch die Zeilenansicht laeuft ueber das Raster, nur einspaltig:
+                // so gelten Pagination (`gridState`), Suchfeld und Kategorie-Chip
+                // unveraendert fuer beide Darstellungen.
                 LazyVerticalGrid(
                     state = gridState,
-                    columns = GridCells.Adaptive(minSize = 150.dp),
+                    columns = if (isListMode) GridCells.Fixed(1) else GridCells.Adaptive(minSize = 150.dp),
                     contentPadding = PaddingValues(top = 8.dp, start = 8.dp, end = 8.dp, bottom = 100.dp),
                     modifier = Modifier.fillMaxSize()
                 ) {
@@ -315,33 +330,112 @@ fun DashboardScreen(
                         )
                     }
 
-                    // stringResource(R.string.common_show_all)-Modus: Kategorie-Chip als Rückweg zu den Shelf-Reihen
-                    viewModel.selectedShelf?.let { shelf ->
-                        item(span = { GridItemSpan(maxLineSpan) }) {
-                            Row(modifier = Modifier.padding(horizontal = 8.dp)) {
+                    // Zeile ueber der Liste: links der Kategorie-Chip als Rueckweg
+                    // zu den Shelf-Reihen (nur im "Alle anzeigen"-Modus), rechts
+                    // der Umschalter Raster/Zeilen. Er sitzt hier statt in der
+                    // Kopfzeile, weil die sich beim Scrollen einfaehrt — und weil
+                    // er dort steht, wo seine Wirkung eintritt.
+                    item(span = { GridItemSpan(maxLineSpan) }) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            viewModel.selectedShelf?.let { shelf ->
                                 InputChip(
                                     selected = true,
                                     onClick = { viewModel.clearShelf() },
                                     label = { Text("${stringResource(shelf.labelRes)} · ${viewModel.movies.size}") },
                                     trailingIcon = { Icon(Icons.Default.Close, null, Modifier.size(14.dp)) }
                                 )
-                            }
+                            } ?: Spacer(Modifier.width(0.dp))
+
+                            ViewModeChip(
+                                viewMode = viewMode,
+                                onToggle = {
+                                    scope.launch {
+                                        dataStoreManager.saveCollectionViewMode(
+                                            if (viewMode == CollectionViewMode.GRID) {
+                                                CollectionViewMode.LIST
+                                            } else {
+                                                CollectionViewMode.GRID
+                                            }
+                                        )
+                                    }
+                                }
+                            )
                         }
                     }
                     items(viewModel.movies, key = { it.id }) { movie ->
-                        MovieItem(
-                            movie = movie,
-                            onClick = { onMovieClick(movie, viewModel.movies.map { it.localId }) },
-                            onWatchedToggle = { viewModel.toggleWatched(movie.localId) }
-                        )
+                        if (isListMode) {
+                            MovieListRow(
+                                movie = movie,
+                                imageUrl = resolveImageUrl(context, movie.coverUrl ?: ""),
+                                onClick = { onMovieClick(movie, viewModel.movies.map { it.localId }) },
+                                onWatchedToggle = { viewModel.toggleWatched(movie.localId) }
+                            )
+                        } else {
+                            MovieItem(
+                                movie = movie,
+                                onClick = { onMovieClick(movie, viewModel.movies.map { it.localId }) },
+                                onWatchedToggle = { viewModel.toggleWatched(movie.localId) }
+                            )
+                        }
                     }
                     if (viewModel.isLoadingMore) {
-                        items(2) { MovieCardSkeleton() }
+                        if (isListMode) {
+                            // Zwei Poster-Platzhalter waeren in der Zeilenansicht
+                            // zwei halbe Bildschirme hoch.
+                            item(span = { GridItemSpan(maxLineSpan) }) {
+                                Box(
+                                    modifier = Modifier.fillMaxWidth().padding(16.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    CircularProgressIndicator(modifier = Modifier.size(24.dp))
+                                }
+                            }
+                        } else {
+                            items(2) { MovieCardSkeleton() }
+                        }
                     }
                 }
             }
         }
     }
+}
+
+/**
+ * Umschalter zwischen Poster-Raster und Zeilenansicht.
+ *
+ * Zeigt als Beschriftung die Darstellung, zu der getippt wird — nicht die
+ * gerade aktive: welche aktiv ist, sieht man ja an der Liste darunter.
+ */
+@Composable
+private fun ViewModeChip(viewMode: CollectionViewMode, onToggle: () -> Unit) {
+    val toList = viewMode == CollectionViewMode.GRID
+    AssistChip(
+        onClick = onToggle,
+        label = {
+            Text(
+                stringResource(if (toList) R.string.view_mode_list else R.string.view_mode_grid),
+                style = MaterialTheme.typography.labelMedium
+            )
+        },
+        leadingIcon = {
+            Icon(
+                imageVector = if (toList) Icons.AutoMirrored.Filled.ViewList else Icons.Default.GridView,
+                contentDescription = null,
+                modifier = Modifier.size(16.dp)
+            )
+        },
+        shape = info.movieshelf.ui.theme.PillShape,
+        colors = AssistChipDefaults.assistChipColors(
+            labelColor = MaterialTheme.colorScheme.onSurfaceVariant,
+            leadingIconContentColor = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+    )
 }
 
 /**

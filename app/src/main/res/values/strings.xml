@@ -414,4 +414,19 @@
     <string name="profile_tmdb_where">Den Schlüssel bekommst du kostenlos bei themoviedb.org — Konto anlegen, dann unter Einstellungen → API.</string>
     <string name="profile_tmdb_get_key">Schlüssel bei TMDb holen</string>
     <string name="actor_born_in">Geboren: %1$s in %2$s</string>
+    <string name="view_mode_list">Zeilen</string>
+    <string name="view_mode_grid">Raster</string>
+    <string name="list_row_shelf_location">Regal %1$s</string>
+    <string name="stats_empty_title">Noch nichts auszuwerten</string>
+    <string name="stats_empty_hint">Sobald Filme in deiner Sammlung stehen, erscheint hier die Auswertung.</string>
+    <string name="stats_avg_runtime">Ø Laufzeit</string>
+    <string name="stats_minutes">%1$d Min.</string>
+    <string name="stats_per_film">je Film</string>
+    <string name="stats_days">%1$d Tage</string>
+    <string name="stats_unwatched">%1$d noch nicht gesehen</string>
+    <string name="stats_collection_types">Zusammensetzung</string>
+    <string name="stats_per_year">Nach Jahr</string>
+    <string name="stats_age_rating">Altersfreigabe</string>
+    <string name="stats_fsk">FSK %1$d</string>
+    <string name="stats_decade_short">%1$der</string>
 </resources>

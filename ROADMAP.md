@@ -1,5 +1,89 @@
 # MovieShelf Android – Roadmap
 
+## Version 2.2.0 (geplant)
+
+Aktueller Stand: 2.1.0 (versionCode 31). Die Punkte unten stammen aus dem
+Funktionsvergleich mit **MovieShelf Desktop** (`versions/desktop`) — es ist das,
+was die Desktop-App kann und die App bisher nicht.
+Priorität: 🔴 hoch · 🟡 mittel · ⚪ optional.
+
+> Nicht auf der Liste, weil bereits vorhanden: Serien mit Staffeln/Episoden inkl.
+> Season-Backfill, Boxset-Anzeige, TMDb-Import, Schauspieler-Detailseiten, Listen,
+> **Statistiken** (`StatsScreen`), physische Sammlungsdaten (Edition, Region,
+> Regalstandort, Zustand, Kaufdatum/-preis), Standalone- und Online-Modus mit Sync,
+> Deutsch/Englisch, Hell/Dunkel, Update-Hinweis über Play.
+> Nur mobil: 2FA-Verwaltung, Wunschlisten-Toggle, Cover-/Backdrop-Upload, OAuth-Login.
+
+### Funktionslücken gegenüber der Desktop-App
+
+- 🔴 **Jellyfin-Import** — größte Lücke. Desktop übernimmt ganze Bibliotheken vom
+  eigenen Jellyfin-Server samt Staffeln, Episoden, Covern, Besetzung, Trailern und
+  Gesehen-Status, optional mit TMDb-Abgleich ([JellyfinPanel.vue](../desktop/src/components/settings/JellyfinPanel.vue)).
+  In der App gibt es dazu bisher keine Zeile Code. Braucht: Server-Adresse +
+  Login (Token verschlüsselt ablegen), Bibliotheks-/Titelauswahl, Import in die
+  lokale Room-DB, danach regulärer Sync. *Aufwand: groß.*
+
+- 🔴 **Massenbearbeitung** — Desktop kann mehrere Titel auswählen und gemeinsam
+  ändern ([BulkActionBar.vue](../desktop/src/components/BulkActionBar.vue)). Im
+  Dashboard fehlt jede Mehrfachauswahl. Sinnvoller Umfang: Long-Press startet den
+  Auswahlmodus, Sammelaktionen für Gesehen-Status, Genre/Tag, Regalstandort,
+  Zustand, Löschen. **Server:** keinen Bulk-Endpunkt vorhanden — entweder n × 
+  `PUT /api/admin/movies/{id}` oder ein neuer Sammel-Endpunkt. *Aufwand: mittel.*
+
+- 🔴 **Eigene Bewertung (`user_rating`)** — Desktop hat ein Sterne-Widget in der
+  Detailansicht ([MovieDetailView.vue:125](../desktop/src/views/MovieDetailView.vue#L125)),
+  speichert lokal und schiebt beim Sync per `POST /api/movies/{id}/rate` hoch
+  ([useSyncEngine.ts:670](../desktop/src/composables/useSyncEngine.ts#L670)).
+  Der App fehlt das ganz: `user_rating` kommt in `app/src/main` nicht vor — das
+  vorhandene `rating` ist die *Film*-Bewertung aus TMDb, nicht die des Nutzers.
+  **Server ist fertig** (`MovieRatingController`), also reine App-Arbeit: Spalten
+  `user_rating` + `synced_user_rating` in `MovieEntity` (Room-Migration), Sterne im
+  Detail-Screen, Push-Schritt in der `SyncEngine` analog zum Gesehen-Status.
+  *Aufwand: klein–mittel.*
+
+- 🟡 **Zufallsauswahl** — „Überrasch mich" wie [RandomPickerModal.vue](../desktop/src/components/RandomPickerModal.vue).
+  `RANDOM()` wird in [MovieDao.kt:71](app/src/main/java/info/movieshelf/data/local/db/MovieDao.kt#L71)
+  schon für die Empfehlungen benutzt, es fehlt nur die Auslosung auf die aktuell
+  gefilterte Menge plus ein Ergebnis-Sheet. Rein lokal, kein Server nötig.
+  *Aufwand: klein.*
+
+- 🟡 **Besetzung manuell pflegen** — Desktop hat einen Schauspieler-Picker
+  ([ActorPickerModal.vue](../desktop/src/components/movies/ActorPickerModal.vue));
+  der Android-Edit-Screen kennt keine Schauspieler-Zuordnung. Lesend ist alles da
+  (`GET /api/actors`, `/api/actors/search`). **Server:** `AdminMovieController::update`
+  schreibt die `actors`-Relation nicht — Endpunkt bzw. Feld muss ergänzt werden.
+  *Aufwand: mittel (Server + App).*
+
+- 🟡 **Boxset-Zuordnung bearbeiten** — die App *zeigt* Boxset-Kinder im Detail
+  ([MovieDetailScreen.kt:324](app/src/main/java/info/movieshelf/ui/details/MovieDetailScreen.kt#L324)),
+  kann sie aber nicht zuordnen oder entfernen; Desktop schon
+  ([CollectionPartsSection.vue](../desktop/src/components/movies/CollectionPartsSection.vue)).
+  **Server:** wie oben, die Eltern-/Kind-Beziehung ist im Admin-Update nicht
+  schreibbar. *Aufwand: mittel (Server + App).*
+
+- ⚪ **Ansichtsmodi der Sammlung** — Desktop bietet Karten-, Zeilen- und
+  Tabellenansicht (`MovieCard`/`MovieListRow`/`MovieTableRow`); Android hat nur das
+  Poster-Grid. Auf dem Telefon lohnt am ehesten eine kompakte Zeilenansicht (Cover
+  klein, Titel/Jahr/Regalstandort daneben) als Umschalter im Dashboard, gespeichert
+  in DataStore. *Aufwand: klein–mittel.*
+
+### Bewusst nicht übernommen
+
+- **Statistik-Fenster** — Desktop kann die Statistiken in ein eigenes Fenster
+  auslösen. Auf Mobil ohne Entsprechung; der bestehende `StatsScreen` deckt den
+  Inhalt ab.
+- **Backup als `.ms`-Archiv** — Desktop exportiert Datenbank plus Cover in eine
+  Datei. Auf Android ist die Room-DB an die App gebunden; ein Austauschformat wäre
+  nur sinnvoll, wenn es zwischen beiden Apps kompatibel ist. Zurückgestellt, bis
+  klar ist, ob das Archiv geräteübergreifend gelten soll.
+
+---
+
+## Archiv
+
+<details>
+<summary>Roadmap 1.7.0 (abgeschlossen)</summary>
+
 ## Version 1.7.0 (geplant)
 
 Aktueller Stand: 1.6.1. Die folgenden Punkte sind für 1.7.0 vorgemerkt.
@@ -78,3 +162,5 @@ Priorität: 🔴 hoch · 🟡 mittel · ⚪ optional.
 1. **Film löschen** (#schneller Abschluss der Admin-Bearbeitung)
 2. **Tests** für die in 1.6.1 überarbeitete Sortier-/Repository-Logik
 3. Ein „echtes" Feature: **Wunschliste** oder **Listen**
+
+</details>
