@@ -39,6 +39,19 @@ open class FakeMovieDao : MovieDao {
     override suspend fun findByYear(year: Int?): List<MovieEntity> =
         rows.filter { it.year == year }
 
+    override suspend fun updateUserRating(localId: Long, rating: Int?, now: String) {
+        val index = rows.indexOfFirst { it.localId == localId }
+        if (index >= 0) rows[index] = rows[index].copy(userRating = rating, updatedAt = now)
+    }
+
+    override suspend fun getPendingUserRatings(): List<MovieEntity> =
+        rows.filter { it.remoteId != null && !it.isDeleted && it.userRating != it.syncedUserRating }
+
+    override suspend fun markUserRatingSynced(localId: Long, rating: Int?) {
+        val index = rows.indexOfFirst { it.localId == localId }
+        if (index >= 0) rows[index] = rows[index].copy(syncedUserRating = rating)
+    }
+
     override suspend fun insert(movie: MovieEntity): Long {
         val id = if (movie.localId != 0L) movie.localId else (rows.maxOfOrNull { it.localId } ?: 0L) + 1
         rows.removeAll { it.localId == id }

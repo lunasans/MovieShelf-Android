@@ -29,16 +29,10 @@ Priorität: 🔴 hoch · 🟡 mittel · ⚪ optional.
   Zustand, Löschen. **Server:** keinen Bulk-Endpunkt vorhanden — entweder n × 
   `PUT /api/admin/movies/{id}` oder ein neuer Sammel-Endpunkt. *Aufwand: mittel.*
 
-- [] 🔴 **Eigene Bewertung (`user_rating`)** — Desktop hat ein Sterne-Widget in der
-  Detailansicht ([MovieDetailView.vue:125](../desktop/src/views/MovieDetailView.vue#L125)),
-  speichert lokal und schiebt beim Sync per `POST /api/movies/{id}/rate` hoch
-  ([useSyncEngine.ts:670](../desktop/src/composables/useSyncEngine.ts#L670)).
-  Der App fehlt das ganz: `user_rating` kommt in `app/src/main` nicht vor — das
-  vorhandene `rating` ist die *Film*-Bewertung aus TMDb, nicht die des Nutzers.
-  **Server ist fertig** (`MovieRatingController`), also reine App-Arbeit: Spalten
-  `user_rating` + `synced_user_rating` in `MovieEntity` (Room-Migration), Sterne im
-  Detail-Screen, Push-Schritt in der `SyncEngine` analog zum Gesehen-Status.
-  *Aufwand: klein–mittel.*
+- [x] 🔴 **Eigene Bewertung (`user_rating`)** — **umgesetzt.** Fünf Sterne in der
+  Detailansicht, erneutes Tippen nimmt die Bewertung zurück. Liegt lokal in
+  `userRating`/`syncedUserRating` und geht über `POST /api/movies/{id}/rate` raus —
+  sofort, und beim nächsten Abgleich noch einmal, falls der erste Versuch scheiterte.
 
 - [] 🟡 **Zufallsauswahl** — „Überrasch mich" wie [RandomPickerModal.vue](../desktop/src/components/RandomPickerModal.vue).
   `RANDOM()` wird in [MovieDao.kt:71](app/src/main/java/info/movieshelf/data/local/db/MovieDao.kt#L71)

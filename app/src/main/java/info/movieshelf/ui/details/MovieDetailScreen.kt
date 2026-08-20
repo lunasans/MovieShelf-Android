@@ -312,6 +312,12 @@ private fun MovieDetailContent(
                     }
 
                     Spacer(Modifier.height(24.dp))
+                    UserRatingRow(
+                        rating = movie.userRating,
+                        onRate = { viewModel.setUserRating(it) }
+                    )
+
+                    Spacer(Modifier.height(24.dp))
                     Text(text = stringResource(R.string.detail_plot), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
                     Spacer(Modifier.height(8.dp))
 
@@ -772,6 +778,54 @@ private fun PhysicalCollectionCard(movie: Movie, modifier: Modifier = Modifier) 
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.SemiBold,
                     color = MaterialTheme.colorScheme.onSurface
+                )
+            }
+        }
+    }
+}
+
+/**
+ * Eigene Bewertung als fuenf Sterne.
+ *
+ * Getrennt von der Bewertung, die als Zahl oben im Kopf steht: die kommt von
+ * TMDb, diese hier gehoert dem Nutzer. Ein Tippen auf den bereits gesetzten
+ * Stern nimmt die Bewertung zurueck — sonst gaebe es keinen Weg von "einmal
+ * vergeben" zurueck zu "noch nicht bewertet".
+ */
+@Composable
+private fun UserRatingRow(rating: Int?, onRate: (Int) -> Unit) {
+    Column {
+        Text(
+            text = stringResource(R.string.detail_your_rating),
+            style = MaterialTheme.typography.titleLarge,
+            fontWeight = FontWeight.Bold
+        )
+        Spacer(Modifier.height(8.dp))
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            (1..5).forEach { star ->
+                val filled = (rating ?: 0) >= star
+                IconButton(
+                    onClick = { onRate(star) },
+                    modifier = Modifier.size(40.dp)
+                ) {
+                    Icon(
+                        imageVector = if (filled) Icons.Default.Star else Icons.Default.StarBorder,
+                        contentDescription = stringResource(R.string.detail_rate_stars, star),
+                        tint = if (filled) {
+                            MaterialTheme.colorScheme.primary
+                        } else {
+                            MaterialTheme.colorScheme.onSurfaceVariant
+                        },
+                        modifier = Modifier.size(28.dp)
+                    )
+                }
+            }
+            if (rating != null) {
+                Spacer(Modifier.width(8.dp))
+                Text(
+                    text = stringResource(R.string.detail_rating_clear_hint),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
         }

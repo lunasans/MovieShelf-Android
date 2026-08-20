@@ -43,6 +43,11 @@ data class Movie(
     val condition: String? = null,
     @SerializedName("view_count") val viewCount: Int? = null,
     @SerializedName("is_watched") val isWatched: Boolean? = null,
+    /**
+     * Eigene Sternbewertung (1-5) des angemeldeten Nutzers — nicht [rating],
+     * das die Bewertung des Films bei TMDb traegt.
+     */
+    @SerializedName("user_rating") val userRating: Int? = null,
     @SerializedName("actors", alternate = ["cast", "credits"]) val actors: List<Actor>? = null,
     @SerializedName("tmdb_id") val tmdbId: String? = null,
     @SerializedName("rating_age") val ratingAge: Int? = null,
@@ -334,6 +339,15 @@ data class MovieUpdateRequest(
     @SerializedName("purchase_price") val purchasePrice: Double? = null,
     val condition: String? = null,
     @SerializedName("in_collection") val inCollection: Boolean? = null
+)
+
+/** Antwort von POST api/movies/{id}/rate. */
+data class RateResponse(
+    /** Die gesetzte Bewertung, oder `null` nach dem Entfernen. */
+    val rating: Int? = null,
+    /** Durchschnitt ueber alle Nutzer — die App zeigt ihn derzeit nicht. */
+    val avg: Double? = null,
+    val count: Int? = null
 )
 
 /** Antwort von GET api/admin/export. */

@@ -462,4 +462,7 @@
     <string name="profile_jellyfin">Jellyfin import</string>
     <string name="profile_jellyfin_hint">Import libraries from your own media server</string>
     <string name="common_ok">OK</string>
+    <string name="detail_your_rating">Your rating</string>
+    <string name="detail_rate_stars">%1$d out of 5 stars</string>
+    <string name="detail_rating_clear_hint">Tap again to remove</string>
 </resources>

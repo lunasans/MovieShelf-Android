@@ -465,4 +465,7 @@
     <string name="profile_jellyfin">Jellyfin-Import</string>
     <string name="profile_jellyfin_hint">Bibliotheken vom eigenen Medienserver übernehmen</string>
     <string name="common_ok">OK</string>
+    <string name="detail_your_rating">Deine Bewertung</string>
+    <string name="detail_rate_stars">%1$d von 5 Sternen</string>
+    <string name="detail_rating_clear_hint">Nochmal tippen zum Entfernen</string>
 </resources>
