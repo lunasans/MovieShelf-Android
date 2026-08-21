@@ -78,6 +78,43 @@ interface ActorDao {
         ORDER BY fa.sortOrder
     """)
     suspend fun getCastOf(movieLocalId: Long): List<ActorEntity>
+
+    /**
+     * Die Filme einer Person aus der lokalen Sammlung. Gegenstueck zu
+     * [getCastOf]; die Detailansicht zeigt sie damit auch ohne Server.
+     *
+     * Filter und Reihenfolge wie in der Desktop-App
+     * (`electron/handlers/actors.ts`, `getMoviesForActor`): geloeschte und
+     * nicht zur Sammlung gehoerende Titel bleiben draussen, neueste zuerst.
+     * `inCollection IS NULL` zaehlt hier wie 1 — so halten es alle anderen
+     * Abfragen in [MovieDao] auch, weil die Spalte erst spaeter dazukam.
+     */
+    @Query("""
+        SELECT m.* FROM movies m
+        JOIN film_actor fa ON fa.movieLocalId = m.localId
+        WHERE fa.actorLocalId = :actorLocalId
+          AND m.isDeleted = 0
+          AND (m.inCollection = 1 OR m.inCollection IS NULL)
+        ORDER BY m.year DESC, m.title
+    """)
+    suspend fun getMoviesOf(actorLocalId: Long): List<MovieEntity>
+
+    /** Fuer die Darstellerliste: nur Personen, die in der Sammlung vorkommen. */
+    @Query("""
+        SELECT a.* FROM actors a
+        WHERE EXISTS (SELECT 1 FROM film_actor fa WHERE fa.actorLocalId = a.localId)
+        ORDER BY a.name
+    """)
+    suspend fun getAllWithFilms(): List<ActorEntity>
+
+    /** Namenssuche fuer die lokale Darstellerliste. */
+    @Query("""
+        SELECT a.* FROM actors a
+        WHERE a.name LIKE '%' || :query || '%'
+          AND EXISTS (SELECT 1 FROM film_actor fa WHERE fa.actorLocalId = a.localId)
+        ORDER BY a.name
+    """)
+    suspend fun searchByName(query: String): List<ActorEntity>
 }
 
 @Dao

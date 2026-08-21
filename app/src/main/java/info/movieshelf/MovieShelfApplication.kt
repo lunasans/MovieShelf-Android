@@ -89,7 +89,7 @@ class MovieShelfApplication : Application(), ImageLoaderFactory {
     }
 
     val actorRepository by lazy {
-        ActorRepository { RetrofitClient.api }
+        ActorRepository(actorDao = database.actorDao()) { RetrofitClient.api }
     }
 
     private val dataStoreManager by lazy { DataStoreManager(this) }

@@ -197,6 +197,7 @@ class MovieRepository(
                     actors = cast.map { actor ->
                         info.movieshelf.data.model.Actor(
                             id = actor.remoteId,
+                            localId = actor.localId,
                             name = actor.name,
                             imageUrl = actor.imagePath,
                             biography = actor.bio,
@@ -206,6 +207,19 @@ class MovieRepository(
                     }
                 )
             }
+        } else {
+            // Die Besetzung kam als JSON vom Server und kennt nur Server-IDs.
+            // Die lokale ID nachtragen, damit die Detailansicht der Person
+            // ohne Server auskommt — sonst haette ausgerechnet der Weg ueber
+            // die Shelf keinen Zugriff auf die eigene Datenbank.
+            movie = movie.copy(
+                actors = movie.actors?.map { actor ->
+                    if (actor.localId != 0L) return@map actor
+                    val local = actor.id?.let { actorDao.findLocalIdByRemoteId(it) }
+                        ?: actor.name?.let { actorDao.findLocalIdByName(it) }
+                    if (local == null) actor else actor.copy(localId = local)
+                }
+            )
         }
 
         if (movie.collectionType == "Serie") {

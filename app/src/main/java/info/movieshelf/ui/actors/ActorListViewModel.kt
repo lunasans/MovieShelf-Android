@@ -29,14 +29,29 @@ class ActorListViewModel(
         loadActors()
     }
 
+    /**
+     * Erst die eigene Sammlung, dann der Server.
+     *
+     * Die lokale Liste ist die eigentliche Antwort auf „wer spielt in meinen
+     * Filmen" — der Server kennt daneben noch Personen aus fremden Sammlungen.
+     * Ist lokal nichts da (frische Installation vor dem ersten Abgleich),
+     * bleibt der Serverbestand die Rueckfallebene.
+     */
     fun loadActors(refresh: Boolean = false) {
         viewModelScope.launch {
             if (refresh) isRefreshing = true else isLoading = true
             error = null
             try {
-                actors = repository.getActors(page = 1, perPage = 100)
+                val local = repository.getLocalActors()
+                if (local.isNotEmpty()) {
+                    actors = local
+                } else {
+                    actors = repository.getRemoteActors(page = 1, perPage = 100)
+                }
             } catch (e: Exception) {
-                error = UiText.of(R.string.error_actors_load, e.message ?: "")
+                if (actors.isEmpty()) {
+                    error = UiText.of(R.string.error_actors_load, e.message ?: "")
+                }
             } finally {
                 isLoading = false
                 isRefreshing = false
@@ -61,7 +76,8 @@ class ActorListViewModel(
         isLoading = true
         error = null
         try {
-            actors = repository.searchActors(query)
+            val local = repository.searchLocalActors(query)
+            actors = if (local.isNotEmpty()) local else repository.searchRemoteActors(query)
         } catch (e: Exception) {
             error = UiText.of(R.string.error_search_failed, e.message ?: "")
         } finally {

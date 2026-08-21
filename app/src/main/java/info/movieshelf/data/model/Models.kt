@@ -226,7 +226,13 @@ data class Actor(
     @SerializedName("movies") val movies: List<Movie>? = null,
     @SerializedName("bio", alternate = ["biography"]) val biography: String? = null,
     @SerializedName("birth_date", alternate = ["birthday"]) val birthDate: String? = null,
-    @SerializedName("place_of_birth") val placeOfBirth: String? = null
+    @SerializedName("place_of_birth") val placeOfBirth: String? = null,
+    /**
+     * Lokale Identitaet, wie bei [Movie]. [id] bleibt die Server-ID fuer
+     * Netzaufrufe; navigiert wird ueber diese hier, damit ein Darsteller auch
+     * ohne Server und im eigenstaendigen Betrieb aufrufbar ist.
+     */
+    @Transient val localId: Long = 0
 )
 
 data class Stats(
