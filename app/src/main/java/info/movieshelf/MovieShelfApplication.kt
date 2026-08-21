@@ -97,10 +97,17 @@ class MovieShelfApplication : Application(), ImageLoaderFactory {
     /** Fuer die Oberflaeche, die den Jellyfin-Zugang verwaltet. */
     val dataStore: DataStoreManager get() = dataStoreManager
 
+    /**
+     * Eine Instanz fuer die ganze App: der Schluessel haengt nicht an ihr,
+     * sondern wird pro Aufruf mitgegeben — zwei Instanzen brauechten also nur
+     * zwei Verbindungs- und Thread-Pools fuer dieselben Aufrufe.
+     */
+    private val tmdbApi by lazy { TmdbApi.create() }
+
     val tmdbRepository by lazy {
         TmdbRepository(
             movieRepository = movieRepository,
-            tmdbApi = TmdbApi.create(),
+            tmdbApi = tmdbApi,
             shelfApiProvider = { RetrofitClient.api },
             isShelfMode = { isShelfMode() },
             apiKeyProvider = { dataStoreManager.currentTmdbApiKey() }
@@ -116,7 +123,7 @@ class MovieShelfApplication : Application(), ImageLoaderFactory {
             actorDao = database.actorDao(),
             seriesDao = database.seriesDao(),
             mediaStore = mediaStore,
-            tmdbApi = TmdbApi.create(),
+            tmdbApi = tmdbApi,
             tmdbApiKeyProvider = { dataStoreManager.currentTmdbApiKey() },
             setCast = { localId, cast -> movieRepository.setCast(localId, cast) },
             downloadArtwork = { movieRepository.downloadMissingArtwork() }
@@ -203,9 +210,12 @@ class MovieShelfApplication : Application(), ImageLoaderFactory {
                     .build()
             }
             .diskCache {
+                // Nur eine der beiden Groessenangaben darf gesetzt sein: in Coil
+                // loescht maxSizeBytes ein zuvor gesetztes maxSizePercent (und
+                // umgekehrt). Fest 50 MB, weil Poster ohnehin dauerhaft im
+                // MediaStore landen und dieser Cache nur die Zwischenzeit deckt.
                 DiskCache.Builder()
                     .directory(this.cacheDir.resolve("image_cache"))
-                    .maxSizePercent(0.02)
                     .maxSizeBytes(50L * 1024 * 1024)
                     .build()
             }
