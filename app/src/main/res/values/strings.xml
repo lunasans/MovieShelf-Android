@@ -246,6 +246,7 @@
 
     <!-- Meldungen der ViewModels -->
     <string name="error_actor_load">Fehler beim Laden des Schauspielers: %1$s</string>
+    <string name="error_actor_not_found">Dieser Schauspieler ist nicht in der Sammlung.</string>
     <string name="error_actors_load">Fehler beim Laden der Schauspieler: %1$s</string>
     <string name="error_search_failed">Suche fehlgeschlagen: %1$s</string>
     <string name="error_tmdb_search">TMDb-Suche fehlgeschlagen: %1$s</string>

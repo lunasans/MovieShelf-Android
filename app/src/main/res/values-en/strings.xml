@@ -243,6 +243,7 @@
 
     <!-- ViewModel messages -->
     <string name="error_actor_load">Could not load the actor: %1$s</string>
+    <string name="error_actor_not_found">This actor is not in the collection.</string>
     <string name="error_actors_load">Could not load actors: %1$s</string>
     <string name="error_search_failed">Search failed: %1$s</string>
     <string name="error_tmdb_search">TMDb search failed: %1$s</string>

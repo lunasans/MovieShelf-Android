@@ -140,6 +140,9 @@ private class EmptyActorDao : ActorDao {
     override suspend fun setCast(refs: List<FilmActorCrossRef>) = Unit
     override suspend fun clearCast(movieLocalId: Long) = Unit
     override suspend fun getCastOf(movieLocalId: Long): List<ActorEntity> = emptyList()
+    override suspend fun getMoviesOf(actorLocalId: Long): List<MovieEntity> = emptyList()
+    override suspend fun getAllWithFilms(): List<ActorEntity> = emptyList()
+    override suspend fun searchByName(query: String): List<ActorEntity> = emptyList()
 }
 
 private class EmptySeriesDao : SeriesDao {

@@ -34,6 +34,7 @@ import info.movieshelf.data.local.DataStoreManager
 import info.movieshelf.data.local.ThemeMode
 import info.movieshelf.data.model.Movie
 import info.movieshelf.ui.about.AboutScreen
+import info.movieshelf.data.model.Actor
 import info.movieshelf.ui.actors.ActorDetailScreen
 import info.movieshelf.ui.add.AddMovieScreen
 import info.movieshelf.ui.dashboard.DashboardScreen
@@ -174,6 +175,16 @@ private fun movieDetailsRoute(movie: Movie, allLocalIds: List<Long> = emptyList(
         if (movie.localId == 0L && movie.id != 0) add("remoteId=${movie.id}")
     }.joinToString("&")
     return "movie_details/${movie.localId}" + if (query.isEmpty()) "" else "?$query"
+}
+
+/**
+ * Wie [movieDetailsRoute]: die lokale ID traegt den Weg, die Server-ID haengt
+ * als Zusatz daran. Ohne lokale ID (Person nur auf dem Server bekannt) bleibt
+ * der Pfad 0 und nur die Server-ID zaehlt.
+ */
+private fun actorDetailsRoute(actor: Actor): String {
+    val query = if (actor.id != null) "?remoteId=${actor.id}" else ""
+    return "actor_details/${actor.localId}$query"
 }
 
 @Composable
@@ -501,16 +512,26 @@ fun MovieShelfApp(oauthCallbackUri: MutableState<Uri?> = mutableStateOf(null)) {
                         onMovieClick = { movie: Movie ->
                             navController.navigate(movieDetailsRoute(movie))
                         },
-                        onActorClick = { actorId ->
-                            navController.navigate("actor_details/$actorId")
+                        onActorClick = { actor ->
+                            navController.navigate(actorDetailsRoute(actor))
                         },
+                        // Ein Name aus dem Beschreibungstext, ohne Eintrag in
+                        // der Besetzung. Erst lokal nachsehen — der Umweg ueber
+                        // die Serversuche war der Grund, warum diese Verweise
+                        // ohne Netz ins Leere liefen.
                         onActorNameClick = { actorName ->
                             scope.launch {
+                                val localId = runCatching {
+                                    app.actorRepository.findLocalIdByName(actorName)
+                                }.getOrNull()
+                                if (localId != null) {
+                                    navController.navigate("actor_details/$localId")
+                                    return@launch
+                                }
                                 try {
-                                    val response = RetrofitClient.api.searchActors(actorName)
-                                    val foundActor = response.data?.firstOrNull()
-                                    if (foundActor?.id != null) {
-                                        navController.navigate("actor_details/${foundActor.id}")
+                                    val remoteId = app.actorRepository.findRemoteIdByName(actorName)
+                                    if (remoteId != null) {
+                                        navController.navigate("actor_details/0?remoteId=$remoteId")
                                     } else {
                                         Toast.makeText(context, "Schauspieler \"$actorName\" nicht gefunden", Toast.LENGTH_SHORT).show()
                                     }
@@ -521,17 +542,17 @@ fun MovieShelfApp(oauthCallbackUri: MutableState<Uri?> = mutableStateOf(null)) {
                         }
                     )
                 }
-                composable("actor_details/{actorId}") { backStackEntry ->
-                    val actorId = backStackEntry.arguments?.getString("actorId")?.toIntOrNull()
-                    if (actorId != null) {
-                        ActorDetailScreen(
-                            actorId = actorId,
-                            onBack = { navController.popBackStack() },
-                            onMovieClick = { movie: Movie ->
-                                navController.navigate(movieDetailsRoute(movie))
-                            }
-                        )
-                    }
+                composable("actor_details/{localId}?remoteId={remoteId}") { backStackEntry ->
+                    val localId = backStackEntry.arguments?.getString("localId")?.toLongOrNull() ?: 0L
+                    val remoteId = backStackEntry.arguments?.getString("remoteId")?.toIntOrNull()
+                    ActorDetailScreen(
+                        localId = localId,
+                        remoteId = remoteId,
+                        onBack = { navController.popBackStack() },
+                        onMovieClick = { movie: Movie ->
+                            navController.navigate(movieDetailsRoute(movie))
+                        }
+                    )
                 }
                 composable("add_movie") {
                     AddMovieScreen(

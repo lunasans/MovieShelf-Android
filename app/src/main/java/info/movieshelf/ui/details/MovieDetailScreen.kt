@@ -69,7 +69,7 @@ fun MovieDetailScreen(
     reloadKey: Int = 0,
     onBack: () -> Unit,
     onEditClick: (Long) -> Unit = {},
-    onActorClick: (Int) -> Unit = {},
+    onActorClick: (Actor) -> Unit = {},
     onActorNameClick: (String) -> Unit = {},
     onMovieClick: (Movie) -> Unit
 ) {
@@ -126,7 +126,7 @@ private fun MovieDetailContent(
     reloadKey: Int,
     onBack: () -> Unit,
     onEditClick: (Long) -> Unit,
-    onActorClick: (Int) -> Unit,
+    onActorClick: (Actor) -> Unit,
     onActorNameClick: (String) -> Unit,
     onMovieClick: (Movie) -> Unit,
     repository: info.movieshelf.data.repository.MovieRepository,
@@ -499,7 +499,7 @@ private fun MovieDetailContent(
                             contentPadding = PaddingValues(bottom = 32.dp, end = 16.dp)
                         ) {
                             items(movie.actors) { actor ->
-                                ActorCardItem(actor = actor, onClick = { actor.id?.let { onActorClick(it) } })
+                                ActorCardItem(actor = actor, onClick = { onActorClick(actor) })
                             }
                         }
                     }
@@ -904,7 +904,7 @@ private fun UserRatingRow(rating: Int?, onRate: (Int) -> Unit) {
 @Composable
 private fun MovieDescription(
     movie: Movie,
-    onActorClick: (Int) -> Unit,
+    onActorClick: (Actor) -> Unit,
     onActorNameClick: (String) -> Unit
 ) {
     val rawDescription = movie.overview ?: stringResource(R.string.detail_no_overview)
@@ -937,8 +937,8 @@ private fun MovieDescription(
                     ),
                     linkInteractionListener = {
                         val localActor = movie.actors?.find { it.name?.equals(actorName, ignoreCase = true) == true }
-                        if (localActor?.id != null) {
-                            onActorClick(localActor.id)
+                        if (localActor != null) {
+                            onActorClick(localActor)
                         } else {
                             onActorNameClick(actorName)
                         }

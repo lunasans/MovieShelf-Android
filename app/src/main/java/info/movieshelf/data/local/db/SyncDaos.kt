@@ -78,6 +78,35 @@ interface ActorDao {
         ORDER BY fa.sortOrder
     """)
     suspend fun getCastOf(movieLocalId: Long): List<ActorEntity>
+
+    /**
+     * Die Filme einer Person aus der lokalen Sammlung. Gegenstueck zu
+     * [getCastOf]; die Detailansicht zeigt sie damit auch ohne Server.
+     */
+    @Query("""
+        SELECT m.* FROM movies m
+        JOIN film_actor fa ON fa.movieLocalId = m.localId
+        WHERE fa.actorLocalId = :actorLocalId
+        ORDER BY m.year, m.title
+    """)
+    suspend fun getMoviesOf(actorLocalId: Long): List<MovieEntity>
+
+    /** Fuer die Darstellerliste: nur Personen, die in der Sammlung vorkommen. */
+    @Query("""
+        SELECT a.* FROM actors a
+        WHERE EXISTS (SELECT 1 FROM film_actor fa WHERE fa.actorLocalId = a.localId)
+        ORDER BY a.name
+    """)
+    suspend fun getAllWithFilms(): List<ActorEntity>
+
+    /** Namenssuche fuer die lokale Darstellerliste. */
+    @Query("""
+        SELECT a.* FROM actors a
+        WHERE a.name LIKE '%' || :query || '%'
+          AND EXISTS (SELECT 1 FROM film_actor fa WHERE fa.actorLocalId = a.localId)
+        ORDER BY a.name
+    """)
+    suspend fun searchByName(query: String): List<ActorEntity>
 }
 
 @Dao

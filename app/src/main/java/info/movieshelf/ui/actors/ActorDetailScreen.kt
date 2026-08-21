@@ -38,13 +38,15 @@ import coil.compose.AsyncImage
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ActorDetailScreen(
-    actorId: Int,
+    localId: Long,
+    remoteId: Int?,
     onBack: () -> Unit,
     onMovieClick: (Movie) -> Unit
 ) {
     val app = LocalContext.current.applicationContext as MovieShelfApplication
     val viewModel: ActorDetailViewModel = viewModel(
-        factory = ActorDetailViewModel.Factory(actorId, app.actorRepository)
+        key = "actor-$localId-$remoteId",
+        factory = ActorDetailViewModel.Factory(localId, remoteId, app.actorRepository)
     )
     val actor = viewModel.actor
 
