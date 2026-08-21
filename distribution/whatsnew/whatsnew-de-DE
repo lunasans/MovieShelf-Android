@@ -1,11 +1,6 @@
-Neu:
-
-• Jellyfin-Import: Bibliotheken vom eigenen Medienserver übernehmen, samt Staffeln, Episoden, Covern und Besetzung.
-• Eigene Bewertung mit fünf Sternen, je Folge abhaken, Wunschliste ansehen.
-• Sortieren und nach Genre filtern, Zeilenansicht, Zufallsauswahl.
-• Mehrere Titel gemeinsam bearbeiten.
-
 Behoben:
 
-• "Vollständig synchronisieren" holte nur eine Vorschau – ältere Bewertungen kamen nie an.
-• Überarbeitete Statistik.
+• Darstellerprofile brauchen keinen Server mehr: Biografie, Geburtsdatum, Bild und die Filme der Person kommen aus der eigenen Sammlung. War die Shelf nicht erreichbar, blieb die Seite bisher leer.
+• Im eigenständigen Betrieb ließ sich ein Darsteller gar nicht öffnen – jetzt schon.
+• Verweise auf Namen im Beschreibungstext funktionieren ohne Netz.
+• "Dieses Gerät" stand bei langen Gerätenamen senkrecht, Buchstabe für Buchstabe.

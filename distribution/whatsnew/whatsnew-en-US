@@ -1,11 +1,6 @@
-New:
-
-• Jellyfin import: bring in libraries from your own media server, with seasons, episodes, covers and cast.
-• Rate movies with five stars, tick off single episodes, view your wishlist.
-• Sort and filter by genre, list view, random pick.
-• Edit several titles at once.
-
 Fixed:
 
-• "Full sync" only fetched a preview – older ratings never arrived.
-• Reworked statistics.
+• Actor profiles no longer need the server: biography, birth date, photo and the person's films now come from your own collection. Previously the page stayed empty whenever the shelf was unreachable.
+• In standalone mode an actor could not be opened at all – now it can.
+• Name links inside descriptions work offline.
+• "This device" was printed vertically, one letter per line, next to long device names.
