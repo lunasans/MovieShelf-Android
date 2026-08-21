@@ -133,7 +133,7 @@ jobs:
             --arg content "$CONTENT" \
             --arg tagIds "${FORUM_TAG_ID:-}" \
             '{ data: { type: "discussions", attributes: { title: $title, content: $content } } }
-             | ($tagIds | split(",") | map(gsub("\s"; "")) | map(select(. != ""))) as $ids
+             | ($tagIds | split(",") | map(gsub("\\s"; "")) | map(select(. != ""))) as $ids
              | if ($ids | length) > 0 then
                  .data.relationships = { tags: { data: ($ids | map({ type: "tags", id: . })) } }
                else . end' > payload.json
