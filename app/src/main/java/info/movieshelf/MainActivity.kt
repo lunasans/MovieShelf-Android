@@ -9,6 +9,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.animation.*
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Logout
@@ -16,6 +17,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
@@ -52,6 +54,8 @@ import info.movieshelf.ui.setup.SetupScreen
 import info.movieshelf.ui.stats.StatsScreen
 import info.movieshelf.ui.sync.SyncScreen
 import info.movieshelf.ui.theme.MovieShelfTheme
+import info.movieshelf.ui.theme.StatusBarScrimBottom
+import info.movieshelf.ui.theme.StatusBarScrimTop
 import com.google.android.play.core.appupdate.AppUpdateManagerFactory
 import com.google.android.play.core.install.InstallStateUpdatedListener
 import com.google.android.play.core.install.model.AppUpdateType
@@ -602,6 +606,20 @@ fun MovieShelfApp(oauthCallbackUri: MutableState<Uri?> = mutableStateOf(null)) {
                     AboutScreen(onBack = { navController.popBackStack() })
                 }
             }
+
+            // Rosé-Verlauf hinter der transparenten Statusleiste (edge-to-edge):
+            // System-Icons lassen Android nur hell/dunkel faerben, aber der
+            // Untergrund darunter bekommt so den Marken-Akzent statt Schwarz.
+            // Der Verlauf reicht bewusst ueber die Statusleiste hinaus, sonst
+            // wirkt er wie eine harte Kante statt wie ein Ausblenden.
+            val statusBarHeight = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
+            Box(
+                modifier = Modifier
+                    .align(Alignment.TopCenter)
+                    .fillMaxWidth()
+                    .height(statusBarHeight + 32.dp)
+                    .background(Brush.verticalGradient(listOf(StatusBarScrimTop, StatusBarScrimBottom)))
+            )
 
             AnimatedVisibility(
                 visible = showNavBar && bottomBarVisible,
