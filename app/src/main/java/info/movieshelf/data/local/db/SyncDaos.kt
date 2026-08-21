@@ -82,12 +82,20 @@ interface ActorDao {
     /**
      * Die Filme einer Person aus der lokalen Sammlung. Gegenstueck zu
      * [getCastOf]; die Detailansicht zeigt sie damit auch ohne Server.
+     *
+     * Filter und Reihenfolge wie in der Desktop-App
+     * (`electron/handlers/actors.ts`, `getMoviesForActor`): geloeschte und
+     * nicht zur Sammlung gehoerende Titel bleiben draussen, neueste zuerst.
+     * `inCollection IS NULL` zaehlt hier wie 1 — so halten es alle anderen
+     * Abfragen in [MovieDao] auch, weil die Spalte erst spaeter dazukam.
      */
     @Query("""
         SELECT m.* FROM movies m
         JOIN film_actor fa ON fa.movieLocalId = m.localId
         WHERE fa.actorLocalId = :actorLocalId
-        ORDER BY m.year, m.title
+          AND m.isDeleted = 0
+          AND (m.inCollection = 1 OR m.inCollection IS NULL)
+        ORDER BY m.year DESC, m.title
     """)
     suspend fun getMoviesOf(actorLocalId: Long): List<MovieEntity>
 

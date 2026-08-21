@@ -58,7 +58,7 @@ class ActorOfflineTest {
                 imagePath = "/data/actors/7.jpg"
             )
         )
-        val movieLocalId = db.movieDao().insert(alien())
+        val movieLocalId = db.movieDao().insert(film(1, "Alien", 1979))
         db.actorDao().setCast(
             listOf(FilmActorCrossRef(movieLocalId = movieLocalId, actorLocalId = actorLocalId))
         )
@@ -67,10 +67,16 @@ class ActorOfflineTest {
     @After
     fun tearDown() = db.close()
 
-    private fun alien() = MovieEntity(
-        remoteId = 1,
-        title = "Alien",
-        year = 1979,
+    private fun film(
+        remoteId: Int,
+        title: String,
+        year: Int,
+        isDeleted: Boolean = false,
+        inCollection: Boolean? = true
+    ) = MovieEntity(
+        remoteId = remoteId,
+        title = title,
+        year = year,
         rating = null,
         genre = null,
         overview = null,
@@ -91,13 +97,14 @@ class ActorOfflineTest {
         ratingAge = null,
         tag = null,
         isBoxset = false,
-        inCollection = true,
+        inCollection = inCollection,
         collectionType = "Film",
         createdAt = "2026-01-01T00:00:00Z",
         updatedAt = "2026-01-01T00:00:00Z",
         syncedAt = "2026-01-01T00:00:00Z",
         actorsJson = null,
-        boxsetChildrenJson = null
+        boxsetChildrenJson = null,
+        isDeleted = isDeleted
     )
 
     @Test
@@ -123,6 +130,29 @@ class ActorOfflineTest {
         val filme = repository.getLocalActor(localId)!!.movies
 
         assertEquals(listOf("Alien"), filme?.map { it.title })
+    }
+
+    @Test
+    fun `geloeschte und ausgelagerte Filme bleiben draussen, neueste zuerst`() = runTest {
+        // Dieselbe Regel wie in der Desktop-App (getMoviesForActor): sonst
+        // stuende in der Filmografie ein Titel, den die Sammlung nicht mehr
+        // fuehrt — und die beiden Oberflaechen zeigten verschiedene Listen.
+        val actorLocalId = db.actorDao().findLocalIdByRemoteId(7)!!
+        listOf(
+            film(2, "Aliens", 1986),
+            film(3, "Geloescht", 1990, isDeleted = true),
+            film(4, "Nicht in Sammlung", 1992, inCollection = false),
+            film(5, "Alte Zeile ohne Angabe", 2000, inCollection = null)
+        ).forEach { titel ->
+            val id = db.movieDao().insert(titel)
+            db.actorDao().setCast(
+                listOf(FilmActorCrossRef(movieLocalId = id, actorLocalId = actorLocalId))
+            )
+        }
+
+        val filme = repository.getLocalActor(actorLocalId)!!.movies!!.map { it.title }
+
+        assertEquals(listOf("Alte Zeile ohne Angabe", "Aliens", "Alien"), filme)
     }
 
     @Test
