@@ -212,7 +212,12 @@ private fun AccessRow(
                     style = MaterialTheme.typography.bodyLarge,
                     fontWeight = FontWeight.SemiBold,
                     maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
+                    overflow = TextOverflow.Ellipsis,
+                    // Ohne weight nimmt der Name die ganze Zeile und laesst dem
+                    // Etikett eine Spalte von wenigen Pixeln, in die es sich
+                    // Buchstabe fuer Buchstabe umbricht. `fill = false`, damit
+                    // ein kurzer Name das Etikett nicht nach rechts schiebt.
+                    modifier = Modifier.weight(1f, fill = false)
                 )
                 if (token.isCurrent) {
                     Spacer(Modifier.width(8.dp))
@@ -220,7 +225,10 @@ private fun AccessRow(
                         text = stringResource(R.string.access_this_device),
                         style = MaterialTheme.typography.labelSmall,
                         fontWeight = FontWeight.Black,
-                        color = MaterialTheme.colorScheme.primary
+                        color = MaterialTheme.colorScheme.primary,
+                        // Das Etikett gibt nicht nach: lieber kuerzt der Name.
+                        maxLines = 1,
+                        softWrap = false
                     )
                 }
             }
