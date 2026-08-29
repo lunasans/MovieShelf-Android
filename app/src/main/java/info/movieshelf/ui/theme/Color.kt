@@ -91,6 +91,14 @@ val GlassScrimDark = Color(0xF0101014) // 94% deckender Scrim: bei hellen Covern
 val NavScrimTop = Color(0x00000000)
 val NavScrimBottom = Color(0xB3000000)
 
+/**
+ * Rosé-Verlauf hinter der Statusleiste: faerbt keine System-Icons (Android
+ * erlaubt dort nur hell/dunkel), gibt der transparenten Statusleiste aber
+ * den Marken-Akzent als Untergrund, bevor er nach unten ausblendet.
+ */
+val StatusBarScrimTop = Color(0xCCE11D48) // Rose-600, stark gedeckt am oberen Rand
+val StatusBarScrimBottom = Color(0x00E11D48) // vollstaendig transparent
+
 // Medienformat-Farben (DVD/Blu-ray/4K/Streaming/Digital/Leihe)
 val MediaFormatDvd = Color(0xFFF97316) // Orange
 val MediaFormatBluray = Color(0xFF3B82F6) // Blau
