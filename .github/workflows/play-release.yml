@@ -124,7 +124,12 @@ jobs:
           RELEASE_BODY=$(jq -r '.body // ""' release.json)
           RELEASE_URL=$(jq -r '.url' release.json)
 
-          TITLE="MovieShelf Android ${RELEASE_NAME:-$TAG}"
+          # Der Release-Name traegt bereits "MovieShelf" (siehe Schritt
+          # "GitHub-Release als Versionsmarke"), das Praefix hier ebenfalls.
+          # Ohne das Abschneiden stuende es zweimal im Titel:
+          # "MovieShelf Android MovieShelf v2.2.2".
+          NAME="${RELEASE_NAME:-$TAG}"
+          TITLE="MovieShelf Android ${NAME#MovieShelf }"
 
           CONTENT="${RELEASE_BODY:-Neue Version veroeffentlicht.}
 
