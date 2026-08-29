@@ -9,6 +9,9 @@ on:
     tags: ['v*']
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   # Dieselbe Definition wie bei jedem Pull Request, wiederverwendet statt
   # kopiert: eine zweite Fassung waere die erste, die veraltet.
