@@ -1,6 +1,7 @@
 Behoben:
 
-• Darstellerprofile brauchen keinen Server mehr: Biografie, Geburtsdatum, Bild und die Filme der Person kommen aus der eigenen Sammlung. War die Shelf nicht erreichbar, blieb die Seite bisher leer.
-• Im eigenständigen Betrieb ließ sich ein Darsteller gar nicht öffnen – jetzt schon.
-• Verweise auf Namen im Beschreibungstext funktionieren ohne Netz.
-• "Dieses Gerät" stand bei langen Gerätenamen senkrecht, Buchstabe für Buchstabe.
+• Ein neu angelegter oder importierter Film erschien erst nach einem Neustart der App in der Übersicht. Jetzt steht er sofort in der Liste.
+
+Neu:
+
+• Hinter der Statusleiste liegt ein rosé-farbener Verlauf, der nach unten ausblendet, statt dass dort der dunkle Hintergrund durchscheint.
