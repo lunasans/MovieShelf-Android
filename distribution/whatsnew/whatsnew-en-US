@@ -1,6 +1,7 @@
 Fixed:
 
-• Actor profiles no longer need the server: biography, birth date, photo and the person's films now come from your own collection. Previously the page stayed empty whenever the shelf was unreachable.
-• In standalone mode an actor could not be opened at all – now it can.
-• Name links inside descriptions work offline.
-• "This device" was printed vertically, one letter per line, next to long device names.
+• A newly created or imported film only showed up in the overview after restarting the app. It now appears in the list right away.
+
+New:
+
+• A rosé gradient sits behind the status bar and fades out downwards, instead of the dark background simply showing through.
