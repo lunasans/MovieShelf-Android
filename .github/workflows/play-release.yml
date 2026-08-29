@@ -98,6 +98,8 @@ jobs:
     needs: [release]
     if: needs.release.result == 'success'
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - name: Diskussion im Forum erstellen
         env:
