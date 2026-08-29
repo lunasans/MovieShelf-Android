@@ -450,6 +450,13 @@ fun MovieShelfApp(oauthCallbackUri: MutableState<Uri?> = mutableStateOf(null)) {
                     CreateMovieScreen(
                         onBack = { navController.popBackStack() },
                         onCreated = { newLocalId ->
+                            // Neuer Film: Dashboard zum Neuladen anstoßen, sonst
+                            // zeigt es die veraltete Liste bis zum App-Neustart.
+                            runCatching {
+                                navController.getBackStackEntry("dashboard").savedStateHandle.let { handle ->
+                                    handle["needs_refresh"] = (handle.get<Int>("needs_refresh") ?: 0) + 1
+                                }
+                            }
                             navController.navigate("movie_details/$newLocalId") {
                                 popUpTo("create_movie") { inclusive = true }
                             }
@@ -564,6 +571,13 @@ fun MovieShelfApp(oauthCallbackUri: MutableState<Uri?> = mutableStateOf(null)) {
                         // Die Suche verlaesst der Weg in jedem Fall, sie ist nach
                         // einem Treffer ohnehin zu Ende.
                         onMovieImported = { localId ->
+                            // Neuer Film: Dashboard zum Neuladen anstoßen, sonst
+                            // zeigt es die veraltete Liste bis zum App-Neustart.
+                            runCatching {
+                                navController.getBackStackEntry("dashboard").savedStateHandle.let { handle ->
+                                    handle["needs_refresh"] = (handle.get<Int>("needs_refresh") ?: 0) + 1
+                                }
+                            }
                             navController.popBackStack()
                             if (localId != null) navController.navigate("edit_movie/$localId")
                         },
