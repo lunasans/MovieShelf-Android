@@ -793,8 +793,6 @@ class MovieRepository(
      */
     suspend fun getStats(): Stats = LocalStats.from(movieDao.getAllForStats())
 
-    suspend fun searchTmdb(query: String) = api.searchTmdb(query)
-
     /**
      * Film oder Serie serverseitig importieren.
      *

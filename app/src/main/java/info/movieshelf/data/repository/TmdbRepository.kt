@@ -28,7 +28,7 @@ class TmdbRepository(
     suspend fun isSearchAvailable(): Boolean = isShelfMode() || apiKeyProvider() != null
 
     suspend fun search(query: String, series: Boolean = false): TmdbSearchResponse {
-        if (isShelfMode()) return shelfApiProvider().searchTmdb(query)
+        if (isShelfMode()) return shelfApiProvider().searchTmdb(query, if (series) "tv" else "movie")
 
         val key = apiKeyProvider() ?: throw MissingTmdbKeyException()
         return if (series) tmdbApi.searchSeries(key, query) else tmdbApi.searchMovies(key, query)
