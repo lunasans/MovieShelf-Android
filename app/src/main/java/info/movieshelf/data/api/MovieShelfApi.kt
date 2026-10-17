@@ -152,15 +152,17 @@ interface MovieShelfApi {
     suspend fun searchActors(@Query("q") query: String): ActorResponse
 
     // TMDb Integration
+    /**
+     * Ohne `type` sucht die Shelf nur Filme (TmdbController::search, Vorgabe
+     * `movie`) — eine Serie wird dann schlicht nicht gefunden. Desktop schickt
+     * den Typ genauso mit. Bewusst ohne Vorgabe: wer den Typ vergisst, soll es
+     * beim Bauen merken, nicht erst an einer leeren Trefferliste.
+     */
     @GET("api/tmdb/search")
     suspend fun searchTmdb(
-        @Query("query") query: String
+        @Query("query") query: String,
+        @Query("type") type: String
     ): TmdbSearchResponse
-
-    @GET("api/tmdb/details")
-    suspend fun getTmdbDetails(
-        @Query("tmdb_id") tmdbId: Int
-    ): Map<String, Any>
 
     @POST("api/tmdb/import")
     suspend fun importFromTmdb(
