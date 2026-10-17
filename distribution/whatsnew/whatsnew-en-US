@@ -1,7 +1,3 @@
 Fixed:
 
-• A newly created or imported film only showed up in the overview after restarting the app. It now appears in the list right away.
-
-New:
-
-• A rosé gradient sits behind the status bar and fades out downwards, instead of the dark background simply showing through.
+• When connected to a shelf, searching while adding a title found no series even with "Series" selected – only films were searched. Series now show up just like in the desktop app and on the web.
