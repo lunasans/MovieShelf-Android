@@ -1,7 +1,3 @@
 Behoben:
 
-• Ein neu angelegter oder importierter Film erschien erst nach einem Neustart der App in der Übersicht. Jetzt steht er sofort in der Liste.
-
-Neu:
-
-• Hinter der Statusleiste liegt ein rosé-farbener Verlauf, der nach unten ausblendet, statt dass dort der dunkle Hintergrund durchscheint.
+• Im Betrieb mit einer Shelf fand die Suche beim Hinzufügen keine Serien, auch wenn „Serie" gewählt war – es wurden nur Filme gesucht. Jetzt erscheinen Serien wie in der Desktop-App und im Web.
