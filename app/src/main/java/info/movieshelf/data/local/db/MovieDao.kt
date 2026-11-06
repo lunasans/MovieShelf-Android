@@ -140,29 +140,6 @@ interface MovieDao {
      * Regel gilt: [LocalStats] wirft die Huellen weg und zaehlt die Teile.
      * Ein Film in einem Boxset zaehlt zur Sammlung, das Boxset selbst nicht.
      */
-    /**
-     * Die Wunschliste: was der Nutzer sich vorgemerkt hat.
-     *
-     * Nicht `inCollection`! Das haengt am Film und sagt, ob er zur Sammlung
-     * gehoert; die Wunschliste haengt am Benutzer. Die erste Fassung dieser
-     * Abfrage las die falsche Spalte und zeigte damit alles, was nicht zur
-     * Sammlung gehoert.
-     */
-    @Query("SELECT * FROM movies WHERE isDeleted = 0 AND isWishlisted = 1 ORDER BY title COLLATE NOCASE")
-    suspend fun getWishlist(): List<MovieEntity>
-
-    @Query("UPDATE movies SET isWishlisted = :wishlisted, updatedAt = :now WHERE localId = :localId")
-    suspend fun updateWishlisted(localId: Long, wishlisted: Boolean, now: String)
-
-    @Query("UPDATE movies SET syncedWishlisted = :wishlisted WHERE localId = :localId")
-    suspend fun markWishlistSynced(localId: Long, wishlisted: Boolean)
-
-    @Query("""
-        SELECT * FROM movies
-        WHERE remoteId IS NOT NULL AND isDeleted = 0 AND isWishlisted != syncedWishlisted
-    """)
-    suspend fun getPendingWishlist(): List<MovieEntity>
-
     @Query("SELECT * FROM movies WHERE isDeleted = 0")
     suspend fun getAllForStats(): List<MovieEntity>
 

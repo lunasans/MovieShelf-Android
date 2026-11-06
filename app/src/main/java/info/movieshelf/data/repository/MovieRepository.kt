@@ -155,9 +155,6 @@ class MovieRepository(
             .map { it.toMovie() }
             .sortedWith(compareBy(String.CASE_INSENSITIVE_ORDER) { it.title.orEmpty() })
 
-    /** Vorgemerkte Titel — die Wunschliste. */
-    suspend fun getWishlist(): List<Movie> = movieDao.getWishlist().map { it.toMovie() }
-
     suspend fun getFeatured(limit: Int = 5): List<Movie> =
         movieDao.getFeatured(limit).map { it.toMovie() }
             .ifEmpty { movieDao.getNewest(1).map { it.toMovie() } }
@@ -705,72 +702,6 @@ class MovieRepository(
     // ── Aktionen am einzelnen Film ───────────────────────────────────────────
     // Noch reine Netzaufrufe. Sie liegen hier statt in den ViewModels, damit
     // Phase 3 sie an einer Stelle auf lokales Schreiben umstellen kann.
-
-    /**
-     * Vormerkung umschalten.
-     *
-     * Wie Gesehen-Stand und Bewertung zuerst lokal — sonst waere die
-     * Wunschliste auf dem Geraet erst nach dem naechsten Abgleich zu sehen, und
-     * ohne Netz gar nicht. Der Versand wird gleich versucht; scheitert er,
-     * bleibt die Vormerkung offen stehen.
-     */
-    suspend fun setWishlisted(localId: Long, wishlisted: Boolean): Boolean {
-        val entity = movieDao.getByLocalId(localId) ?: return wishlisted
-        movieDao.updateWishlisted(localId, wishlisted, SyncClock.now())
-
-        val remoteId = entity.remoteId?.takeIf { isShelfMode() } ?: return wishlisted
-        return try {
-            // Der Endpunkt ist ein Umschalter: er antwortet mit dem Stand, den
-            // die Shelf nun fuehrt. Der gilt.
-            val serverState = api.toggleWishlist(remoteId).wishlisted ?: wishlisted
-            movieDao.markWishlistSynced(localId, serverState)
-            if (serverState != wishlisted) {
-                movieDao.updateWishlisted(localId, serverState, SyncClock.now())
-            }
-            isOffline = false
-            serverState
-        } catch (e: Exception) {
-            isOffline = true
-            wishlisted
-        }
-    }
-
-    /** Offene Vormerkungen nachreichen. */
-    suspend fun pushWishlist(
-        onProgress: (Int, Int, String?) -> Unit = { _, _, _ -> }
-    ): Int {
-        if (!isShelfMode()) return 0
-        val pending = movieDao.getPendingWishlist()
-        var pushed = 0
-        var done = 0
-        var failed = 0
-        var firstError: String? = null
-
-        for (entity in pending) {
-            onProgress(++done, pending.size, entity.title)
-            val remoteId = entity.remoteId ?: continue
-            try {
-                val serverState = api.toggleWishlist(remoteId).wishlisted ?: entity.isWishlisted
-                movieDao.markWishlistSynced(entity.localId, serverState)
-                if (serverState != entity.isWishlisted) {
-                    movieDao.updateWishlisted(entity.localId, serverState, SyncClock.now())
-                }
-                pushed++
-                isOffline = false
-            } catch (e: Exception) {
-                isOffline = true
-                failed++
-                if (firstError == null) firstError = e.message ?: e::class.java.simpleName
-            }
-        }
-
-        if (failed > 0) {
-            throw IllegalStateException(
-                "$failed von ${pending.size} Vormerkungen nicht uebertragen: $firstError"
-            )
-        }
-        return pushed
-    }
 
     suspend fun fetchTrailer(remoteId: Int): String? {
         val response = api.fetchTrailer(remoteId)

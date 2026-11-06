@@ -278,10 +278,6 @@ class DashboardViewModel(private val repository: MovieRepository) : ViewModel() 
         repository.toggleWatchedByLocalId(movie.localId, movie.isWatched == true)
     }
 
-    // Eine Sammelaktion fuer die Wunschliste fehlt bewusst: das lokale Setzen
-    // der Vormerkung kommt erst mit PR #41. Ueber den blossen Server-Aufruf
-    // waere sie ohne Netz wirkungslos.
-
     fun bulkDelete() = runBulk { movie -> repository.deleteMovieByLocalId(movie.localId) }
 
     /**

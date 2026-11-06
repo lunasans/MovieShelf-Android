@@ -88,7 +88,7 @@ interface MovieShelfApi {
     @GET("api/tags")
     suspend fun getTags(): TagResponse
 
-    // Listen / Wunschliste
+    // Listen
     @GET("api/lists")
     suspend fun getLists(): ListsResponse
 
@@ -124,9 +124,6 @@ interface MovieShelfApi {
 
     @POST("api/movies/{id}/watched")
     suspend fun toggleWatched(@Path("id") id: Int): Map<String, Any>
-
-    @POST("api/movies/{id}/wishlist")
-    suspend fun toggleWishlist(@Path("id") id: Int): WishlistToggleResponse
 
     @GET("api/info")
     suspend fun getServerInfo(): ServerInfo

@@ -64,7 +64,6 @@ fun ProfileScreen(
     onListsClick: () -> Unit = {},
     onTwoFactorClick: () -> Unit = {},
     onJellyfinClick: () -> Unit = {},
-    onWishlistClick: () -> Unit = {},
     onAccessClick: () -> Unit = {},
     onSyncClick: () -> Unit = {},
     /** Eigenstaendiger Betrieb: kein Konto, kein Abgleich, keine 2FA. */
@@ -150,13 +149,6 @@ fun ProfileScreen(
                     title = stringResource(R.string.profile_my_lists),
                     subtitle = stringResource(R.string.profile_my_lists_sub),
                     onClick = onListsClick
-                )
-                HorizontalDivider(Modifier.padding(start = 56.dp))
-                SettingsRow(
-                    icon = Icons.Default.FavoriteBorder,
-                    title = stringResource(R.string.wishlist_title),
-                    subtitle = stringResource(R.string.wishlist_subtitle),
-                    onClick = onWishlistClick
                 )
                 if (!isStandalone) {
                     HorizontalDivider(Modifier.padding(start = 56.dp))
