@@ -90,7 +90,7 @@
     <string name="profile_settings">Settings</string>
     <string name="section_collection">Collection</string>
     <string name="profile_my_lists">My lists</string>
-    <string name="profile_my_lists_sub">Your own lists and wishlist</string>
+    <string name="profile_my_lists_sub">Your own lists</string>
     <string name="profile_sync_sub">Sync your local collection with your MovieShelf</string>
     <string name="section_security">Security</string>
     <string name="twofactor_title">Two-factor authentication</string>
@@ -165,7 +165,6 @@
     <!-- Details, editing, profile, two-factor -->
     <string name="detail_add_to_list">Add to list</string>
     <string name="common_edit">Edit</string>
-    <string name="detail_wishlist">Add to wishlist</string>
     <string name="detail_mark_watched">Mark as watched</string>
     <string name="detail_fetch_trailer">Fetch trailer from TMDb</string>
     <string name="common_manage">Manage</string>
@@ -252,7 +251,6 @@
     <string name="error_rating_range">The rating must be between 0 and 100.</string>
     <string name="error_movie_not_found">Film not found</string>
     <string name="error_update_failed">Update failed: %1$s</string>
-    <string name="error_wishlist_failed">Wishlist error: %1$s</string>
     <string name="message_trailer_found">Trailer found and saved.</string>
     <string name="error_no_trailer">No trailer found.</string>
     <string name="error_trailer_failed">Could not fetch the trailer: %1$s</string>
@@ -372,7 +370,7 @@
     <string name="scanner_barcode">Barcode: %1$s</string>
     <string name="form_comma_separated">Comma-separated</string>
     <string name="form_date_format">YYYY-MM-DD</string>
-    <string name="form_in_collection_hint">This film is part of the collection (not just the wishlist)</string>
+    <string name="form_in_collection_hint">This film is part of the collection (not just noted down)</string>
     <string name="dashboard_offline">Offline — showing cached data</string>
     <string name="dashboard_sync_hint">Your collection is fetched from the shelf when you sync.</string>
     <string name="common_show_all">Show all</string>
@@ -397,7 +395,7 @@
     <string name="detail_price">Price</string>
     <string name="error_image_unreadable">The image could not be read.</string>
     <string name="list_this_movie">This film</string>
-    <string name="lists_none_hint">Create lists (a wishlist, for instance) in the web or desktop app.</string>
+    <string name="lists_none_hint">Create lists in the web or desktop app.</string>
     <string name="error_profile_not_loaded">Profile could not be loaded</string>
     <string name="stats_series_one">series in the collection</string>
     <string name="stats_series_many">series in the collection</string>
@@ -480,10 +478,6 @@
     <string name="sort_descending">Descending</string>
     <string name="filter_genre">Genre</string>
     <string name="filter_genre_all">All genres</string>
-    <string name="wishlist_title">Wishlist</string>
-    <string name="wishlist_subtitle">Titles you noted down, not in the collection yet</string>
-    <string name="wishlist_empty">Nothing noted down yet</string>
-    <string name="wishlist_empty_hint">Tap the heart on a movie to add it to your wishlist.</string>
     <string name="error_movie_not_loaded_short">This movie could not be loaded.</string>
     <string name="sync_ratings">Ratings</string>
     <string name="sync_episodes_watched">Episodes watched</string>

@@ -82,6 +82,10 @@ data class MovieEntity(
      */
     val userRating: Int? = null,
     /**
+     * Rest der entfallenen Wunschliste: wird nur noch vom Server gespiegelt,
+     * die App zeigt und aendert ihn nicht mehr. Die Spalten bleiben, ein
+     * Schemaumbau auf den Geraeten braechte nichts.
+     *
      * Vorgemerkt — die Wunschliste des Nutzers.
      *
      * Nicht zu verwechseln mit [inCollection]: das haengt am Film und sagt, ob
@@ -143,10 +147,6 @@ data class MovieEntity(
     /** Die eigene Bewertung ist lokal gesetzt, der Server weiss noch nichts davon. */
     val hasPendingUserRating: Boolean
         get() = userRating != syncedUserRating
-
-    /** Die Vormerkung ist lokal gesetzt und noch nicht uebertragen. */
-    val hasPendingWishlist: Boolean
-        get() = isWishlisted != syncedWishlisted
 
     /**
      * In das Modell der Oberfläche übersetzen. [Movie.id] bleibt die Server-ID

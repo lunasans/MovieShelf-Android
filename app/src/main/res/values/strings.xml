@@ -93,7 +93,7 @@
     <string name="profile_settings">Einstellungen</string>
     <string name="section_collection">Sammlung</string>
     <string name="profile_my_lists">Meine Listen</string>
-    <string name="profile_my_lists_sub">Eigene Listen und Wunschliste</string>
+    <string name="profile_my_lists_sub">Eigene Listen</string>
     <string name="profile_sync_sub">Lokale Sammlung mit deiner MovieShelf abgleichen</string>
     <string name="section_security">Sicherheit</string>
     <string name="twofactor_title">Zwei-Faktor-Authentifizierung</string>
@@ -168,7 +168,6 @@
     <!-- Details, Bearbeiten, Profil, Zwei-Faktor -->
     <string name="detail_add_to_list">Zu Liste hinzufügen</string>
     <string name="common_edit">Bearbeiten</string>
-    <string name="detail_wishlist">Zur Wunschliste</string>
     <string name="detail_mark_watched">Gesehen markieren</string>
     <string name="detail_fetch_trailer">Trailer von TMDb holen</string>
     <string name="common_manage">Verwalten</string>
@@ -255,7 +254,6 @@
     <string name="error_rating_range">Bewertung muss zwischen 0 und 100 liegen.</string>
     <string name="error_movie_not_found">Film nicht gefunden</string>
     <string name="error_update_failed">Fehler beim Aktualisieren: %1$s</string>
-    <string name="error_wishlist_failed">Fehler bei der Wunschliste: %1$s</string>
     <string name="message_trailer_found">Trailer gefunden und gespeichert.</string>
     <string name="error_no_trailer">Kein Trailer gefunden.</string>
     <string name="error_trailer_failed">Trailer konnte nicht geholt werden: %1$s</string>
@@ -375,7 +373,7 @@
     <string name="scanner_barcode">Barcode: %1$s</string>
     <string name="form_comma_separated">Komma-getrennt</string>
     <string name="form_date_format">JJJJ-MM-TT</string>
-    <string name="form_in_collection_hint">Film ist Teil der Sammlung (nicht nur Wunschliste)</string>
+    <string name="form_in_collection_hint">Film ist Teil der Sammlung (nicht nur vorgemerkt)</string>
     <string name="dashboard_offline">Offline — zwischengespeicherte Daten</string>
     <string name="dashboard_sync_hint">Deine Sammlung wird beim Synchronisieren von der Shelf geholt.</string>
     <string name="common_show_all">Alle anzeigen</string>
@@ -400,7 +398,7 @@
     <string name="detail_price">Kaufpreis</string>
     <string name="error_image_unreadable">Bild konnte nicht gelesen werden.</string>
     <string name="list_this_movie">Dieser Film</string>
-    <string name="lists_none_hint">Listen (z. B. eine Wunschliste) legst du in der Web- oder Desktop-App an.</string>
+    <string name="lists_none_hint">Listen legst du in der Web- oder Desktop-App an.</string>
     <string name="error_profile_not_loaded">Profil konnte nicht geladen werden</string>
     <string name="stats_series_one">Serie in der Sammlung</string>
     <string name="stats_series_many">Serien in der Sammlung</string>
@@ -483,10 +481,6 @@
     <string name="sort_descending">Absteigend</string>
     <string name="filter_genre">Genre</string>
     <string name="filter_genre_all">Alle Genres</string>
-    <string name="wishlist_title">Wunschliste</string>
-    <string name="wishlist_subtitle">Vorgemerkte Titel, noch nicht in der Sammlung</string>
-    <string name="wishlist_empty">Noch nichts vorgemerkt</string>
-    <string name="wishlist_empty_hint">Tippe in der Filmansicht auf das Herz, um einen Titel vorzumerken.</string>
     <string name="error_movie_not_loaded_short">Der Film konnte nicht geladen werden.</string>
     <string name="sync_ratings">Bewertungen</string>
     <string name="sync_episodes_watched">Folgen gesehen</string>

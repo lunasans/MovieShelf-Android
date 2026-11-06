@@ -99,28 +99,11 @@ class MovieDetailViewModel(
         }
     }
 
-    fun toggleWishlist() {
-        val currentMovie = movie ?: return
-        val newState = !(currentMovie.isWishlisted ?: false)
-
-        // Optimistisches UI-Update
-        movie = currentMovie.copy(isWishlisted = newState)
-
-        viewModelScope.launch {
-            // Kein Rollback mehr: die Vormerkung steht lokal und wartet als
-            // offene Aenderung auf den naechsten Abgleich. Sie hier
-            // zurueckzudrehen wuerde sie verwerfen, obwohl sie gilt — derselbe
-            // Grund wie beim Gesehen-Stand.
-            val wishlisted = repository.setWishlisted(currentMovie.localId, newState)
-            movie = movie?.copy(isWishlisted = wishlisted)
-        }
-    }
-
     /**
      * Eigene Bewertung setzen — 1 bis 5 Sterne, erneutes Tippen auf denselben
      * Stern entfernt sie wieder.
      *
-     * Optimistisch wie der Wunschlisten-Schalter: die Sterne fuellen sich
+     * Optimistisch: die Sterne fuellen sich
      * sofort. Das Repository schreibt lokal und versucht den Versand; scheitert
      * er, bleibt die Bewertung als offen stehen und geht beim naechsten
      * Abgleich raus — ein Rollback waere hier also falsch.

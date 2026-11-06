@@ -151,12 +151,7 @@ data class TagResponse(
     val data: List<TagItem>
 )
 
-// --- Listen / Wunschliste ---
-// Antwort von POST /api/movies/{id}/wishlist
-data class WishlistToggleResponse(
-    val wishlisted: Boolean? = null
-)
-
+// --- Listen ---
 // Antwort der Cover/Backdrop-Upload-Endpunkte
 data class ImageUploadResponse(
     val message: String? = null,
